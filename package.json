@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@hookform/resolvers": "^3.9.1",
+    "@mui/material": "^6.1.6",
+    "@radix-ui/react-form": "^0.1.0",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-toast": "^1.2.2",
+    "bootstrap": "^5.3.3",
+    "lucide-react": "^0.454.0",
+    "react-hook-form": "^7.53.1",
+    "react-toastify": "^10.0.6",
+    "yup": "^1.4.0"
+  }
+}
