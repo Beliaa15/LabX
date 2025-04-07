@@ -16,10 +16,17 @@ export const AuthProvider = ({ children }) => {
         const initAuth = async () => {
             if (authToken) {
                 try {
-                    // You can add a function to validate the token or get user data here
-                    // For example: const userData = await fetchUserData(authToken);
-                    // setUser(userData);
-                    setUser({ isAuthenticated: true }); // Placeholder
+                    const storedUser = {
+                        isAuthenticated: true,
+                        role: localStorage.getItem('userRole') || 'student',
+                        firstName: localStorage.getItem('userFirstName') || '',
+                        lastName: localStorage.getItem('userLastName') || '',
+                        email: localStorage.getItem('userEmail') || '',
+                        bio: localStorage.getItem('userBio') || '',
+                        location: localStorage.getItem('userLocation') || '',
+                        courses: JSON.parse(localStorage.getItem('userCourses') || '[]')
+                    };
+                    setUser(storedUser);
                 } catch (err) {
                     console.error('Authentication error:', err);
                     handleLogout();
@@ -30,6 +37,16 @@ export const AuthProvider = ({ children }) => {
 
         initAuth();
     }, [authToken]);
+
+    const saveUserData = (userData) => {
+        localStorage.setItem('userRole', userData.role);
+        localStorage.setItem('userFirstName', userData.firstName);
+        localStorage.setItem('userLastName', userData.lastName);
+        localStorage.setItem('userEmail', userData.email);
+        localStorage.setItem('userBio', userData.bio);
+        localStorage.setItem('userLocation', userData.location);
+        localStorage.setItem('userCourses', JSON.stringify(userData.courses || []));
+    };
 
     const saveToken = (token) => {
         localStorage.setItem('authToken', token);
@@ -42,7 +59,11 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await loginService(credentials);
             saveToken(response.token);
-            setUser(response.user || { isAuthenticated: true });
+            saveUserData(response.user);
+            setUser({
+                ...response.user,
+                isAuthenticated: true
+            });
             return response;
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed');
@@ -62,6 +83,13 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             setAuthToken(null);
             localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userFirstName');
+            localStorage.removeItem('userLastName');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userBio');
+            localStorage.removeItem('userLocation');
+            localStorage.removeItem('userCourses');
             setLoading(false);
         }
     };
@@ -70,14 +98,28 @@ export const AuthProvider = ({ children }) => {
         return !!authToken && !!user;
     };
 
+    const isAdmin = () => {
+        return user?.role === 'admin';
+    };
+
+    const isProfessor = () => {
+        return user?.role === 'professor';
+    };
+
+    const isStudent = () => {
+        return user?.role === 'student';
+    };
+
     const value = {
         user,
-        authToken,
         loading,
         error,
         login: handleLogin,
         logout: handleLogout,
         isAuthenticated,
+        isAdmin,
+        isProfessor,
+        isStudent
     };
 
     return (

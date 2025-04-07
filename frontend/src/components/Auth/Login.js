@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { MOCK_USERS } from '../../services/authService';
 
 /**
  * Login component
@@ -45,6 +46,23 @@ const Login = () => {
               create a new account
             </Link>
           </p>
+        </div>
+
+        {/* Mock Users for Testing */}
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Available Mock Users:</h3>
+          <div className="space-y-2">
+            {MOCK_USERS.map((user) => (
+              <div key={user.email} className="text-sm">
+                <span className="font-medium">{user.firstName} {user.lastName}</span>
+                <span className="text-gray-500"> ({user.role})</span>
+                <br />
+                <span className="text-gray-600">Email: {user.email}</span>
+                <br />
+                <span className="text-gray-600">Password: password</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {error && (
@@ -117,8 +135,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${loading ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>

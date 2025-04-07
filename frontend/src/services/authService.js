@@ -25,14 +25,58 @@ api.interceptors.request.use(
 );
 
 // Mock user data for development without backend
-const MOCK_USER = {
-    id: '1',
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    bio: 'Frontend developer with a passion for React',
-    location: 'New York, USA',
-};
+export const MOCK_USERS = [
+    {
+        id: '1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com',
+        role: 'student',
+        bio: 'Computer Science student',
+        location: 'New York, USA',
+        courses: ['CS101', 'MATH201', 'PHYS101']
+    },
+    {
+        id: '2',
+        firstName: 'Sarah',
+        lastName: 'Smith',
+        email: 'sarah.smith@example.com',
+        role: 'professor',
+        bio: 'Mathematics Professor',
+        location: 'Boston, USA',
+        courses: ['MATH201', 'MATH301', 'MATH401']
+    },
+    {
+        id: '3',
+        firstName: 'Michael',
+        lastName: 'Johnson',
+        email: 'michael.johnson@example.com',
+        role: 'admin',
+        bio: 'System Administrator',
+        location: 'San Francisco, USA',
+        courses: []
+    },
+    {
+        id: '4',
+        firstName: 'Emily',
+        lastName: 'Williams',
+        email: 'emily.williams@example.com',
+        role: 'student',
+        bio: 'Physics student',
+        location: 'Chicago, USA',
+        courses: ['PHYS101', 'PHYS201', 'MATH201']
+    },
+    {
+        id: '5',
+        firstName: 'David',
+        lastName: 'Brown',
+        email: 'david.brown@example.com',
+        role: 'professor',
+        bio: 'Computer Science Professor',
+        location: 'Seattle, USA',
+        courses: ['CS101', 'CS201', 'CS301']
+    }
+];
 
 // Mock token
 const MOCK_TOKEN = 'mock-jwt-token-for-development';
@@ -43,10 +87,16 @@ export const login = async (credentials) => {
     if (!process.env.REACT_APP_USE_REAL_API) {
         console.log('Using mock login with credentials:', credentials);
 
+        // Find user by email
+        const user = MOCK_USERS.find(u => u.email === credentials.email);
+
         // Simple validation
-        if (credentials.email === 'test@example.com' && credentials.password === 'password') {
+        if (user && credentials.password === 'password') {
             return {
-                user: MOCK_USER,
+                user: {
+                    ...user,
+                    isAuthenticated: true
+                },
                 token: MOCK_TOKEN,
             };
         }
@@ -70,7 +120,7 @@ export const signup = async (userData) => {
         // Simulate successful signup
         return {
             user: {
-                ...MOCK_USER,
+                ...MOCK_USERS[0],
                 firstName: userData.firstName,
                 lastName: userData.lastName,
                 email: userData.email,
@@ -99,7 +149,7 @@ export const fetchUserProfile = async () => {
     // For development without backend
     if (!process.env.REACT_APP_USE_REAL_API) {
         console.log('Using mock profile data');
-        return MOCK_USER;
+        return MOCK_USERS[0];
     }
 
     // Real API call
@@ -114,7 +164,7 @@ export const updateUserProfile = async (userData) => {
 
         // Return updated user data
         return {
-            ...MOCK_USER,
+            ...MOCK_USERS[0],
             ...userData,
         };
     }
