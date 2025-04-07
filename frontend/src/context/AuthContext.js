@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
                         email: localStorage.getItem('userEmail') || '',
                         bio: localStorage.getItem('userBio') || '',
                         location: localStorage.getItem('userLocation') || '',
+                        phone: localStorage.getItem('userPhone') || '',
                         courses: JSON.parse(localStorage.getItem('userCourses') || '[]')
                     };
                     setUser(storedUser);
@@ -43,8 +44,9 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('userFirstName', userData.firstName);
         localStorage.setItem('userLastName', userData.lastName);
         localStorage.setItem('userEmail', userData.email);
-        localStorage.setItem('userBio', userData.bio);
-        localStorage.setItem('userLocation', userData.location);
+        localStorage.setItem('userBio', userData.bio || '');
+        localStorage.setItem('userLocation', userData.location || '');
+        localStorage.setItem('userPhone', userData.phone || '');
         localStorage.setItem('userCourses', JSON.stringify(userData.courses || []));
     };
 
@@ -89,8 +91,33 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('userEmail');
             localStorage.removeItem('userBio');
             localStorage.removeItem('userLocation');
+            localStorage.removeItem('userPhone');
             localStorage.removeItem('userCourses');
             setLoading(false);
+        }
+    };
+
+    const updateProfile = async (profileData) => {
+        try {
+            // In a real app, you would make an API call to update the profile
+            // For now, we'll just update the local state and localStorage
+
+            // Create updated user object
+            const updatedUser = {
+                ...user,
+                ...profileData
+            };
+
+            // Update local state
+            setUser(updatedUser);
+
+            // Save to localStorage
+            saveUserData(updatedUser);
+
+            return updatedUser;
+        } catch (err) {
+            console.error('Profile update error:', err);
+            throw new Error('Failed to update profile');
         }
     };
 
@@ -116,6 +143,7 @@ export const AuthProvider = ({ children }) => {
         error,
         login: handleLogin,
         logout: handleLogout,
+        updateProfile,
         isAuthenticated,
         isAdmin,
         isProfessor,

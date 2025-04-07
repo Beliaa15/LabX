@@ -1,210 +1,186 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchUserProfile, updateUserProfile } from '../../services/authService';
+import { useUI } from '../../context/UIContext';
+import Sidebar from '../Common/Sidebar';
 
 /**
- * Profile component
- * @returns {React.ReactNode} - The profile component
+ * Profile page component for user profile management
+ * @returns {React.ReactNode} - The profile page component
  */
 const Profile = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, updateProfile } = useAuth();
+  const { sidebarCollapsed } = useUI();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [profileData, setProfileData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    bio: '',
-    location: '',
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+
+  const [formData, setFormData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
   });
 
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const data = await fetchUserProfile();
-        setProfileData({
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          email: data.email || '',
-          bio: data.bio || '',
-          location: data.location || '',
-        });
-      } catch (err) {
-        setError('Failed to load profile data');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, []);
-
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProfileData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     setError('');
     setSuccess('');
-    setUpdating(true);
 
     try {
-      await updateUserProfile(profileData);
-      setSuccess('Profile updated successfully');
+      // In a real app, this would send data to a server
+      await updateProfile(formData);
+      setSuccess('Profile updated successfully!');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update profile');
+      setError(err.message || 'Failed to update profile. Please try again.');
     } finally {
-      setUpdating(false);
+      setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-            <div>
-              <h3 className="text-lg leading-6 font-medium text-gray-900">User Profile</h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">Personal details and preferences</p>
+    <div className="min-h-screen bg-gray-100">
+      {/* Sidebar component handles both mobile and desktop sidebars */}
+      <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
+
+      {/* Main content */}
+      <div className={`${sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'} flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
+        <div className="sticky top-0 z-10 flex items-center justify-between h-16 bg-white shadow-sm px-4 md:px-6">
+          <div className="flex-1 px-4 flex justify-between">
+            <div className="flex-1 flex">
+              <h1 className="text-2xl font-semibold text-gray-900">Profile</h1>
             </div>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
-            >
-              Sign out
-            </button>
+            <div className="ml-4 flex items-center md:ml-6">
+              <div className="flex items-center">
+                <span className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center">
+                  <span className="text-sm font-medium leading-none text-white">
+                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                  </span>
+                </span>
+                <span className="ml-3 text-gray-700 text-sm font-medium lg:block">
+                  <span className="sr-only">Welcome,</span>
+                  {user?.firstName} {user?.lastName}
+                </span>
+              </div>
+            </div>
           </div>
-
-          {error && (
-            <div className="rounded-md bg-red-50 p-4 m-4">
-              <div className="flex">
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {success && (
-            <div className="rounded-md bg-green-50 p-4 m-4">
-              <div className="flex">
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-green-800">{success}</h3>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div className="border-t border-gray-200">
-              <dl>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">First name</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    <input
-                      type="text"
-                      name="firstName"
-                      id="firstName"
-                      value={profileData.firstName}
-                      onChange={handleChange}
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    />
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Last name</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    <input
-                      type="text"
-                      name="lastName"
-                      id="lastName"
-                      value={profileData.lastName}
-                      onChange={handleChange}
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    />
-                  </dd>
-                </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Email address</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={profileData.email}
-                      onChange={handleChange}
-                      disabled
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md bg-gray-100"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Location</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    <input
-                      type="text"
-                      name="location"
-                      id="location"
-                      value={profileData.location}
-                      onChange={handleChange}
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    />
-                  </dd>
-                </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">About</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    <textarea
-                      id="bio"
-                      name="bio"
-                      rows={3}
-                      value={profileData.bio}
-                      onChange={handleChange}
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"
-                    />
-                    <p className="mt-2 text-sm text-gray-500">Brief description for your profile.</p>
-                  </dd>
-                </div>
-              </dl>
-            </div>
-            <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
-              <button
-                type="submit"
-                disabled={updating}
-                className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${updating ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-              >
-                {updating ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </form>
         </div>
+
+        <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
+          <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+              <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">User Information</h3>
+                  <p className="mt-1 max-w-2xl text-sm text-gray-500">Update your personal details.</p>
+                </div>
+                <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
+                  {success && (
+                    <div className="mb-4 p-2 bg-green-100 border border-green-400 text-green-700 rounded">
+                      {success}
+                    </div>
+                  )}
+                  {error && (
+                    <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+                      {error}
+                    </div>
+                  )}
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                      <div className="sm:col-span-3">
+                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                          First name
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            type="text"
+                            name="firstName"
+                            id="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                          Last name
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            type="text"
+                            name="lastName"
+                            id="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                          Email address
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            type="email"
+                            name="email"
+                            id="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                          Phone number
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            type="text"
+                            name="phone"
+                            id="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-5">
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          {loading ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );
