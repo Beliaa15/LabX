@@ -130,131 +130,190 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     ];
 
     const renderSidebarContent = (isMobile = false) => (
-        <>
-            <div className={`flex-shrink-0 flex items-center px-4 h-16 ${isMobile ? '' : 'justify-between'}`}>
-                {(!sidebarCollapsed || isMobile) && (
-                    <h1 className="text-xl font-bold text-gray-900">University Platform</h1>
-                )}
-                {!isMobile && (
-                    <button
-                        type="button"
-                        className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        onClick={toggleSidebar}
-                    >
-                        <span className="sr-only">{sidebarCollapsed ? 'Expand' : 'Collapse'} sidebar</span>
-                        <svg
-                            className="h-6 w-6"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d={sidebarCollapsed
-                                    ? "M13 5l7 7-7 7M5 5l7 7-7 7"
-                                    : "M11 19l-7-7 7-7m8 14l-7-7 7-7"}
-                            />
-                        </svg>
-                    </button>
-                )}
-            </div>
-            <nav className={`mt-5 flex-1 px-2 space-y-1 ${isMobile ? 'bg-white' : ''}`}>
-                {navigationLinks.map((item) => (
-                    <Link
-                        key={item.name}
-                        to={item.href}
-                        className={`${item.active
-                            ? isMobile ? 'bg-gray-100 text-gray-900' : 'bg-indigo-100 text-indigo-900'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                            } group flex items-center py-2 text-sm font-medium rounded-md ${isMobile
-                                ? 'px-2 py-2 text-base'
-                                : sidebarCollapsed ? 'px-2 justify-center' : 'px-2'
-                            }`}
-                    >
-                        <span className={`${isMobile
-                            ? item.active ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
-                            : item.active
-                                ? 'text-indigo-500'
-                                : 'text-gray-400 group-hover:text-gray-500'
-                            } flex-shrink-0 h-6 w-6 ${isMobile ? 'mr-4' : sidebarCollapsed ? 'mr-0' : 'mr-3'
-                            }`}>
-                            {item.icon}
-                        </span>
-                        {(!sidebarCollapsed || isMobile) && <span>{item.name}</span>}
-                    </Link>
-                ))}
-            </nav>
-            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-                <button
-                    onClick={logout}
-                    className="flex items-center text-red-600 hover:text-red-700"
-                >
-                    <svg
-                        className={`flex-shrink-0 h-6 w-6 text-red-600 group-hover:text-red-700 ${isMobile ? 'mr-3' : sidebarCollapsed ? 'mr-0' : 'mr-2'}`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        />
-                    </svg>
-                    {(!sidebarCollapsed || isMobile) && <span>Sign out</span>}
-                </button>
-            </div>
-        </>
+      <>
+        <div
+          className={`flex-shrink-0 flex items-center px-4 h-16 ${
+            isMobile ? '' : 'justify-between'
+          }`}
+        >
+          {(!sidebarCollapsed || isMobile) && (
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              University Platform
+            </h1>
+          )}
+          {!isMobile && (
+            <button
+              type="button"
+              className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-950"
+              onClick={toggleSidebar}
+            >
+              <span className="sr-only">
+                {sidebarCollapsed ? 'Expand' : 'Collapse'} sidebar
+              </span>
+              <svg
+                className="h-6 w-6"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={
+                    sidebarCollapsed
+                      ? 'M13 5l7 7-7 7M5 5l7 7-7 7'
+                      : 'M11 19l-7-7 7-7m8 14l-7-7 7-7'
+                  }
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+        <nav
+          className={`mt-5 flex-1 px-2 space-y-1 ${isMobile ? 'bg-white' : ''}`}
+        >
+          {navigationLinks.map((item) => (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={`${
+                item.active
+                  ? isMobile
+                    ? 'bg-gray-100 text-gray-900 '
+                    : 'bg-indigo-100 text-indigo-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-400'
+              } group flex items-center py-2 text-sm font-medium rounded-md ${
+                isMobile
+                  ? 'px-2 py-2 text-base'
+                  : sidebarCollapsed
+                  ? 'px-2 justify-center'
+                  : 'px-2'
+              }`}
+            >
+              <span
+                className={`${
+                  isMobile
+                    ? item.active
+                      ? 'text-gray-500'
+                      : 'text-gray-400 group-hover:text-gray-500'
+                    : item.active
+                    ? 'text-indigo-500'
+                    : 'text-gray-400 group-hover:text-gray-500 dark:text-slate-400'
+                } flex-shrink-0 h-6 w-6 ${
+                  isMobile ? 'mr-4' : sidebarCollapsed ? 'mr-0' : 'mr-3'
+                }`}
+              >
+                {item.icon}
+              </span>
+              {(!sidebarCollapsed || isMobile) && <span>{item.name}</span>}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex-shrink-0 flex border-t border-gray-200 p-4 dark:border-[#121212]">
+          <button
+            onClick={logout}
+            className="flex items-center text-red-600 hover:text-red-700"
+          >
+            <svg
+              className={`flex-shrink-0 h-6 w-6 text-red-600 group-hover:text-red-700 ${
+                isMobile ? 'mr-3' : sidebarCollapsed ? 'mr-0' : 'mr-2'
+              }`}
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+            {(!sidebarCollapsed || isMobile) && <span>Sign out</span>}
+          </button>
+        </div>
+      </>
     );
 
     return (
-        <>
-            {/* Mobile sidebar */}
-            <div className={`fixed inset-0 flex z-40 md:hidden ${mobileOpen ? 'block' : 'hidden'}`}>
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setMobileOpen(false)}></div>
-                <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-                    <div className="absolute top-0 right-0 -mr-12 pt-2">
-                        <button
-                            type="button"
-                            className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                            onClick={() => setMobileOpen(false)}
-                        >
-                            <span className="sr-only">Close sidebar</span>
-                            <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-                        {renderSidebarContent(true)}
-                    </div>
-                </div>
-            </div>
-
-            {/* Desktop sidebar - collapsible */}
-            <div className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'md:w-16' : 'md:w-64'}`}>
-                <div className="flex-1 flex flex-col min-h-0 border-r border-gray-200 bg-white">
-                    {renderSidebarContent()}
-                </div>
-            </div>
-
-            {/* Mobile sidebar toggle button - to be used in the header */}
-            <button
+      <>
+        {/* Mobile sidebar */}
+        <div
+          className={`fixed inset-0 flex z-40 md:hidden ${
+            mobileOpen ? 'block' : 'hidden'
+          }`}
+        >
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={() => setMobileOpen(false)}
+          ></div>
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
+            <div className="absolute top-0 right-0 -mr-12 pt-2">
+              <button
                 type="button"
-                className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-                onClick={() => setMobileOpen(true)}
-            >
-                <span className="sr-only">Open sidebar</span>
-                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                onClick={() => setMobileOpen(false)}
+              >
+                <span className="sr-only">Close sidebar</span>
+                <svg
+                  className="h-6 w-6 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
-            </button>
-        </>
+              </button>
+            </div>
+            <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+              {renderSidebarContent(true)}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop sidebar - collapsible */}
+        <div
+          className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 transition-all duration-300 ease-in-out ${
+            sidebarCollapsed ? 'md:w-16' : 'md:w-64'
+          }`}
+        >
+          <div className="flex-1 flex flex-col min-h-0 border-r border-gray-200 bg-white dark:bg-[#2A2A2A] dark:border-[#121212]">
+            {renderSidebarContent()}
+          </div>
+        </div>
+
+        {/* Mobile sidebar toggle button - to be used in the header */}
+        <button
+          type="button"
+          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+          onClick={() => setMobileOpen(true)}
+        >
+          <span className="sr-only">Open sidebar</span>
+          <svg
+            className="h-6 w-6"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
+      </>
     );
 };
 
