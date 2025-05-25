@@ -17,6 +17,13 @@ const {
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const { labValidation, paramValidation } = require('../middleware/validationMiddleware');
 
+
+
+// Upload WebGL file
+router.post('/labs/:id/upload-webgl', labController.uploadWebGL);
+
+// Get WebGL file
+router.get('/labs/:id/webgl', labController.getWebGL);
 // List and create labs
 router.route('/')
     .get(authenticate, getLabs)

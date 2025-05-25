@@ -14,6 +14,10 @@ const LabSchema = new Schema({
         type: Date,
         required: true
     },
+    webglUrl: {
+        type: String,
+        default: null,
+    },
     filePath: {
         type: String,
         required: true
