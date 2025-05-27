@@ -239,35 +239,33 @@ const AdminCourseManagement = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-[#121212]">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
       <div className={`${sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'} flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="sticky top-0 z-10 bg-white dark:bg-[#2A2A2A] border-b border-gray-200 dark:border-gray-700">
           <div className="px-4 md:px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Course Management
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-1">
-                  Create courses and assign professors
-                </p>
               </div>
 
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <span className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-white">
-                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                    </span>
+                  <span className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center">
+                  <span className="text-sm font-medium leading-none text-white">
+                    {user?.firstName?.charAt(0)}
+                    {user?.lastName?.charAt(0)}
                   </span>
+                </span>
                   <div className="hidden md:block">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {user?.firstName} {user?.lastName}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
+                    
                   </div>
                 </div>
                 <ToggleButton
@@ -280,7 +278,7 @@ const AdminCourseManagement = () => {
         </div>
 
         {/* Controls */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4">
+        <div className="bg-white dark:bg-[#2A2A2A] border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex items-center space-x-4">
               <button
@@ -303,14 +301,14 @@ const AdminCourseManagement = () => {
                   placeholder="Search courses..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               >
                 <option value="name">Sort by Name</option>
                 <option value="date">Sort by Date</option>
@@ -344,10 +342,10 @@ const AdminCourseManagement = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-4 md:p-6">
+        <div className="flex-1 p-4 md:p-6 bg-gray-100 dark:bg-[#121212]">
           {sortedCourses.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <BookOpen className="w-12 h-12 text-gray-400 mb-4" />
+              <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 {searchQuery ? 'No courses found' : 'No courses created yet'}
               </h3>
@@ -386,7 +384,7 @@ const AdminCourseManagement = () => {
         {/* Create Course Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg">
+            <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl w-full max-w-lg">
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Create New Course
@@ -402,7 +400,7 @@ const AdminCourseManagement = () => {
                         value={courseCode}
                         onChange={(e) => setCourseCode(e.target.value)}
                         placeholder="e.g., CS101"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       />
                     </div>
@@ -415,7 +413,7 @@ const AdminCourseManagement = () => {
                         value={courseName}
                         onChange={(e) => setCourseName(e.target.value)}
                         placeholder="Enter course name..."
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       />
                     </div>
@@ -428,7 +426,7 @@ const AdminCourseManagement = () => {
                         onChange={(e) => setCourseDescription(e.target.value)}
                         placeholder="Enter course description..."
                         rows="3"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -456,7 +454,7 @@ const AdminCourseManagement = () => {
         {/* Assign Professor Modal */}
         {showAssignModal && selectedCourse && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+            <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl w-full max-w-md">
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Assign Professor
