@@ -3,6 +3,93 @@ const Lab = require('../models/Lab');
 const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+const Lab = require('../models/Lab');
+
+// Configure Multer storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '..', 'uploads', 'webgl');
+        fs.mkdirSync(uploadDir, { recursive: true });
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    },
+});
+
+const upload = multer({ storage });
+
+// Upload WebGL file
+// define uploadWebGL as a const
+const uploadWebGL = [
+    upload.single('webgl'),
+    async (req, res) => {
+        try {
+            const labId = req.params.id;
+            if (!req.file) {
+                return res.status(400).json({ error: 'No file uploaded' });
+            }
+
+            const fileName = req.file.filename;
+            const webglUrl = `/uploads/webgl/${fileName}`;
+
+            const lab = await Lab.findByIdAndUpdate(
+                labId,
+                { webglUrl },
+                { new: true }
+            );
+
+            if (!lab) {
+                return res.status(404).json({ error: 'Lab not found' });
+            }
+
+            res.json({ message: 'WebGL uploaded', webglUrl });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Server error' });
+        }
+    },
+];
+
+// define getWebGL as a const
+const getWebGL = async (req, res) => {
+    try {
+        const labId = req.params.id;
+        const lab = await Lab.findById(labId);
+
+        if (!lab || !lab.webglUrl) {
+            return res.status(404).json({ error: 'WebGL build not found' });
+        }
+
+        const filePath = path.join(__dirname, '..', lab.webglUrl);
+        res.sendFile(filePath);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// And at the bottom, export everything together:
+module.exports = {
+    createLab,
+    getLabs,
+    getLabById,
+    updateLab,
+    deleteLab,
+    addStudent,
+    removeStudent,
+    addTeacher,
+    removeTeacher,
+    uploadWebGL,
+    getWebGL,
+};
+
+
+
+
 // @desc    Create new lab
 // @route   POST /api/labs
 // @access  Private/Teacher or Admin
@@ -354,5 +441,7 @@ module.exports = {
     addStudent,
     removeStudent,
     addTeacher,
-    removeTeacher
+    removeTeacher,
+    uploadWebGL,
+    getWebGL,
 };
