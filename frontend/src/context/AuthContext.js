@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const storedUser = {
                         isAuthenticated: true,
+                        id: localStorage.getItem('userId') || '',
                         role: localStorage.getItem('userRole') || 'student',
                         firstName: localStorage.getItem('userFirstName') || '',
                         lastName: localStorage.getItem('userLastName') || '',
@@ -40,6 +41,7 @@ export const AuthProvider = ({ children }) => {
     }, [authToken]);
 
     const saveUserData = (userData) => {
+        localStorage.setItem('userId', userData.id);
         localStorage.setItem('userRole', userData.role);
         localStorage.setItem('userFirstName', userData.firstName);
         localStorage.setItem('userLastName', userData.lastName);
@@ -85,6 +87,7 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             setAuthToken(null);
             localStorage.removeItem('authToken');
+            localStorage.removeItem('userId');
             localStorage.removeItem('userRole');
             localStorage.removeItem('userFirstName');
             localStorage.removeItem('userLastName');

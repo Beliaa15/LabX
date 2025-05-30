@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import { getProfessors, assignCourse, unassignCourse } from '../../services/professorService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import {
@@ -32,21 +33,28 @@ const AdminCourseManagement = () => {
   const [courseCode, setCourseCode] = useState('');
   
   // Data states
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState(() => {
+    const savedCourses = localStorage.getItem('adminCourses');
+    return savedCourses ? JSON.parse(savedCourses) : [];
+  });
+  
   const [professors, setProfessors] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('name');
 
-  // Mock data - replace with actual API calls
+  // Load professors from service
   useEffect(() => {
-    // Simulate API calls
-    setProfessors([
-      { id: 1, name: 'Dr. John Smith', email: 'john.smith@university.edu', assignedCourses: 2 },
-      { id: 2, name: 'Dr. Sarah Johnson', email: 'sarah.johnson@university.edu', assignedCourses: 1 },
-      { id: 3, name: 'Dr. Michael Brown', email: 'michael.brown@university.edu', assignedCourses: 0 },
-    ]);
+    const loadProfessors = () => {
+      const professorsList = getProfessors();
+      setProfessors(professorsList);
+    };
+    loadProfessors();
   }, []);
+
+  // Save courses to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('adminCourses', JSON.stringify(courses));
+  }, [courses]);
 
   const handleToggle = (e) => {
     if (e.target.checked) {
@@ -77,19 +85,56 @@ const AdminCourseManagement = () => {
     }
   };
 
-  const handleAssignProfessor = (professorId) => {
+  const handleAssignProfessor = async (professorId) => {
     if (selectedCourse) {
-      setCourses(courses.map(course => 
-        course.id === selectedCourse.id 
-          ? { ...course, assignedProfessor: professorId, status: 'active' }
-          : course
-      ));
-      setShowAssignModal(false);
-      setSelectedCourse(null);
+      try {
+        // Call the service to assign the course
+        await assignCourse(professorId, selectedCourse.id);
+
+        // Update courses - ensure professorId is stored as string
+        setCourses(courses.map(course => 
+          course.id === selectedCourse.id 
+            ? { ...course, assignedProfessor: String(professorId), status: 'active' }
+            : course
+        ));
+
+        // Update professors' assignedCourses count
+        setProfessors(professors.map(prof => {
+          if (prof.id === professorId) {
+            return { ...prof, assignedCourses: prof.assignedCourses + 1 };
+          }
+          if (selectedCourse.assignedProfessor && prof.id === selectedCourse.assignedProfessor) {
+            return { ...prof, assignedCourses: Math.max(0, prof.assignedCourses - 1) };
+          }
+          return prof;
+        }));
+
+        setShowAssignModal(false);
+        setSelectedCourse(null);
+      } catch (error) {
+        console.error('Failed to assign professor:', error);
+      }
     }
   };
 
-  const handleDeleteCourse = (courseId) => {
+  const handleDeleteCourse = async (courseId) => {
+    const courseToDelete = courses.find(c => c.id === courseId);
+    if (courseToDelete && courseToDelete.assignedProfessor) {
+      try {
+        // Call the service to unassign the course
+        await unassignCourse(courseToDelete.assignedProfessor, courseId);
+
+        // Update professor's assigned courses count
+        setProfessors(professors.map(prof => 
+          prof.id === courseToDelete.assignedProfessor
+            ? { ...prof, assignedCourses: Math.max(0, prof.assignedCourses - 1) }
+            : prof
+        ));
+      } catch (error) {
+        console.error('Failed to unassign professor:', error);
+        // You might want to show an error message to the user here
+      }
+    }
     setCourses(courses.filter(course => course.id !== courseId));
   };
 
@@ -97,19 +142,6 @@ const AdminCourseManagement = () => {
     course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     course.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const sortedCourses = [...filteredCourses].sort((a, b) => {
-    switch (sortBy) {
-      case 'name':
-        return a.name.localeCompare(b.name);
-      case 'date':
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      case 'code':
-        return a.code.localeCompare(b.code);
-      default:
-        return 0;
-    }
-  });
 
   const getProfessorName = (professorId) => {
     const professor = professors.find(p => p.id === professorId);
@@ -305,16 +337,6 @@ const AdminCourseManagement = () => {
                 />
               </div>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="name">Sort by Name</option>
-                <option value="date">Sort by Date</option>
-                <option value="code">Sort by Code</option>
-              </select>
-
               <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
@@ -342,8 +364,8 @@ const AdminCourseManagement = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-4 md:p-6 bg-gray-100 dark:bg-[#121212]">
-          {sortedCourses.length === 0 ? (
+        <div className="flex-1 p-4 md:p-6">
+          {filteredCourses.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
               <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -366,13 +388,13 @@ const AdminCourseManagement = () => {
             <>
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {sortedCourses.map((course) => (
+                  {filteredCourses.map((course) => (
                     <CourseCard key={course.id} course={course} />
                   ))}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {sortedCourses.map((course) => (
+                  {filteredCourses.map((course) => (
                     <CourseListItem key={course.id} course={course} />
                   ))}
                 </div>
