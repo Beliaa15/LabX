@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import {
@@ -28,20 +29,30 @@ const Courses = () => {
   const { sidebarCollapsed } = useUI();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
+  // Form states
+  const [newFolderName, setNewFolderName] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [courseName, setCourseName] = useState('');
+  const [courseCode, setCourseCode] = useState('');
+  const [courseDescription, setCourseDescription] = useState('');
+  
   // Modal states
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showEnrolledStudentsModal, setShowEnrolledStudentsModal] = useState(false);
-  
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
   // Selected states
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedFolder, setSelectedFolder] = useState(null);
-  
-  // Form states
-  const [newFolderName, setNewFolderName] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
-  
+  const [tempCourse, setTempCourse] = useState(null);
+
+  // View states
+  const [viewMode, setViewMode] = useState('grid');
+  const [currentPath, setCurrentPath] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Data states with localStorage initialization
   const [courses, setCourses] = useState(() => {
     const savedCourses = localStorage.getItem('adminCourses');
@@ -66,53 +77,20 @@ const Courses = () => {
     return [];
   });
 
+  // Initialize students from MOCK_USERS
   const [students, setStudents] = useState(() => {
-    const savedStudents = localStorage.getItem('allStudents');
-    return savedStudents ? JSON.parse(savedStudents) : [
-      { id: 1, name: 'John Doe', email: 'john.doe@university.edu' },
-      { id: 2, name: 'Jane Smith', email: 'jane.smith@university.edu' },
-      { id: 3, name: 'Alice Johnson', email: 'alice.j@university.edu' },
-      { id: 4, name: 'Bob Wilson', email: 'bob.w@university.edu' },
-    ];
+    // Get only users with role 'student' and format them
+    const studentUsers = MOCK_USERS
+      .filter(user => user.role === 'student')
+      .map(user => ({
+        id: user.id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        courses: user.courses || []
+      }));
+
+    return studentUsers;
   });
-
-  // Update courses when adminCourses in localStorage changes or user changes
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const savedCourses = localStorage.getItem('adminCourses');
-      const allCourses = savedCourses ? JSON.parse(savedCourses) : [];
-      
-      // Filter courses for the current professor
-      if (user && user.role === 'professor') {
-        const filteredCourses = allCourses.filter(course => {
-          const isMatch = String(course.assignedProfessor) === String(user.id);
-          console.log(`Checking course ${course.name}:`, {
-            courseAssignedProfessor: course.assignedProfessor,
-            userId: user.id,
-            isMatch
-          });
-          return isMatch;
-        });
-        console.log('Setting filtered courses:', filteredCourses);
-        setCourses(filteredCourses);
-      }
-    };
-
-    // Initial load
-    handleStorageChange();
-
-    // Listen for storage changes
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [user]);
-
-  // Debug effect to monitor courses changes
-  useEffect(() => {
-    console.log('Courses updated:', courses);
-  }, [courses]);
 
   const [materials, setMaterials] = useState(() => {
     const savedMaterials = localStorage.getItem('courseMaterials');
@@ -120,24 +98,47 @@ const Courses = () => {
   });
 
   const [availableStudents, setAvailableStudents] = useState([]);
-  const [tempCourse, setTempCourse] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
-  const [currentPath, setCurrentPath] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Update courses when adminCourses in localStorage changes or user changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedCourses = localStorage.getItem('adminCourses');
+      const allCourses = savedCourses ? JSON.parse(savedCourses) : [];
+      
+      // Initialize enrolledStudents for each course if it doesn't exist
+      const coursesWithEnrolledStudents = allCourses.map(course => ({
+        ...course,
+        enrolledStudents: course.enrolledStudents || []
+      }));
+      
+      // Filter courses for the current professor
+      if (user && user.role === 'professor') {
+        const filteredCourses = coursesWithEnrolledStudents.filter(course => 
+          String(course.assignedProfessor) === String(user.id)
+        );
+        setCourses(filteredCourses);
+      }
+    };
+
+    handleStorageChange();
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [user]);
+
+  // Debug effect to monitor courses changes
+  useEffect(() => {
+    console.log('Courses updated:', courses);
+  }, [courses]);
 
   // Save data to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('courseMaterials', JSON.stringify(materials));
   }, [materials]);
 
-  useEffect(() => {
-    localStorage.setItem('allStudents', JSON.stringify(students));
-  }, [students]);
-
   // Update available students when a course is selected
   useEffect(() => {
     if (tempCourse) {
-      const enrolledIds = tempCourse.enrolledStudents.map(student => student.id);
+      const enrolledIds = tempCourse.enrolledStudents?.map(student => student.id) || [];
       setAvailableStudents(students.filter(student => !enrolledIds.includes(student.id)));
     }
   }, [tempCourse, students]);
@@ -150,82 +151,122 @@ const Courses = () => {
     }
   };
 
-  // Update handleAddStudent to work with tempCourse
+  // Update handleAddStudent
   const handleAddStudent = (studentId) => {
     if (tempCourse) {
       const studentToAdd = students.find(s => s.id === studentId);
       if (studentToAdd) {
+        // Ensure enrolledStudents exists
+        const updatedTempCourse = {
+          ...tempCourse,
+          enrolledStudents: tempCourse.enrolledStudents || []
+        };
+
         // Update the courses state
         setCourses(prevCourses => 
           prevCourses.map(course => {
             if (course.id === tempCourse.id) {
               return {
                 ...course,
-                enrolledStudents: [...course.enrolledStudents, studentToAdd]
+                enrolledStudents: [...(course.enrolledStudents || []), studentToAdd]
               };
             }
             return course;
           })
         );
 
-        // Update the tempCourse state
-        setTempCourse(prev => ({
-          ...prev,
-          enrolledStudents: [...prev.enrolledStudents, studentToAdd]
-        }));
+        // Update tempCourse
+        setTempCourse({
+          ...updatedTempCourse,
+          enrolledStudents: [...updatedTempCourse.enrolledStudents, studentToAdd]
+        });
+
+        // Update localStorage
+        const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
+        const updatedCourses = allCourses.map(course => {
+          if (course.id === tempCourse.id) {
+            return {
+              ...course,
+              enrolledStudents: [...(course.enrolledStudents || []), studentToAdd]
+            };
+          }
+          return course;
+        });
+        localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
 
         // Update available students
         setAvailableStudents(prev => prev.filter(s => s.id !== studentId));
+        setShowAddStudentModal(false);
       }
-      setShowAddStudentModal(false);
     }
   };
 
+  // Update handleRemoveStudent
   const handleRemoveStudent = (studentId) => {
     if (tempCourse) {
+      // Ensure enrolledStudents exists
+      const updatedTempCourse = {
+        ...tempCourse,
+        enrolledStudents: tempCourse.enrolledStudents || []
+      };
+
       // Update the courses state
       setCourses(prevCourses => 
         prevCourses.map(course => {
           if (course.id === tempCourse.id) {
             return {
               ...course,
-              enrolledStudents: course.enrolledStudents.filter(s => s.id !== studentId)
+              enrolledStudents: (course.enrolledStudents || []).filter(s => s.id !== studentId)
             };
           }
           return course;
         })
       );
 
-      // Update the tempCourse state to reflect the change immediately in the modal
-      setTempCourse(prev => ({
-        ...prev,
-        enrolledStudents: prev.enrolledStudents.filter(s => s.id !== studentId)
-      }));
+      // Update tempCourse
+      const removedStudent = updatedTempCourse.enrolledStudents.find(s => s.id === studentId);
+      setTempCourse({
+        ...updatedTempCourse,
+        enrolledStudents: updatedTempCourse.enrolledStudents.filter(s => s.id !== studentId)
+      });
+
+      // Update localStorage
+      const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
+      const updatedCourses = allCourses.map(course => {
+        if (course.id === tempCourse.id) {
+          return {
+            ...course,
+            enrolledStudents: (course.enrolledStudents || []).filter(s => s.id !== studentId)
+          };
+        }
+        return course;
+      });
+      localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
 
       // Update available students
-      setAvailableStudents(prev => [
-        ...prev,
-        tempCourse.enrolledStudents.find(s => s.id === studentId)
-      ]);
+      if (removedStudent) {
+        setAvailableStudents(prev => [...prev, removedStudent]);
+      }
     }
   };
 
-  const handleCreateFolder = (e) => {
+  const handleCreateCourse = (e) => {
     e.preventDefault();
-    if (newFolderName.trim() && selectedCourse) {
-      const newFolder = {
+    if (courseName.trim() && courseCode.trim()) {
+      const newCourse = {
         id: Date.now(),
-        name: newFolderName,
-        type: 'folder',
-        path: [...currentPath],
-        courseId: selectedCourse.id,
-        items: [],
+        name: courseName,
+        code: courseCode,
+        description: courseDescription,
         createdAt: new Date().toISOString(),
+        assignedProfessor: null,
+        status: 'draft',
       };
-      
-      setMaterials(prev => [...prev, newFolder]);
-      setNewFolderName('');
-      setShowCreateFolderModal(false);
+      setCourses([...courses, newCourse]);
+      setCourseName('');
+      setCourseCode('');
+      setCourseDescription('');
+      setShowCreateModal(false);
     }
   };
 
@@ -248,6 +289,25 @@ const Courses = () => {
     }
   };
 
+  const handleCreateFolder = (e) => {
+    e.preventDefault();
+    if (newFolderName.trim() && selectedCourse) {
+      const newFolder = {
+        id: Date.now(),
+        name: newFolderName,
+        type: 'folder',
+        path: [...currentPath],
+        courseId: selectedCourse.id,
+        items: [],
+        createdAt: new Date().toISOString(),
+      };
+      
+      setMaterials(prev => [...prev, newFolder]);
+      setNewFolderName('');
+      setShowCreateFolderModal(false);
+    }
+  };
+
   const navigateToFolder = (folder) => {
     setCurrentPath(prev => [...prev, folder.name]);
     setSelectedFolder(folder);
@@ -260,6 +320,7 @@ const Courses = () => {
 
   const getCurrentMaterials = () => {
     return materials.filter(item => 
+      item.courseId === selectedCourse?.id &&
       JSON.stringify(item.path) === JSON.stringify(currentPath)
     );
   };
@@ -325,7 +386,7 @@ const Courses = () => {
             <div className="flex items-center justify-between">
               <span className="text-gray-500 dark:text-gray-400">Students:</span>
               <span className="font-medium text-gray-900 dark:text-white">
-                {course.enrolledStudents.length}
+                {(course.enrolledStudents || []).length}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -529,7 +590,7 @@ const Courses = () => {
                         {selectedCourse.name}
                       </h2>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {selectedCourse.code} • {selectedCourse.enrolledStudents.length} students
+                        {selectedCourse.code} • {(selectedCourse.enrolledStudents || []).length} students
                       </p>
                     </div>
                     <div className="flex space-x-3">
@@ -655,9 +716,9 @@ const Courses = () => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Enrolled Students - {tempCourse.name}
                 </h3>
-                {tempCourse.enrolledStudents.length > 0 ? (
+                {(tempCourse.enrolledStudents || []).length > 0 ? (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {tempCourse.enrolledStudents.map((student) => (
+                    {(tempCourse.enrolledStudents || []).map((student) => (
                       <div
                         key={student.id}
                         className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
@@ -694,50 +755,6 @@ const Courses = () => {
                     className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add Material Modal */}
-        {showAddMaterialModal && selectedCourse && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl w-full max-w-md">
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Upload Files
-                </h3>
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                    <input
-                      type="file"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="file-upload"
-                      multiple
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer flex flex-col items-center"
-                    >
-                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-gray-700 dark:text-gray-300 font-medium">
-                        Click to upload files
-                      </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        or drag and drop them here
-                      </span>
-                    </label>
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    onClick={() => setShowAddMaterialModal(false)}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Cancel
                   </button>
                 </div>
               </div>
@@ -785,6 +802,50 @@ const Courses = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Material Modal */}
+        {showAddMaterialModal && selectedCourse && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl w-full max-w-md">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Upload Files
+                </h3>
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="file-upload"
+                      multiple
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer flex flex-col items-center"
+                    >
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-gray-700 dark:text-gray-300 font-medium">
+                        Click to upload files
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        or drag and drop them here
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => setShowAddMaterialModal(false)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
