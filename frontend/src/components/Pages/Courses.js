@@ -5,12 +5,7 @@ import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import {
-  Plus,
-  Search,
-  Grid3X3,
-  List,
   BookOpen,
-  Users,
   FileText,
   FolderPlus,
   Upload,
