@@ -51,7 +51,7 @@ const App = () => {
               path="my-courses"
               element={
                 <ProtectedRoute>
-                  <Courses />
+                  <MyCourses />
                 </ProtectedRoute>
               }
             />
