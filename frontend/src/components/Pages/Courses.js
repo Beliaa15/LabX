@@ -429,6 +429,40 @@ const Courses = () => {
     );
   };
 
+  const handleDelete = async (item) => {
+    try {
+      const result = await showConfirmDialog(
+        `Delete ${item.type === 'folder' ? 'Folder' : 'File'}`,
+        `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
+        'Yes, Delete',
+        'Cancel'
+      );
+
+      if (result.isConfirmed) {
+        // Remove the item from materials
+        setMaterials(prev => prev.filter(material => material.id !== item.id));
+
+        // If it's a folder, also remove all items inside that folder
+        if (item.type === 'folder') {
+          setMaterials(prev => prev.filter(material => 
+            !material.path.includes(item.name)
+          ));
+        }
+
+        showSuccessAlert(
+          'Deleted Successfully',
+          `${item.type === 'folder' ? 'Folder' : 'File'} "${item.name}" has been deleted`
+        );
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      showErrorAlert(
+        'Delete Failed',
+        'There was an error deleting the item. Please try again.'
+      );
+    }
+  };
+
   const CourseCard = ({ course }) => {
     const handleCardClick = () => {
       setSelectedCourse(course);
@@ -502,16 +536,8 @@ const Courses = () => {
   };
 
   const MaterialItem = ({ item }) => {
-    const handleDownload = async (file) => {
-      try {
-        await downloadFile(file);
-      } catch (error) {
-        console.error('Download failed:', error);
-      }
-    };
-
     return (
-      <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 group">
+      <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 group relative">
         <div className="p-6">
           <div className="flex flex-col items-center text-center space-y-4">
             {/* Icon Container */}
@@ -541,47 +567,44 @@ const Courses = () => {
               )}
             </div>
 
-            {/* Action Button */}
-            {item.type === 'folder' ? (
-              <button
-                onClick={() => navigateToFolder(item)}
-                className="w-full px-4 py-2.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors flex items-center justify-center space-x-2 font-medium"
-              >
-                <Folder className="w-4 h-4" />
-                <span>Open Folder</span>
-              </button>
-            ) : (
-              <button 
-                onClick={() => handleDownload(item)}
-                className="w-full px-4 py-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center space-x-2 font-medium"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions - Appears on Hover */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <div className="flex space-x-1">
-            {item.type === 'folder' ? (
-              <button 
-                className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                title="Delete Folder"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            ) : (
-              <>
-                <button 
-                  className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  title="Delete File"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </>
-            )}
+            {/* Action Buttons */}
+            <div className="flex flex-col w-full space-y-4">
+              {item.type === 'folder' ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigateToFolder(item)}
+                    className="flex-1 px-3  py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                  >
+                    <Folder className="w-4 h-4 mr-2" />
+                    Open Folder
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item)}
+                    className="flex-1 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleDownload(item)}
+                    className="flex-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item)}
+                    className="flex-1 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
