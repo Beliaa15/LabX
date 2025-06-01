@@ -4,6 +4,8 @@ import { useUI } from '../../context/UIContext';
 import { getProfessors, assignCourse, unassignCourse } from '../../services/professorService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 import {
   Plus,
   Search,
@@ -18,6 +20,55 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
+
+// Initialize SweetAlert2
+const MySwal = withReactContent(Swal);
+
+// Utility functions for alerts
+const showSuccessAlert = (title, text) => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'success',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+  });
+};
+
+const showErrorAlert = (title, text) => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'error',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+  });
+};
+
+const showConfirmDialog = (title, text, confirmButtonText = 'Yes', cancelButtonText = 'No') => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+    confirmButtonColor: '#3B82F6',
+    cancelButtonColor: '#EF4444',
+  });
+};
 
 const AdminCourseManagement = () => {
   const { user } = useAuth();
@@ -82,6 +133,7 @@ const AdminCourseManagement = () => {
       setCourseCode('');
       setCourseDescription('');
       setShowCreateModal(false);
+      showSuccessAlert('Course Created', `Course "${courseName}" has been created successfully`);
     }
   };
 
@@ -109,33 +161,49 @@ const AdminCourseManagement = () => {
           return prof;
         }));
 
+        const professor = professors.find(p => p.id === professorId);
+        showSuccessAlert('Professor Assigned', `${professor.name} has been assigned to ${selectedCourse.name}`);
         setShowAssignModal(false);
         setSelectedCourse(null);
       } catch (error) {
         console.error('Failed to assign professor:', error);
+        showErrorAlert('Assignment Failed', 'Failed to assign professor to the course');
       }
     }
   };
 
   const handleDeleteCourse = async (courseId) => {
     const courseToDelete = courses.find(c => c.id === courseId);
-    if (courseToDelete && courseToDelete.assignedProfessor) {
-      try {
-        // Call the service to unassign the course
-        await unassignCourse(courseToDelete.assignedProfessor, courseId);
+    
+    // Show confirmation dialog before deleting
+    const result = await showConfirmDialog(
+      'Delete Course',
+      `Are you sure you want to delete "${courseToDelete.name}"? This action cannot be undone.`,
+      'Yes, Delete',
+      'Cancel'
+    );
 
-        // Update professor's assigned courses count
-        setProfessors(professors.map(prof => 
-          prof.id === courseToDelete.assignedProfessor
-            ? { ...prof, assignedCourses: Math.max(0, prof.assignedCourses - 1) }
-            : prof
-        ));
-      } catch (error) {
-        console.error('Failed to unassign professor:', error);
-        // You might want to show an error message to the user here
+    if (result.isConfirmed) {
+      if (courseToDelete && courseToDelete.assignedProfessor) {
+        try {
+          // Call the service to unassign the course
+          await unassignCourse(courseToDelete.assignedProfessor, courseId);
+
+          // Update professor's assigned courses count
+          setProfessors(professors.map(prof => 
+            prof.id === courseToDelete.assignedProfessor
+              ? { ...prof, assignedCourses: Math.max(0, prof.assignedCourses - 1) }
+              : prof
+          ));
+        } catch (error) {
+          console.error('Failed to unassign professor:', error);
+          showErrorAlert('Error', 'Failed to unassign professor from the course');
+          return;
+        }
       }
+      setCourses(courses.filter(course => course.id !== courseId));
+      showSuccessAlert('Course Deleted', `Course "${courseToDelete.name}" has been deleted successfully`);
     }
-    setCourses(courses.filter(course => course.id !== courseId));
   };
 
   const filteredCourses = courses.filter(course =>
