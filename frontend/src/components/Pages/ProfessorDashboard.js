@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, BookOpen, FileText, BarChart2, Calendar } from 'lucide-react';
+import { Users, BookOpen, FileText, Calendar } from 'lucide-react';
 
 const ProfessorDashboard = () => {
     // Sample data - replace with actual API calls

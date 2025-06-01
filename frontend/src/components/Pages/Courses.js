@@ -4,13 +4,10 @@ import { useUI } from '../../context/UIContext';
 import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 import {
-  Plus,
-  Search,
-  Grid3X3,
-  List,
   BookOpen,
-  Users,
   FileText,
   FolderPlus,
   Upload,
@@ -23,6 +20,55 @@ import {
   Download,
 } from 'lucide-react';
 import { downloadFile } from '../../services/fileService';
+
+// Initialize SweetAlert2
+const MySwal = withReactContent(Swal);
+
+// Utility functions for alerts
+const showSuccessAlert = (title, text) => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'success',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+  });
+};
+
+const showErrorAlert = (title, text) => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'error',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+  });
+};
+
+const showConfirmDialog = (title, text, confirmButtonText = 'Yes', cancelButtonText = 'No') => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+    confirmButtonColor: '#3B82F6',
+    cancelButtonColor: '#EF4444',
+  });
+};
 
 const Courses = () => {
   const { user } = useAuth();
@@ -197,22 +243,59 @@ const Courses = () => {
         // Update available students
         setAvailableStudents(prev => prev.filter(s => s.id !== studentId));
         setShowAddStudentModal(false);
+
+        // Show success alert
+        showSuccessAlert(
+          'Student Added',
+          `${studentToAdd.name} has been successfully enrolled in ${tempCourse.name}`
+        );
       }
     }
   };
 
   // Update handleRemoveStudent
-  const handleRemoveStudent = (studentId) => {
+  const handleRemoveStudent = async (studentId) => {
     if (tempCourse) {
-      // Ensure enrolledStudents exists
-      const updatedTempCourse = {
-        ...tempCourse,
-        enrolledStudents: tempCourse.enrolledStudents || []
-      };
+      const studentToRemove = tempCourse.enrolledStudents.find(s => s.id === studentId);
+      
+      // Show confirmation dialog
+      const result = await showConfirmDialog(
+        'Remove Student',
+        `Are you sure you want to remove ${studentToRemove.name} from ${tempCourse.name}?`,
+        'Yes, Remove',
+        'Cancel'
+      );
 
-      // Update the courses state
-      setCourses(prevCourses => 
-        prevCourses.map(course => {
+      if (result.isConfirmed) {
+        // Ensure enrolledStudents exists
+        const updatedTempCourse = {
+          ...tempCourse,
+          enrolledStudents: tempCourse.enrolledStudents || []
+        };
+
+        // Update the courses state
+        setCourses(prevCourses => 
+          prevCourses.map(course => {
+            if (course.id === tempCourse.id) {
+              return {
+                ...course,
+                enrolledStudents: (course.enrolledStudents || []).filter(s => s.id !== studentId)
+              };
+            }
+            return course;
+          })
+        );
+
+        // Update tempCourse
+        const removedStudent = updatedTempCourse.enrolledStudents.find(s => s.id === studentId);
+        setTempCourse({
+          ...updatedTempCourse,
+          enrolledStudents: updatedTempCourse.enrolledStudents.filter(s => s.id !== studentId)
+        });
+
+        // Update localStorage
+        const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
+        const updatedCourses = allCourses.map(course => {
           if (course.id === tempCourse.id) {
             return {
               ...course,
@@ -220,32 +303,19 @@ const Courses = () => {
             };
           }
           return course;
-        })
-      );
+        });
+        localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
 
-      // Update tempCourse
-      const removedStudent = updatedTempCourse.enrolledStudents.find(s => s.id === studentId);
-      setTempCourse({
-        ...updatedTempCourse,
-        enrolledStudents: updatedTempCourse.enrolledStudents.filter(s => s.id !== studentId)
-      });
-
-      // Update localStorage
-      const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
-      const updatedCourses = allCourses.map(course => {
-        if (course.id === tempCourse.id) {
-          return {
-            ...course,
-            enrolledStudents: (course.enrolledStudents || []).filter(s => s.id !== studentId)
-          };
+        // Update available students
+        if (removedStudent) {
+          setAvailableStudents(prev => [...prev, removedStudent]);
         }
-        return course;
-      });
-      localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
 
-      // Update available students
-      if (removedStudent) {
-        setAvailableStudents(prev => [...prev, removedStudent]);
+        // Show success alert
+        showSuccessAlert(
+          'Student Removed',
+          `${removedStudent.name} has been removed from ${tempCourse.name}`
+        );
       }
     }
   };
@@ -286,6 +356,12 @@ const Courses = () => {
       setMaterials(prev => [...prev, newFile]);
       setSelectedFile(null);
       setShowAddMaterialModal(false);
+
+      // Show success alert
+      showSuccessAlert(
+        'File Uploaded',
+        `${file.name} has been successfully uploaded to ${selectedCourse.name}`
+      );
     }
   };
 
@@ -305,6 +381,34 @@ const Courses = () => {
       setMaterials(prev => [...prev, newFolder]);
       setNewFolderName('');
       setShowCreateFolderModal(false);
+
+      // Show success alert
+      showSuccessAlert(
+        'Folder Created',
+        `Folder "${newFolderName}" has been created successfully`
+      );
+    } else if (!newFolderName.trim()) {
+      // Show error alert if folder name is empty
+      showErrorAlert(
+        'Error',
+        'Please enter a folder name'
+      );
+    }
+  };
+
+  const handleDownload = async (file) => {
+    try {
+      await downloadFile(file);
+      showSuccessAlert(
+        'Download Started',
+        `${file.name} is being downloaded`
+      );
+    } catch (error) {
+      console.error('Download failed:', error);
+      showErrorAlert(
+        'Download Failed',
+        'There was an error downloading the file. Please try again.'
+      );
     }
   };
 
@@ -323,6 +427,40 @@ const Courses = () => {
       item.courseId === selectedCourse?.id &&
       JSON.stringify(item.path) === JSON.stringify(currentPath)
     );
+  };
+
+  const handleDelete = async (item) => {
+    try {
+      const result = await showConfirmDialog(
+        `Delete ${item.type === 'folder' ? 'Folder' : 'File'}`,
+        `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
+        'Yes, Delete',
+        'Cancel'
+      );
+
+      if (result.isConfirmed) {
+        // Remove the item from materials
+        setMaterials(prev => prev.filter(material => material.id !== item.id));
+
+        // If it's a folder, also remove all items inside that folder
+        if (item.type === 'folder') {
+          setMaterials(prev => prev.filter(material => 
+            !material.path.includes(item.name)
+          ));
+        }
+
+        showSuccessAlert(
+          'Deleted Successfully',
+          `${item.type === 'folder' ? 'Folder' : 'File'} "${item.name}" has been deleted`
+        );
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      showErrorAlert(
+        'Delete Failed',
+        'There was an error deleting the item. Please try again.'
+      );
+    }
   };
 
   const CourseCard = ({ course }) => {
@@ -357,16 +495,6 @@ const Courses = () => {
                 className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30"
               >
                 <Eye className="w-3 h-3 text-white" />
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAddMaterialModal(true);
-                  setTempCourse(course); // Use a temporary state for modals
-                }}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30"
-              >
-                <Upload className="w-3 h-3 text-white" />
               </button>
             </div>
           </div>
@@ -408,16 +536,8 @@ const Courses = () => {
   };
 
   const MaterialItem = ({ item }) => {
-    const handleDownload = async (file) => {
-      try {
-        await downloadFile(file);
-      } catch (error) {
-        console.error('Download failed:', error);
-      }
-    };
-
     return (
-      <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 group">
+      <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 group relative">
         <div className="p-6">
           <div className="flex flex-col items-center text-center space-y-4">
             {/* Icon Container */}
@@ -447,47 +567,44 @@ const Courses = () => {
               )}
             </div>
 
-            {/* Action Button */}
-            {item.type === 'folder' ? (
-              <button
-                onClick={() => navigateToFolder(item)}
-                className="w-full px-4 py-2.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors flex items-center justify-center space-x-2 font-medium"
-              >
-                <Folder className="w-4 h-4" />
-                <span>Open Folder</span>
-              </button>
-            ) : (
-              <button 
-                onClick={() => handleDownload(item)}
-                className="w-full px-4 py-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center space-x-2 font-medium"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions - Appears on Hover */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <div className="flex space-x-1">
-            {item.type === 'folder' ? (
-              <button 
-                className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                title="Delete Folder"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            ) : (
-              <>
-                <button 
-                  className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  title="Delete File"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </>
-            )}
+            {/* Action Buttons */}
+            <div className="flex flex-col w-full space-y-4">
+              {item.type === 'folder' ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigateToFolder(item)}
+                    className="flex-1 px-3  py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                  >
+                    <Folder className="w-4 h-4 mr-2" />
+                    Open Folder
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item)}
+                    className="flex-1 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleDownload(item)}
+                    className="flex-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item)}
+                    className="flex-1 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
