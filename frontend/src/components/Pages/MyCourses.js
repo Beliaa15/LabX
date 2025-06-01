@@ -14,43 +14,8 @@ import {
   Grid3X3,
   List,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
+import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { downloadFile } from '../../services/fileService';
-
-// Initialize SweetAlert2
-const MySwal = withReactContent(Swal);
-
-// Utility functions for alerts
-const showSuccessAlert = (title, text) => {
-  return MySwal.fire({
-    title,
-    text,
-    icon: 'success',
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
-    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-  });
-};
-
-const showErrorAlert = (title, text) => {
-  return MySwal.fire({
-    title,
-    text,
-    icon: 'error',
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
-    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-  });
-};
 
 const MyCourses = () => {
   const { user } = useAuth();
@@ -81,7 +46,7 @@ const MyCourses = () => {
     }));
   });
 
-  const [materials, setMaterials] = useState(() => {
+  const [materials] = useState(() => {
     const savedMaterials = localStorage.getItem('courseMaterials');
     return savedMaterials ? JSON.parse(savedMaterials) : [];
   });

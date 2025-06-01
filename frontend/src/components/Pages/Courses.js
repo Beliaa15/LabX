@@ -4,8 +4,6 @@ import { useUI } from '../../context/UIContext';
 import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import {
   BookOpen,
   FileText,
@@ -19,56 +17,12 @@ import {
   Eye,
   Download,
 } from 'lucide-react';
+import { 
+  showSuccessAlert, 
+  showErrorAlert, 
+  showConfirmDialog 
+} from '../../utils/sweetAlert';
 import { downloadFile } from '../../services/fileService';
-
-// Initialize SweetAlert2
-const MySwal = withReactContent(Swal);
-
-// Utility functions for alerts
-const showSuccessAlert = (title, text) => {
-  return MySwal.fire({
-    title,
-    text,
-    icon: 'success',
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
-    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-  });
-};
-
-const showErrorAlert = (title, text) => {
-  return MySwal.fire({
-    title,
-    text,
-    icon: 'error',
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
-    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-  });
-};
-
-const showConfirmDialog = (title, text, confirmButtonText = 'Yes', cancelButtonText = 'No') => {
-  return MySwal.fire({
-    title,
-    text,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText,
-    cancelButtonText,
-    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
-    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
-    confirmButtonColor: '#3B82F6',
-    cancelButtonColor: '#EF4444',
-  });
-};
 
 const Courses = () => {
   const { user } = useAuth();
