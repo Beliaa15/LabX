@@ -7,7 +7,7 @@ import Toaster from './components/ui/toaster';
 import './index.css';
 
 // Page imports
-import Home from './components/Pages/Home';
+// import Home from './components/Pages/Home';
 import Dashboard from './components/Pages/Dashboard';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
@@ -24,7 +24,7 @@ const App = () => {
         <Router>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<Home />} />
+            {/* <Route path="/" element={<Home />} /> */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
 
