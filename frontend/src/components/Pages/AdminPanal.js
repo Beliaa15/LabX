@@ -74,7 +74,7 @@ const AdminCourseManagement = () => {
         description: courseDescription,
         createdAt: new Date().toISOString(),
         assignedProfessor: null,
-        enrolledStudents: 0,
+        enrolledStudents: [],
         status: 'draft',
       };
       setCourses([...courses, newCourse]);
@@ -206,7 +206,7 @@ const AdminCourseManagement = () => {
           <div className="flex items-center justify-between">
             <span className="text-gray-500 dark:text-gray-400">Students:</span>
             <span className="font-medium text-gray-900 dark:text-white">
-              {course.enrolledStudents}
+              {Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0}
             </span>
           </div>
           <div className="flex items-center justify-between">
@@ -243,7 +243,7 @@ const AdminCourseManagement = () => {
             </div>
             <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
               <span>Professor: {getProfessorName(course.assignedProfessor)}</span>
-              <span>{course.enrolledStudents} students</span>
+              <span>{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0} students</span>
               <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
