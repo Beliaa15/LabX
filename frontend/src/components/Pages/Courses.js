@@ -4,6 +4,8 @@ import { useUI } from '../../context/UIContext';
 import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 import {
   BookOpen,
   FileText,
@@ -18,6 +20,55 @@ import {
   Download,
 } from 'lucide-react';
 import { downloadFile } from '../../services/fileService';
+
+// Initialize SweetAlert2
+const MySwal = withReactContent(Swal);
+
+// Utility functions for alerts
+const showSuccessAlert = (title, text) => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'success',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+  });
+};
+
+const showErrorAlert = (title, text) => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'error',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+  });
+};
+
+const showConfirmDialog = (title, text, confirmButtonText = 'Yes', cancelButtonText = 'No') => {
+  return MySwal.fire({
+    title,
+    text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText,
+    background: document.documentElement.classList.contains('dark') ? '#2A2A2A' : '#fff',
+    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+    confirmButtonColor: '#3B82F6',
+    cancelButtonColor: '#EF4444',
+  });
+};
 
 const Courses = () => {
   const { user } = useAuth();
@@ -192,22 +243,59 @@ const Courses = () => {
         // Update available students
         setAvailableStudents(prev => prev.filter(s => s.id !== studentId));
         setShowAddStudentModal(false);
+
+        // Show success alert
+        showSuccessAlert(
+          'Student Added',
+          `${studentToAdd.name} has been successfully enrolled in ${tempCourse.name}`
+        );
       }
     }
   };
 
   // Update handleRemoveStudent
-  const handleRemoveStudent = (studentId) => {
+  const handleRemoveStudent = async (studentId) => {
     if (tempCourse) {
-      // Ensure enrolledStudents exists
-      const updatedTempCourse = {
-        ...tempCourse,
-        enrolledStudents: tempCourse.enrolledStudents || []
-      };
+      const studentToRemove = tempCourse.enrolledStudents.find(s => s.id === studentId);
+      
+      // Show confirmation dialog
+      const result = await showConfirmDialog(
+        'Remove Student',
+        `Are you sure you want to remove ${studentToRemove.name} from ${tempCourse.name}?`,
+        'Yes, Remove',
+        'Cancel'
+      );
 
-      // Update the courses state
-      setCourses(prevCourses => 
-        prevCourses.map(course => {
+      if (result.isConfirmed) {
+        // Ensure enrolledStudents exists
+        const updatedTempCourse = {
+          ...tempCourse,
+          enrolledStudents: tempCourse.enrolledStudents || []
+        };
+
+        // Update the courses state
+        setCourses(prevCourses => 
+          prevCourses.map(course => {
+            if (course.id === tempCourse.id) {
+              return {
+                ...course,
+                enrolledStudents: (course.enrolledStudents || []).filter(s => s.id !== studentId)
+              };
+            }
+            return course;
+          })
+        );
+
+        // Update tempCourse
+        const removedStudent = updatedTempCourse.enrolledStudents.find(s => s.id === studentId);
+        setTempCourse({
+          ...updatedTempCourse,
+          enrolledStudents: updatedTempCourse.enrolledStudents.filter(s => s.id !== studentId)
+        });
+
+        // Update localStorage
+        const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
+        const updatedCourses = allCourses.map(course => {
           if (course.id === tempCourse.id) {
             return {
               ...course,
@@ -215,32 +303,19 @@ const Courses = () => {
             };
           }
           return course;
-        })
-      );
+        });
+        localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
 
-      // Update tempCourse
-      const removedStudent = updatedTempCourse.enrolledStudents.find(s => s.id === studentId);
-      setTempCourse({
-        ...updatedTempCourse,
-        enrolledStudents: updatedTempCourse.enrolledStudents.filter(s => s.id !== studentId)
-      });
-
-      // Update localStorage
-      const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
-      const updatedCourses = allCourses.map(course => {
-        if (course.id === tempCourse.id) {
-          return {
-            ...course,
-            enrolledStudents: (course.enrolledStudents || []).filter(s => s.id !== studentId)
-          };
+        // Update available students
+        if (removedStudent) {
+          setAvailableStudents(prev => [...prev, removedStudent]);
         }
-        return course;
-      });
-      localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
 
-      // Update available students
-      if (removedStudent) {
-        setAvailableStudents(prev => [...prev, removedStudent]);
+        // Show success alert
+        showSuccessAlert(
+          'Student Removed',
+          `${removedStudent.name} has been removed from ${tempCourse.name}`
+        );
       }
     }
   };
@@ -281,6 +356,12 @@ const Courses = () => {
       setMaterials(prev => [...prev, newFile]);
       setSelectedFile(null);
       setShowAddMaterialModal(false);
+
+      // Show success alert
+      showSuccessAlert(
+        'File Uploaded',
+        `${file.name} has been successfully uploaded to ${selectedCourse.name}`
+      );
     }
   };
 
@@ -300,6 +381,34 @@ const Courses = () => {
       setMaterials(prev => [...prev, newFolder]);
       setNewFolderName('');
       setShowCreateFolderModal(false);
+
+      // Show success alert
+      showSuccessAlert(
+        'Folder Created',
+        `Folder "${newFolderName}" has been created successfully`
+      );
+    } else if (!newFolderName.trim()) {
+      // Show error alert if folder name is empty
+      showErrorAlert(
+        'Error',
+        'Please enter a folder name'
+      );
+    }
+  };
+
+  const handleDownload = async (file) => {
+    try {
+      await downloadFile(file);
+      showSuccessAlert(
+        'Download Started',
+        `${file.name} is being downloaded`
+      );
+    } catch (error) {
+      console.error('Download failed:', error);
+      showErrorAlert(
+        'Download Failed',
+        'There was an error downloading the file. Please try again.'
+      );
     }
   };
 
@@ -352,16 +461,6 @@ const Courses = () => {
                 className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30"
               >
                 <Eye className="w-3 h-3 text-white" />
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAddMaterialModal(true);
-                  setTempCourse(course); // Use a temporary state for modals
-                }}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30"
-              >
-                <Upload className="w-3 h-3 text-white" />
               </button>
             </div>
           </div>
