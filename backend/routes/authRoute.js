@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 require('../config/passport'); 
 const { body, validationResult } = require('express-validator');
-const { register, login } = require('../controllers/authController');
+const { register, login, logout } = require('../controllers/authController');
 
 const router = express.Router();
 
@@ -58,5 +58,7 @@ router.get('/google/callback',
         res.json({ token });
     }
 );
+
+router.post('/logout', logout);
 
 module.exports = router;

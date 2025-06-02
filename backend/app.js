@@ -3,6 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 const connectDB = require('./config/database'); // MongoDB connection
 const redisClient = require('./config/redis'); // Redis client
@@ -11,7 +12,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Import routes
 const authRoutes = require('./routes/authRoute');
-const labRoutes = require('./routes/labRoute');
+// const labRoutes = require('./routes/labRoute');
 const userRoutes = require('./routes/userRoute');
 
 
@@ -36,7 +37,7 @@ app.use('/static', express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/labs', labRoutes);
+// app.use('/api/labs', labRoutes);
 app.use('/api/users', userRoutes);
 
 

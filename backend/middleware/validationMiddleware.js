@@ -35,9 +35,6 @@ const userValidation = {
             .isLength({ min: 2, max: 50 })
             .withMessage('Name must be between 2 and 50 characters'),
 
-        check('year')
-            .isInt({ min: 1900, max: new Date().getFullYear() })
-            .withMessage('Please provide a valid year'),
 
         check('password')
             .optional()
@@ -64,11 +61,6 @@ const userValidation = {
             .isLength({ min: 2, max: 50 })
             .withMessage('Name must be between 2 and 50 characters'),
 
-        check('year')
-            .optional()
-            .isInt({ min: 1900, max: new Date().getFullYear() })
-            .withMessage('Please provide a valid year'),
-
         check('password')
             .optional()
             .isLength({ min: 6 })
@@ -79,18 +71,18 @@ const userValidation = {
 
     // Resource relationship validations
     enroll: [
-        check('labId')
+        check('courseId')
             .isMongoId()
-            .withMessage('Invalid lab ID format'),
+            .withMessage('Invalid course ID format'),
         validateResult
     ],
 
-    addTeaching: [
-        check('labId')
-            .isMongoId()
-            .withMessage('Invalid lab ID format'),
-        validateResult
-    ]
+    // addTeaching: [
+    //     check('labId')
+    //         .isMongoId()
+    //         .withMessage('Invalid lab ID format'),
+    //     validateResult
+    // ]
 };
 
 /**
