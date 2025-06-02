@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
+import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 /**
  * Profile page component for user profile management
  * @returns {React.ReactNode} - The profile page component
@@ -13,8 +14,6 @@ const Profile = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -37,22 +36,19 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
 
     try {
-      // In a real app, this would send data to a server
       await updateProfile(formData);
-      setSuccess('Profile updated successfully!');
+      showSuccessAlert('Success', 'Profile updated successfully!');
     } catch (err) {
-      setError(err.message || 'Failed to update profile. Please try again.');
+      showErrorAlert('Error', err.message || 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#121212]">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#121212]">
       {/* Sidebar component handles both mobile and desktop sidebars */}
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
@@ -108,111 +104,99 @@ const Profile = () => {
                   </p>
                 </div>
                 <div className="border-t border-gray-200 px-4 py-5 sm:p-6 ">
-                  {success && (
-                    <div className="mb-4 p-2 bg-green-100 border border-green-400 text-green-700 rounded dark:bg-green-300 dark:border-green-700 dark:text-green-900">
-                      {success}
-                    </div>
-                  )}
-                  {error && (
-                    <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded dark:bg-red-300 dark:border-red-700 dark:text-red-900">
-                      {error}
-                    </div>
-                  )}
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6 ">
-                      <div className="sm:col-span-3">
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="firstName"
+                          id="firstName"
+                          value={formData.firstName}
+                          onChange={handleChange}
+                          placeholder="First name"
+                          className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 dark:bg-[#1F1F1F] dark:border-gray-600 dark:text-white"
+                        />
                         <label
                           htmlFor="firstName"
-                          className="block text-sm font-medium text-gray-700 dark:text-white"
+                          className="absolute left-4 -top-2.5 bg-white dark:bg-[#1F1F1F] px-1 text-sm text-gray-600 dark:text-gray-300 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
                         >
                           First name
                         </label>
-                        <div className="mt-1">
-                          <input
-                            type="text"
-                            name="firstName"
-                            id="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            className="px-2 py-3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-[#121212] dark:text-white"
-                          />
-                        </div>
                       </div>
 
-                      <div className="sm:col-span-3">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="lastName"
+                          id="lastName"
+                          value={formData.lastName}
+                          onChange={handleChange}
+                          placeholder="Last name"
+                          className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 dark:bg-[#1F1F1F] dark:border-gray-600 dark:text-white"
+                        />
                         <label
                           htmlFor="lastName"
-                          className="block text-sm font-medium text-gray-700 dark:text-white"
+                          className="absolute left-4 -top-2.5 bg-white dark:bg-[#1F1F1F] px-1 text-sm text-gray-600 dark:text-gray-300 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
                         >
                           Last name
                         </label>
-                        <div className="mt-1">
-                          <input
-                            type="text"
-                            name="lastName"
-                            id="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            className="px-2 py-3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-[#121212] dark:text-white"
-                          />
-                        </div>
                       </div>
 
-                      <div className="sm:col-span-3">
+                      <div className="relative">
+                        <input
+                          type="email"
+                          name="email"
+                          id="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="Email address"
+                          className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 dark:bg-[#1F1F1F] dark:border-gray-600 dark:text-white"
+                        />
                         <label
                           htmlFor="email"
-                          className="block text-sm font-medium text-gray-700 dark:text-white"
+                          className="absolute left-4 -top-2.5 bg-white dark:bg-[#1F1F1F] px-1 text-sm text-gray-600 dark:text-gray-300 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
                         >
                           Email address
                         </label>
-                        <div className="mt-1">
-                          <input
-                            type="email"
-                            name="email"
-                            id="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="px-2 py-3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-[#121212] dark:text-white"
-                          />
-                        </div>
                       </div>
 
-                      <div className="sm:col-span-3">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="phone"
+                          id="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="Phone number"
+                          className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 dark:bg-[#1F1F1F] dark:border-gray-600 dark:text-white"
+                        />
                         <label
                           htmlFor="phone"
-                          className="block text-sm font-medium text-gray-700 dark:text-white"
+                          className="absolute left-4 -top-2.5 bg-white dark:bg-[#1F1F1F] px-1 text-sm text-gray-600 dark:text-gray-300 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
                         >
                           Phone number
                         </label>
-                        <div className="mt-1">
-                          <input
-                            type="text"
-                            name="phone"
-                            id="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            className="px-2 py-3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-[#121212] dark:text-white"
-                          />
-                        </div>
                       </div>
                     </div>
 
-                    <div className="pt-5">
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          {loading ? 'Saving...' : 'Save'}
-                        </button>
-                      </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-6 py-3.5 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[160px]"
+                      >
+                        {loading ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Saving Changes...</span>
+                          </>
+                        ) : (
+                          'Save Changes'
+                        )}
+                      </button>
                     </div>
                   </form>
                 </div>

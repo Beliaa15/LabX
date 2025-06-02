@@ -138,7 +138,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         >
           {(!sidebarCollapsed || isMobile) && (
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              University Platform
+              LabX
             </h1>
           )}
           {!isMobile && (
