@@ -1,4 +1,6 @@
-const { Schema, model } = require('mongoose');
+const { Schema, model, models } = require('mongoose');
+const crypto = require('crypto');
+
 const Task = require('./Task');
 const StudentSubmission = require('./StudentSubmission');
 const Folder = require('./Folder');
@@ -17,6 +19,11 @@ const courseSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: 'User',
             required: true,
+        },
+        code: {
+            type: String,
+            required: true,
+            unique: true,
         },
         students: [
             {
@@ -39,6 +46,24 @@ const courseSchema = new Schema(
     },
     { timestamps: true }
 );
+
+// Middleware to generate a unique course code before saving
+courseSchema.pre('validate', async function (next) {
+    if (!this.code) {
+        let unique = false;
+        while (!unique) {
+            const generatedCode = crypto.randomBytes(3).toString('hex'); // 6-char hex code
+            const existing = await models.Course.findOne({
+                code: generatedCode,
+            });
+            if (!existing) {
+                this.code = generatedCode;
+                unique = true;
+            }
+        }
+    }
+    next();
+});
 
 courseSchema.statics.deleteCourseAndAssociatedData = async (courseId) => {
     const course = await this.findById(courseId);
@@ -69,6 +94,6 @@ courseSchema.statics.deleteCourseAndAssociatedData = async (courseId) => {
 
     // Finally, delete the course itself
     await this.findByIdAndDelete(courseId);
-}
+};
 
 module.exports = model('Course', courseSchema);

@@ -45,16 +45,15 @@ router
 
 // Enroll in a course
 router
-    .route('/:id/enroll')
-    .post(authenticate, isStudent, paramValidation.resourceId, enrollInCourse); // Students can enroll in a course
+    .route('/enroll')
+    .post(authenticate, isStudent, enrollInCourse); // Students can enroll in a course via code
 
 // Unenroll from a course
 router
-    .route('/:id/unenroll')
+    .route('/unenroll')
     .post(
         authenticate,
         isStudent,
-        paramValidation.resourceId,
         unenrollFromCourse
     ); // Students can unenroll from a course
 

@@ -4,7 +4,6 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Course = require('../models/Course');
 
-
 // @desc    Get all courses
 // @route   PUT /api/courses
 // @access  Public
@@ -17,18 +16,18 @@ const getAllCourses = asyncHandler(async (req, res) => {
         throw new Error('Not authorized, no user found');
     }
     // Admin can get all courses, teachers, students, tasks, and folders
-    if(['admin', 'teacher'].includes(req.user.role)) {
-    courses = await Course.find()
-        .populate('teacher', 'firstName lastName email')
-        .populate('students', 'firstName lastName email')
-        .populate('tasks', 'title description dueDate')
+    if (['admin'].includes(req.user.role)) {
+        courses = await Course.find()
+            .populate('teacher', 'firstName lastName email')
+            .populate('students', 'firstName lastName email')
+            .populate('tasks', 'title description dueDate');
         //.populate('folders', 'name');
     } else {
         // Public access to get all courses
         courses = await Course.find()
             .populate('teacher', 'firstName lastName email')
-            .populate('tasks', 'title description dueDate')
-            //.populate('folders', 'name');
+            .populate('tasks', 'title description dueDate');
+        //.populate('folders', 'name');
     }
     if (!courses || courses.length === 0) {
         res.status(404);
@@ -44,8 +43,8 @@ const getCourseById = asyncHandler(async (req, res) => {
     const course = await Course.findById(req.params.id)
         .populate('teacher', 'firstName lastName email')
         .populate('students', 'firstName lastName email')
-        .populate('tasks', 'title description dueDate')
-        //.populate('folders', 'name');
+        .populate('tasks', 'title description dueDate');
+    //.populate('folders', 'name');
 
     if (!course) {
         res.status(404);
@@ -70,7 +69,7 @@ const createCourse = asyncHandler(async (req, res) => {
     if (!created) {
         res.status(400);
         throw new Error('Course creation failed');
-    } 
+    }
     res.status(201).json(created);
 });
 
@@ -86,7 +85,10 @@ const updateCourse = asyncHandler(async (req, res) => {
         throw new Error('Course not found');
     }
 
-    if( (course.teacher.toString() !== req.user._id.toString()) && (req.user.role !== 'admin') ) {
+    if (
+        course.teacher.toString() !== req.user._id.toString() &&
+        req.user.role !== 'admin'
+    ) {
         res.status(403);
         throw new Error('Not authorized to update this course');
     }
@@ -108,7 +110,10 @@ const deleteCourse = asyncHandler(async (req, res) => {
         throw new Error('Course not found');
     }
 
-    if( (course.teacher.toString() !== req.user._id.toString()) && (req.user.role !== 'admin') ) {
+    if (
+        course.teacher.toString() !== req.user._id.toString() &&
+        req.user.role !== 'admin'
+    ) {
         res.status(403);
         throw new Error('Not authorized to update this course');
     }
@@ -119,121 +124,91 @@ const deleteCourse = asyncHandler(async (req, res) => {
 });
 
 // @desc    Enroll user in a Course
-// @route   PUT /api/courses/:id/enroll
+// @route   PUT /api/courses/enroll
 // @access  Private
 const enrollInCourse = asyncHandler(async (req, res) => {
-    // const session = await mongoose.startSession();
-    // session.startTransaction();
-
-    try {
-        const user = await User.findById(req.user._id) //.session(session);
-        if (!user) {
-            res.status(404);
-            throw new Error('User not found');
-        }
-
-        if (user.role !== 'student') {
-            // If the user is not a student, they cannot enroll in courses
-            res.status(400);
-            throw new Error('Only students can enroll in courses');
-        }
-
-        const courseId = req.params.id;
-        if (!courseId) {
-            res.status(400);
-            throw new Error('Course ID is required');
-        }
-
-        const course = await Course.findById(courseId) //.session(session);
-        if (!course) {
-            res.status(404);
-            throw new Error('Course not found');
-        }
-
-        if (user.courses.includes(courseId)) {
-            res.status(400);
-            throw new Error('User already enrolled in this course');
-        }
-
-        if (course.students.includes(user._id)) {
-            res.status(400);
-            throw new Error('User already enrolled in this course');
-        }
-
-        user.courses.push(courseId);
-        course.students.push(user._id);
-
-        await user.save();
-        await course.save();
-
-        // await session.commitTransaction();
-        // session.endSession();
-
-        res.status(200).json({
-            message: 'User enrolled in course successfully',
-        });
-    } catch (error) {
-        // await session.abortTransaction();
-        // session.endSession();
-        res.status(500);
-        throw new Error(error.message || 'Enrollment failed');
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
     }
+
+    if (user.role !== 'student') {
+        // If the user is not a student, they cannot enroll in courses
+        res.status(400);
+        throw new Error('Only students can enroll in courses');
+    }
+
+    const courseCode = req.body.code;
+    if (!courseCode) {
+        res.status(400);
+        throw new Error('Course code is required');
+    }
+
+    const course = await Course.findOne({ code: courseCode });
+
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+
+    if (course.students.includes(user._id)) {
+        res.status(400);
+        throw new Error('User already enrolled in this course');
+    }
+
+    user.courses.push(course._id);
+    course.students.push(user._id);
+
+    await user.save();
+    await course.save();
+
+    res.status(200).json({
+        message: 'User enrolled in course successfully',
+    });
 });
 
 // @desc    Unenroll user from a Course
-// @route   PUT /api/courses/:id/unenroll
+// @route   PUT /api/courses/unenroll
 // @access  Private
 const unenrollFromCourse = asyncHandler(async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-        const user = await User.findById(req.user._id).session(session);
-        if (!user) {
-            res.status(404);
-            throw new Error('User not found');
-        }
-
-        if (user.role !== 'student') {
-            res.status(400);
-            throw new Error('Only students can unenroll from courses');
-        }
-
-        const courseId = req.params.id;
-        if (!courseId) {
-            res.status(400);
-            throw new Error('Course ID is required');
-        }
-
-        const course = await Course.findById(courseId).session(session);
-        if (!course) {
-            res.status(404);
-            throw new Error('Course not found');
-        }
-
-        if (!user.courses.includes(courseId)) {
-            res.status(400);
-            throw new Error('User not enrolled in this course');
-        }
-
-        user.courses.pull(courseId);
-        course.students.pull(user._id);
-
-        await user.save({ session });
-        await course.save({ session });
-
-        await session.commitTransaction();
-        session.endSession();
-
-        res.status(200).json({
-            message: 'User unenrolled from course successfully',
-        });
-    } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        res.status(500);
-        throw new Error(error.message || 'Unenrollment failed');
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
     }
+
+    if (user.role !== 'student') {
+        res.status(400);
+        throw new Error('Only students can unenroll from courses');
+    }
+
+    const courseCode = req.body.code;
+    if (!courseCode) {
+        res.status(400);
+        throw new Error('Course code is required');
+    }
+
+    const course = await Course.findOne({code: courseCode});
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+
+    if (!user.courses.includes(course._id)) {
+        res.status(400);
+        throw new Error('User not enrolled in this course');
+    }
+
+    user.courses.pull(course._id);
+    course.students.pull(user._id);
+
+    await user.save();
+    await course.save();
+
+    res.status(200).json({
+        message: 'User unenrolled from course successfully',
+    });
 });
 
 module.exports = {

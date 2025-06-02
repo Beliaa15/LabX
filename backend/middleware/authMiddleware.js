@@ -14,7 +14,6 @@ const authenticate = async (req, res, next) => {
         return res.status(401).json({ message: 'No token provided' });
     }
     const token = header.split(' ')[1];
-    console.log('Token:', token);
     if (await client.get(token))
         return res.status(401).json({ message: 'Token invalidated' });
     try {
