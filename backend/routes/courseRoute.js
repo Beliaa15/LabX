@@ -12,6 +12,7 @@ const {
     unenrollFromCourse,
     enrollStudentByEmail,
     unenrollStudentByEmail,
+    getCoursesForUser,
 } = require('../controllers/CourseController');
 
 const { authenticate, authorize } = require('../middleware/authMiddleware');
@@ -31,6 +32,12 @@ router
     .route('/')
     .get(authenticate, getAllCourses) // Public access to get all courses
     .post(authenticate, isTeacher, courseValidation.create, createCourse); // Teacher can create a course
+
+// Get courses for the authenticated user
+router.route('/me').get(
+    authenticate,
+    getCoursesForUser
+);
 
 // Single course operations
 router
@@ -77,5 +84,5 @@ router.route('/unenroll-email')
         courseValidation.enroll,
         unenrollStudentByEmail
     ); // Teachers can unenroll students by email
-
+    
 module.exports = router;

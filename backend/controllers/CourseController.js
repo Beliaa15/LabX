@@ -291,6 +291,35 @@ const unenrollStudentByEmail = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get all courses for a specific user
+// @route   GET /api/courses/me
+// @access  Private
+const getCoursesForUser = asyncHandler(async (req, res) => {
+    const user = req.user;
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    let courses = [];
+
+    if (user.role === 'student') {
+        courses = await Course.find({ students: user._id })
+            .populate('teacher', 'firstName lastName email')
+            .populate('tasks', 'title description dueDate');
+    } else if (user.role === 'teacher') {
+        courses = await Course.find({ teacher: user._id })
+            .populate('students', 'firstName lastName email')
+            .populate('tasks', 'title description dueDate');
+    }
+
+    if (!courses || courses.length === 0) {
+        res.status(404);
+        throw new Error('No courses found for this user');
+    }
+    res.json(courses);
+});
+
 module.exports = {
     getAllCourses,
     getCourseById,
@@ -301,4 +330,5 @@ module.exports = {
     unenrollFromCourse,
     enrollStudentByEmail,
     unenrollStudentByEmail,
+    getCoursesForUser
 };
