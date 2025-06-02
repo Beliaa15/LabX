@@ -123,9 +123,9 @@ const deleteCourse = asyncHandler(async (req, res) => {
     res.json({ message: 'Course removed' });
 });
 
-// @desc    Enroll user in a Course
+// @desc    Enroll user in a Course via code
 // @route   PUT /api/courses/enroll
-// @access  Private
+// @access  Private/Student
 const enrollInCourse = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -168,9 +168,9 @@ const enrollInCourse = asyncHandler(async (req, res) => {
     });
 });
 
-// @desc    Unenroll user from a Course
+// @desc    Unenroll user from a Course via code
 // @route   PUT /api/courses/unenroll
-// @access  Private
+// @access  Private/Student
 const unenrollFromCourse = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -211,6 +211,86 @@ const unenrollFromCourse = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Enroll student via email
+// @route   POST /api/courses/enroll-email
+// @access  Private/Teacher
+const enrollStudentByEmail = asyncHandler(async (req, res) => {
+    const { courseId, email } = req.body;
+
+    const course = await Course.findById(courseId);
+    const teacher = await User.findById(req.user._id);
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+
+    if (teacher._id.toString() !== course.teacher.toString()) {
+        res.status(403);
+        throw new Error('Not authorized to enroll students in this course');
+    }
+
+    const student = await User.findOne({ email: email, role: 'student' });
+    if (!student) {
+        res.status(404);
+        throw new Error('Student not found');
+    }
+
+    if (course.students.includes(student._id)) {
+        res.status(400);
+        throw new Error('Student already enrolled in this course');
+    }
+
+    course.students.push(student._id);
+    student.courses.push(course._id);
+
+    await course.save();
+    await student.save();
+
+    res.status(200).json({
+        message: 'Student enrolled in course successfully',
+    });
+});
+
+// @desc    Unenroll student from a Course via email
+// @route   POST /api/courses/unenroll-email
+// @access  Private/Teacher
+const unenrollStudentByEmail = asyncHandler(async (req, res) => {
+    const { courseId, email } = req.body;
+
+    const course = await Course.findById(courseId);
+    const teacher = await User.findById(req.user._id);
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+
+    if (teacher._id.toString() !== course.teacher.toString()) {
+        res.status(403);
+        throw new Error('Not authorized to unenroll students from this course');
+    }
+
+    const student = await User.findOne({ email: email, role: 'student' });
+    if (!student) {
+        res.status(404);
+        throw new Error('Student not found');
+    }
+
+    if (!course.students.includes(student._id)) {
+        res.status(400);
+        throw new Error('Student not enrolled in this course');
+    }
+
+    course.students.pull(student._id);
+    student.courses.pull(course._id);
+
+    await course.save();
+    await student.save();
+
+    res.status(200).json({
+        message: 'Student unenrolled from course successfully',
+    });
+});
+
 module.exports = {
     getAllCourses,
     getCourseById,
@@ -219,4 +299,6 @@ module.exports = {
     deleteCourse,
     enrollInCourse,
     unenrollFromCourse,
+    enrollStudentByEmail,
+    unenrollStudentByEmail,
 };

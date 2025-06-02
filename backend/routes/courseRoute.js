@@ -10,6 +10,8 @@ const {
     deleteCourse, 
     enrollInCourse,
     unenrollFromCourse,
+    enrollStudentByEmail,
+    unenrollStudentByEmail,
 } = require('../controllers/CourseController');
 
 const { authenticate, authorize } = require('../middleware/authMiddleware');
@@ -56,5 +58,24 @@ router
         isStudent,
         unenrollFromCourse
     ); // Students can unenroll from a course
+
+
+// Enroll student by email (only for teachers)
+router.route('/enroll-email')
+    .post(
+        authenticate,
+        isTeacher,
+        courseValidation.enroll,
+        enrollStudentByEmail
+    ); // Teachers can enroll students by email
+
+// Unenroll student by email (only for teachers)
+router.route('/unenroll-email')
+    .post(
+        authenticate,
+        isTeacher,
+        courseValidation.enroll,
+        unenrollStudentByEmail
+    ); // Teachers can unenroll students by email
 
 module.exports = router;

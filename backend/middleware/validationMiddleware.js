@@ -116,6 +116,22 @@ const courseValidation = {
 
         validateResult,
     ],
+
+    // POST validation (enrolling in a course)
+    enroll: [
+        check('courseId')
+            .isMongoId()
+            .withMessage('Invalid course ID format')
+            .not()
+            .isEmpty()
+            .withMessage('Course ID is required'),
+
+        check('email')
+            .isEmail()
+            .withMessage('Please provide a valid email'),
+
+        validateResult,
+    ],
 };
 
 /**
