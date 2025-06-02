@@ -397,7 +397,7 @@ const AdminCourseManagement = () => {
         {/* Main Content */}
         <div className="flex-1 p-4 md:p-6">
           {filteredCourses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
+            <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
               <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 {searchQuery ? 'No courses found' : 'No courses created yet'}
@@ -418,13 +418,13 @@ const AdminCourseManagement = () => {
           ) : (
             <>
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="animate-fadeIn grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredCourses.map((course) => (
                     <CourseCard key={course.id} course={course} />
                   ))}
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="animate-fadeIn space-y-3">
                   {filteredCourses.map((course) => (
                     <CourseListItem key={course.id} course={course} />
                   ))}
