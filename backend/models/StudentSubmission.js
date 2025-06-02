@@ -2,29 +2,24 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const StudentSubmissionSchema = new Schema({
-    student: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+const studentSubmissionSchema = new Schema(
+    {
+        student: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
+        task: {
+            type: Schema.Types.ObjectId,
+            ref: 'Task',
+            required: true,
+        },
+        grade: {
+            type: Number,
+            default: null,
+        },
     },
-    lab: {
-        type: Schema.Types.ObjectId,
-        ref: 'Lab',
-        required: true
-    },
-    grade: {
-        type: Number,
-        default: null
-    },
-    submissionFilePath: {
-        type: String,
-        default: null
-    },
-    submittedAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+    { timestamps: true }
+);
 
-module.exports = mongoose.model('StudentSubmission', StudentSubmissionSchema);
+module.exports = mongoose.model('StudentSubmission', studentSubmissionSchema);

@@ -3,18 +3,18 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 require('../config/passport'); 
 const { body, validationResult } = require('express-validator');
-const { signup, login } = require('../controllers/authController');
+const { register, login } = require('../controllers/authController');
 
 const router = express.Router();
-//signup
+
+//register
 router.post(
-    '/signup',
+    '/register',
     [
         body('email').isEmail().withMessage('Enter a valid email'),
         body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-        body('name').notEmpty().withMessage('Name is required'),
-        body('year').isInt().withMessage('Year must be an integer'),
-    ],
+        body('firstName').notEmpty().withMessage('First Name is required'),
+        body('lastName').notEmpty().withMessage('Last Name is required'),    ],
     (req, res, next) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -22,7 +22,7 @@ router.post(
         }
         next();
     },
-    signup
+    register
 );
 //login
 router.post(
