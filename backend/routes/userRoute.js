@@ -7,18 +7,18 @@ const {
     getUserById,
     updateUser,
     deleteUser,
-    enrollInCourse,
 } = require('../controllers/userController');
 
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const { userValidation, paramValidation } = require('../middleware/validationMiddleware');
+const { checkRole, isAdmin, isStudent, isTeacher} = require('../middleware/roleMiddleware');
 
 // List and create users
 router.route('/students')
-    .get(authenticate, authorize('admin'), getStudents) // Admin can get all students;
+    .get(authenticate, isAdmin, getStudents) // Admin can get all students;
 
 router.route('/teachers')
-    .get(authenticate, authorize('admin'), getTeachers) // Admin can get all teachers;
+    .get(authenticate, isAdmin, getTeachers) // Admin can get all teachers;
 // Single user operations
 
 router.route('/me')
@@ -35,32 +35,22 @@ router.route('/me')
 router.route('/:id')
     .get(
         authenticate,
-        authorize('admin'),
+        isAdmin,
         paramValidation.resourceId,
         getUserById
     )
     .put(
         authenticate,
-        authorize('admin'),
+        isAdmin,
         paramValidation.resourceId,
         userValidation.update,
         updateUser
     )
     .delete(
         authenticate,
-        authorize('admin'),
+        isAdmin,
         paramValidation.resourceId,
         deleteUser
     );
-
-// Lab enrollments (user-lab relationship)
-router.route('/:id/enroll')
-    .post(
-        authenticate,
-        paramValidation.resourceId,
-        userValidation.enroll,
-        enrollInCourse
-    );
-
 
 module.exports = router;

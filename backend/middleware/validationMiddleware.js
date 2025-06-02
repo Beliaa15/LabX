@@ -10,7 +10,7 @@ const validateResult = (req, res, next) => {
         return res.status(400).json({
             status: 'error',
             message: 'Validation failed',
-            errors: errors.array()
+            errors: errors.array(),
         });
     }
     next();
@@ -35,13 +35,12 @@ const userValidation = {
             .isLength({ min: 2, max: 50 })
             .withMessage('Name must be between 2 and 50 characters'),
 
-
         check('password')
             .optional()
             .isLength({ min: 6 })
             .withMessage('Password must be at least 6 characters'),
 
-        validateResult
+        validateResult,
     ],
 
     // PUT/PATCH validation (updating a user)
@@ -66,113 +65,57 @@ const userValidation = {
             .isLength({ min: 6 })
             .withMessage('Password must be at least 6 characters'),
 
-        validateResult
+        validateResult,
     ],
-
-    // Resource relationship validations
-    enroll: [
-        check('courseId')
-            .isMongoId()
-            .withMessage('Invalid course ID format'),
-        validateResult
-    ],
-
-    // addTeaching: [
-    //     check('labId')
-    //         .isMongoId()
-    //         .withMessage('Invalid lab ID format'),
-    //     validateResult
-    // ]
 };
 
 /**
  * Lab resource validation
  */
-const labValidation = {
+const courseValidation = {
     // POST validation (creating a lab)
     create: [
-        check('title')
+        check('name')
             .trim()
             .not()
             .isEmpty()
-            .withMessage('Lab title is required')
+            .withMessage('Course name is required')
             .isLength({ min: 3, max: 100 })
-            .withMessage('Title must be between 3 and 100 characters'),
+            .withMessage('Name must be between 3 and 100 characters'),
 
-        check('startDate')
-            .isISO8601()
-            .withMessage('Start date must be a valid date'),
-
-        check('deadline')
-            .isISO8601()
-            .withMessage('Deadline must be a valid date')
-            .custom((value, { req }) => {
-                if (new Date(value) <= new Date(req.body.startDate)) {
-                    throw new Error('Deadline must be after start date');
-                }
-                return true;
-            }),
-
-        check('filePath')
+        check('description')
             .trim()
             .not()
             .isEmpty()
-            .withMessage('File path is required'),
+            .withMessage('Course description is required')
+            .isLength({ min: 10, max: 500 })
+            .withMessage('Description must be between 10 and 500 characters'),
 
-        validateResult
+        validateResult,
     ],
 
     // PUT/PATCH validation (updating a lab)
     update: [
-        check('title')
+        check('name')
             .optional()
             .trim()
             .not()
             .isEmpty()
-            .withMessage('Title cannot be empty if provided')
+            .withMessage('Course name is required')
             .isLength({ min: 3, max: 100 })
-            .withMessage('Title must be between 3 and 100 characters'),
+            .withMessage('Name must be between 3 and 100 characters'),
 
-        check('startDate')
-            .optional()
-            .isISO8601()
-            .withMessage('Start date must be a valid date'),
-
-        check('deadline')
-            .optional()
-            .isISO8601()
-            .withMessage('Deadline must be a valid date')
-            .custom((value, { req }) => {
-                if (req.body.startDate && new Date(value) <= new Date(req.body.startDate)) {
-                    throw new Error('Deadline must be after start date');
-                }
-                return true;
-            }),
-
-        check('filePath')
+        check('description')
             .optional()
             .trim()
             .not()
             .isEmpty()
-            .withMessage('File path cannot be empty if provided'),
+            .withMessage('Course description is required')
+            .isLength({ min: 10, max: 500 })
+            .withMessage('Description must be between 10 and 500 characters'),
 
-        validateResult
+        validateResult,
     ],
-
-    // Resource relationship validations
-    addStudent: [
-        check('studentId')
-            .isMongoId()
-            .withMessage('Invalid student ID format'),
-        validateResult
-    ],
-
-    addTeacher: [
-        check('teacherId')
-            .isMongoId()
-            .withMessage('Invalid teacher ID format'),
-        validateResult
-    ]
 };
 
 /**
@@ -181,31 +124,25 @@ const labValidation = {
 const paramValidation = {
     // Validate resource ID in URL parameters
     resourceId: [
-        check('id')
-            .isMongoId()
-            .withMessage('Invalid resource ID format'),
-        validateResult
+        check('id').isMongoId().withMessage('Invalid resource ID format'),
+        validateResult,
     ],
 
     // Validate student ID in URL parameters
     studentId: [
-        check('studentId')
-            .isMongoId()
-            .withMessage('Invalid student ID format'),
-        validateResult
+        check('studentId').isMongoId().withMessage('Invalid student ID format'),
+        validateResult,
     ],
 
     // Validate teacher ID in URL parameters
     teacherId: [
-        check('teacherId')
-            .isMongoId()
-            .withMessage('Invalid teacher ID format'),
-        validateResult
-    ]
+        check('teacherId').isMongoId().withMessage('Invalid teacher ID format'),
+        validateResult,
+    ],
 };
 
 module.exports = {
     userValidation,
-    labValidation,
-    paramValidation
+    courseValidation,
+    paramValidation,
 };

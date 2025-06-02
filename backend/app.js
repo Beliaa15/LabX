@@ -12,7 +12,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Import routes
 const authRoutes = require('./routes/authRoute');
-// const labRoutes = require('./routes/labRoute');
+const courseRoutes = require('./routes/courseRoute');
 const userRoutes = require('./routes/userRoute');
 
 
@@ -37,7 +37,7 @@ app.use('/static', express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/auth', authRoutes);
-// app.use('/api/labs', labRoutes);
+app.use('/api/courses', courseRoutes);
 app.use('/api/users', userRoutes);
 
 

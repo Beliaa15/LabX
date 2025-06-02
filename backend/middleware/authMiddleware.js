@@ -16,7 +16,7 @@ const authenticate = async (req, res, next) => {
     const token = header.split(' ')[1];
     console.log('Token:', token);
     if (await client.get(token))
-            return res.status(401).json({ message: 'Token invalidated' });
+        return res.status(401).json({ message: 'Token invalidated' });
     try {
         const decodedToken = jwt.decode(token, process.env.ACCESS_TOKEN_SECRET);
         req.userId = decodedToken.id;
@@ -31,30 +31,13 @@ const authenticate = async (req, res, next) => {
  * Authorize based on user roles
  * @param {string|string[]} roles - Single role or array of allowed roles
  */
-const authorize = (roles) => {
-    return (req, res, next) => {
-        if (!req.user) {
-            return res.status(401).json({
-                status: 'error',
-                message: 'Authentication required'
-            });
-        }
-
-        // Convert single role to array
-        const allowedRoles = ['admin'];
-
-        if (!allowedRoles.includes(req.user.role)) {
-            return res.status(403).json({
-                status: 'error',
-                message: `Access denied. Requires ${allowedRoles.join(' or ')} role`
-            });
-        }
-
-        next();
-    };
-};
+// const authorize =
+//     (...roles) =>
+//     (req, res, next) => {
+//         if (!roles.includes(req.user.role)) return res.sendStatus(403);
+//         next();
+//     };
 
 module.exports = {
     authenticate,
-    authorize
 };

@@ -99,72 +99,10 @@ const deleteUser = asyncHandler(async (req, res) => {
     res.status(204);
 });
 
-// @desc    Enroll user in a Course
-// @route   PUT /api/users/:id/enroll
-// @access  Private
-const enrollInCourse = asyncHandler(async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-        const user = await User.findById(req.params.id).session(session);
-        if (!user) {
-            res.status(404);
-            throw new Error('User not found');
-        }
-
-        const courseId = req.body.courseId;
-        if (!courseId) {
-            res.status(400);
-            throw new Error('Course ID is required');
-        }
-
-        const course = await Course.findById(courseId).session(session);
-        if (!course) {
-            res.status(404);
-            throw new Error('Course not found');
-        }
-
-        if (user.role === 'teacher') {
-            res.status(400);
-            throw new Error('Teachers cannot enroll in courses');
-        }
-
-        if (user.courses.includes(courseId)) {
-            res.status(400);
-            throw new Error('User already enrolled in this course');
-        }
-
-        if (course.students.includes(user._id)) {
-            res.status(400);
-            throw new Error('User already enrolled in this course');
-        }
-
-        user.courses.push(courseId);
-        course.students.push(user._id);
-
-        await user.save({ session });
-        await course.save({ session });
-
-        await session.commitTransaction();
-        session.endSession();
-
-        res.status(200).json({
-            message: 'User enrolled in course successfully',
-        });
-    } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        res.status(500);
-        throw new Error(error.message || 'Enrollment failed');
-    }
-});
-
 module.exports = {
     getStudents,
     getTeachers,
     getUserById,
     updateUser,
     deleteUser,
-    enrollInCourse,
 };
