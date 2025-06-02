@@ -55,7 +55,7 @@ const Dashboard = () => {
                 } flex flex-col flex-1 transition-all duration-300 ease-in-out`}
             >
                 {/* Header */}
-                <header className="sticky top-0 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 transition-all duration-300">
+                <header className="sticky top-0 z-10 bg-white/80 dark:bg-[#1e1f22] backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 transition-all duration-300">
                     <div className="h-16 px-4 md:px-6 flex items-center justify-between">
                         <div className="flex-1 flex items-center">
                             <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
