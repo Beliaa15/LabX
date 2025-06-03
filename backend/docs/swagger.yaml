@@ -1,0 +1,824 @@
+openapi: 3.0.0
+info:
+    title: Online Learning Platform API
+    version: 1.0.0
+    description: API for managing courses, folders, and user enrollments in an online learning platform.
+
+servers:
+    - url: http://localhost:3000/api
+      description: Local development server
+
+components:
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+    schemas:
+        User:
+            type: object
+            properties:
+                _id:
+                    type: string
+                email:
+                    type: string
+                firstName:
+                    type: string
+                lastName:
+                    type: string
+                role:
+                    type: string
+                    enum: [student, teacher, admin]
+                courses:
+                    type: array
+                    items:
+                        type: string
+        UserUpdate:
+            type: object
+            properties:
+                email:
+                    type: string
+                firstName:
+                    type: string
+                lastName:
+                    type: string
+                password:
+                    type: string
+        Course:
+            type: object
+            properties:
+                _id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                teacher:
+                    type: string
+                code:
+                    type: string
+                students:
+                    type: array
+                    items:
+                        type: string
+                tasks:
+                    type: array
+                    items:
+                        type: string
+        CourseCreate:
+            type: object
+            required:
+                - name
+                - description
+            properties:
+                name:
+                    type: string
+                description:
+                    type: string
+        CourseEnrollByCode:
+            type: object
+            required:
+                - code
+            properties:
+                code:
+                    type: string
+        CourseEnrollByEmail:
+            type: object
+            required:
+                - courseId
+                - email
+            properties:
+                courseId:
+                    type: string
+                email:
+                    type: string
+        Folder:
+            type: object
+            properties:
+                _id:
+                    type: string
+                title:
+                    type: string
+                materials:
+                    type: array
+                    items:
+                        type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+
+security:
+    - bearerAuth: []
+
+tags:
+    - name: Auth
+      description: Authentication and authorization
+    - name: Users
+      description: User management and Retrieval
+    - name: Courses
+      description: Course management and enrollment
+
+paths:
+    /auth/register:
+        post:
+            summary: Register a new user
+            tags: [Auth]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - firstName
+                                - lastName
+                                - email
+                                - password
+                            properties:
+                                firstName:
+                                    type: string
+                                    example: John
+                                lastName:
+                                    type: string
+                                    example: Doe
+                                email:
+                                    type: string
+                                    example: john@example.com
+                                password:
+                                    type: string
+                                    example: strongpassword
+            responses:
+                201:
+                    description: User created successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: User created successfully
+                400:
+                    description: User already exists or invalid input
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: User already exists
+
+    /auth/login:
+        post:
+            summary: Log in an existing user
+            tags: [Auth]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - email
+                                - password
+                            properties:
+                                email:
+                                    type: string
+                                    example: john@example.com
+                                password:
+                                    type: string
+                                    example: strongpassword
+            responses:
+                200:
+                    description: Logged in successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    token:
+                                        type: string
+                                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                400:
+                    description: Invalid credentials or Google login required
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Invalid credentials
+
+    /auth/logout:
+        post:
+            summary: Log out the current user
+            tags: [Auth]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: Logged out successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Logged out successfully
+                401:
+                    description: No token provided or token invalidated
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: No token provided
+                500:
+                    description: Error logging out
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Error logging out
+
+    /users/students:
+        get:
+            summary: Get all students
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: List of students
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/User'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+
+    /users/teachers:
+        get:
+            summary: Get all teachers
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: List of teachers
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/User'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+
+    /users/me:
+        get:
+            summary: Get current user profile
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: User profile
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                401:
+                    description: Unauthorized
+        put:
+            summary: Update current user profile
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserUpdate'
+            responses:
+                202:
+                    description: User updated successfully
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+
+    /users/{id}:
+        get:
+            summary: Get user by ID
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: User ID
+            responses:
+                200:
+                    description: User data
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: User not found
+        put:
+            summary: Update user by ID
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: User ID
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserUpdate'
+            responses:
+                202:
+                    description: User updated successfully
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: User not found
+        delete:
+            summary: Delete user by ID
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: User ID
+            responses:
+                204:
+                    description: User deleted successfully
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: User not found
+
+    /courses:
+        get:
+            summary: Get all courses
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: List of courses
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Course'
+                401:
+                    description: Unauthorized
+        post:
+            summary: Create a new course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CourseCreate'
+            responses:
+                201:
+                    description: Course created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Course'
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+
+    /courses/me:
+        get:
+            summary: Get courses for the authenticated user
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: List of user's courses
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Course'
+                401:
+                    description: Unauthorized
+
+    /courses/{id}:
+        get:
+            summary: Get course by ID
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Course ID
+            responses:
+                200:
+                    description: Course data
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Course'
+                401:
+                    description: Unauthorized
+                404:
+                    description: Course not found
+        put:
+            summary: Update a course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Course ID
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CourseCreate'
+            responses:
+                200:
+                    description: Course updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Course'
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course not found
+        delete:
+            summary: Delete a course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Course ID
+            responses:
+                200:
+                    description: Course removed
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course not found
+
+    /courses/enroll:
+        post:
+            summary: Enroll in a course by code (student only)
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CourseEnrollByCode'
+            responses:
+                200:
+                    description: User enrolled in course successfully
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                404:
+                    description: Course not found
+
+    /courses/unenroll:
+        post:
+            summary: Unenroll from a course by code (student only)
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CourseEnrollByCode'
+            responses:
+                200:
+                    description: User unenrolled from course successfully
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                404:
+                    description: Course not found
+
+    /courses/enroll-email:
+        post:
+            summary: Enroll a student by email (teacher only)
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CourseEnrollByEmail'
+            responses:
+                200:
+                    description: Student enrolled in course successfully
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course or student not found
+
+    /courses/unenroll-email:
+        post:
+            summary: Unenroll a student by email (teacher only)
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CourseEnrollByEmail'
+            responses:
+                200:
+                    description: Student unenrolled from course successfully
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course or student not found
+
+    /courses/{courseId}/folders:
+        post:
+            summary: Create a new folder in a course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - title
+                            properties:
+                                title:
+                                    type: string
+                                    example: 'Week 1'
+            responses:
+                201:
+                    description: Folder created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Folder'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course not found
+        get:
+            summary: Get all folders for a course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+            responses:
+                200:
+                    description: List of folders
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    folders:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Folder'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course not found
+
+    /courses/{courseId}/folders/{folderId}:
+        get:
+            summary: Get a folder by ID
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+                - in: path
+                  name: folderId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the folder
+            responses:
+                200:
+                    description: Folder data
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    folder:
+                                        $ref: '#/components/schemas/Folder'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course or folder not found
+        put:
+            summary: Update a folder in a course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+                - in: path
+                  name: folderId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the folder
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                title:
+                                    type: string
+                                    example: 'Updated Folder Title'
+            responses:
+                200:
+                    description: Folder updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                                    folder:
+                                        $ref: '#/components/schemas/Folder'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course or folder not found
+        delete:
+            summary: Delete a folder from a course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+                - in: path
+                  name: folderId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the folder
+            responses:
+                200:
+                    description: Folder deleted successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course or folder not found
