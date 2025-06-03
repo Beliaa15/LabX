@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const { swaggerUi, swaggerSpec } = require('./swagger');
 
 const connectDB = require('./config/database'); // MongoDB connection
 const redisClient = require('./config/redis'); // Redis client
@@ -31,6 +32,8 @@ const limiter = rateLimit({
     max: 100, // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Serve static files (including WebGL builds)
 app.use('/static', express.static('public'));
