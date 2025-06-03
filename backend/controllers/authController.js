@@ -9,7 +9,7 @@ const User = require('../models/User');
 const blacklistToken = async (token) => {
     const exp = jwt.decode(token).exp - Math.floor(Date.now() / 1000);
     await client.set(token, '1', { EX: exp });
-}
+};
 
 exports.register = asyncHandler(async (req, res) => {
     const { email, password, firstName, lastName } = req.body;
@@ -61,12 +61,12 @@ exports.login = asyncHandler(async (req, res) => {
         { expiresIn: '8h' }
     );
 
-    res.json({ token });
+    res.json({ token, user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role } });
 });
 
 exports.logout = asyncHandler(async (req, res) => {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ message: 'No token provided' });
     }
