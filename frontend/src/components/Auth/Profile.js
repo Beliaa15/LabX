@@ -1,26 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
+
 /**
  * Profile page component for user profile management
  * @returns {React.ReactNode} - The profile page component
  */
 const Profile = () => {
-  const { user, updateProfile, isAdmin, isTeacher, isStudent } = useAuth();
+  const { user, updateProfile, isAdmin, isTeacher, isStudent, refreshUserData } = useAuth();
   const { sidebarCollapsed } = useUI();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
   });
+
+  // Load user data when component mounts or when user data changes
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        await refreshUserData();
+        setFormData({
+          firstName: user?.firstName || '',
+          lastName: user?.lastName || '',
+          email: user?.email || '',
+          phone: user?.phone || '',
+        });
+      } catch (err) {
+        showErrorAlert('Error', 'Failed to load user profile data');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [user?._id, refreshUserData]);
+
   const handleToggle = (e) => {
     if (e.target.checked) {
       document.documentElement.classList.add('dark');
@@ -39,13 +62,22 @@ const Profile = () => {
 
     try {
       await updateProfile(formData);
+      await refreshUserData(); // Refresh user data after update
       showSuccessAlert('Success', 'Profile updated successfully!');
     } catch (err) {
-      showErrorAlert('Error', err.message || 'Failed to update profile. Please try again.');
+      showErrorAlert('Error', err.response?.data?.message || 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#121212] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#121212]">

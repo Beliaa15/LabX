@@ -22,7 +22,7 @@ api.interceptors.request.use(
             data: config.data
         });
         
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -120,7 +120,7 @@ export const login = async (credentials) => {
         console.log('Login response:', response.data);
         
         if (response.data.token) {
-            localStorage.setItem('authToken', response.data.token);
+            localStorage.setItem('token', response.data.token);
         }
         return response.data;
     } catch (error) {
@@ -139,7 +139,7 @@ export const signup = async (userData) => {
         const response = await axios.post(`${API_BASE_URL}/api/auth/register`, userData);
         console.log('Signup response:', response.data);
         if (response.data.token) {
-            localStorage.setItem('authToken', response.data.token);
+            localStorage.setItem('token', response.data.token);
         }
         return response.data;
     } catch (error) {
@@ -153,7 +153,7 @@ export const signup = async (userData) => {
 };
 
 export const logout = async () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('token');
 };
 
 export const fetchUserProfile = async () => {

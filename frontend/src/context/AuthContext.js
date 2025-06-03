@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { login as loginService, logout as logoutService } from '../services/authService';
+import { getCurrentUser, updateUserProfile } from '../services/userService';
 
 const AuthContext = createContext();
 
@@ -7,28 +8,31 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [authToken, setAuthToken] = useState(localStorage.getItem('authToken') || null);
+    const [token, setToken] = useState(localStorage.getItem('token') || null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Function to refresh user data from the server
+    const refreshUserData = async () => {
+        try {
+            const userData = await getCurrentUser();
+            setUser({
+                ...userData,
+                isAuthenticated: true
+            });
+            return userData;
+        } catch (err) {
+            console.error('Error refreshing user data:', err);
+            throw err;
+        }
+    };
 
     // Check if user is authenticated on initial load
     useEffect(() => {
         const initAuth = async () => {
-            if (authToken) {
+            if (token) {
                 try {
-                    const storedUser = {
-                        isAuthenticated: true,
-                        id: localStorage.getItem('userId') || '',
-                        role: localStorage.getItem('userRole') || 'student',
-                        firstName: localStorage.getItem('userFirstName') || '',
-                        lastName: localStorage.getItem('userLastName') || '',
-                        email: localStorage.getItem('userEmail') || '',
-                        bio: localStorage.getItem('userBio') || '',
-                        location: localStorage.getItem('userLocation') || '',
-                        phone: localStorage.getItem('userPhone') || '',
-                        courses: JSON.parse(localStorage.getItem('userCourses') || '[]')
-                    };
-                    setUser(storedUser);
+                    await refreshUserData();
                 } catch (err) {
                     console.error('Authentication error:', err);
                     handleLogout();
@@ -38,36 +42,18 @@ export const AuthProvider = ({ children }) => {
         };
 
         initAuth();
-    }, [authToken]);
-
-    const saveUserData = (userData) => {
-        localStorage.setItem('userId', userData.id);
-        localStorage.setItem('userRole', userData.role);
-        localStorage.setItem('userFirstName', userData.firstName);
-        localStorage.setItem('userLastName', userData.lastName);
-        localStorage.setItem('userEmail', userData.email);
-        localStorage.setItem('userBio', userData.bio || '');
-        localStorage.setItem('userLocation', userData.location || '');
-        localStorage.setItem('userPhone', userData.phone || '');
-        localStorage.setItem('userCourses', JSON.stringify(userData.courses || []));
-    };
-
-    const saveToken = (token) => {
-        localStorage.setItem('authToken', token);
-        setAuthToken(token);
-    };
+    }, [token]);
 
     const handleLogin = async (credentials) => {
         setLoading(true);
         setError(null);
         try {
             const response = await loginService(credentials);
-            saveToken(response.token);
-            saveUserData(response.user);
-            setUser({
-                ...response.user,
-                isAuthenticated: true
-            });
+            localStorage.setItem('token', response.token);
+            setToken(response.token);
+            
+            // Get fresh user data from API
+            await refreshUserData();
             return response;
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed');
@@ -85,47 +71,35 @@ export const AuthProvider = ({ children }) => {
             console.error('Logout error:', err);
         } finally {
             setUser(null);
-            setAuthToken(null);
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userId');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userFirstName');
-            localStorage.removeItem('userLastName');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userBio');
-            localStorage.removeItem('userLocation');
-            localStorage.removeItem('userPhone');
-            localStorage.removeItem('userCourses');
+            setToken(null);
+            localStorage.removeItem('token');
             setLoading(false);
         }
     };
 
     const updateProfile = async (profileData) => {
         try {
-            // In a real app, you would make an API call to update the profile
-            // For now, we'll just update the local state and localStorage
+            // Use the real API to update profile with token
+            const updatedUser = await updateUserProfile(profileData);
+            
+            // Update local state with the response from the API
+            setUser({
+                ...updatedUser,
+                isAuthenticated: true
+            });
 
-            // Create updated user object
-            const updatedUser = {
-                ...user,
-                ...profileData
-            };
-
-            // Update local state
-            setUser(updatedUser);
-
-            // Save to localStorage
-            saveUserData(updatedUser);
+            // Refresh user data to ensure all components have the latest data
+            await refreshUserData();
 
             return updatedUser;
         } catch (err) {
             console.error('Profile update error:', err);
-            throw new Error('Failed to update profile');
+            throw err;
         }
     };
 
     const isAuthenticated = () => {
-        return !!authToken && !!user;
+        return !!token && !!user;
     };
 
     const isAdmin = () => {
@@ -142,11 +116,13 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
+        token,
         loading,
         error,
         login: handleLogin,
         logout: handleLogout,
         updateProfile,
+        refreshUserData,
         isAuthenticated,
         isAdmin,
         isTeacher,
