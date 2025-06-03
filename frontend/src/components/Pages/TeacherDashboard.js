@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Users, BookOpen, FileText, Calendar } from 'lucide-react';
 
-const ProfessorDashboard = () => {
+const TeacherDashboard = () => {
     // Sample data - replace with actual API calls
     const [teachingCourses] = useState([
         { id: 1, name: 'Mathematics', students: 45, nextLecture: '2024-04-08' },
@@ -26,7 +26,7 @@ const ProfessorDashboard = () => {
         {/* Welcome Section */}
         <div className="bg-white shadow rounded-lg p-6 dark:bg-[#2A2A2A]">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Professor Dashboard
+            Teacher Dashboard
           </h2>
           <p className="mt-2 text-gray-600 dark:text-slate-400">
             Overview of your courses and student engagement.
@@ -54,6 +54,7 @@ const ProfessorDashboard = () => {
               </div>
             </div>
           </div>
+          
           <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-[#2A2A2A]">
             <div className="p-5">
               <div className="flex items-center">
@@ -73,6 +74,7 @@ const ProfessorDashboard = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-[#2A2A2A]">
             <div className="p-5">
               <div className="flex items-center">
@@ -92,6 +94,7 @@ const ProfessorDashboard = () => {
               </div>
             </div>
           </div>
+
           <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-[#2A2A2A]">
             <div className="p-5">
               <div className="flex items-center">
@@ -165,31 +168,19 @@ const ProfessorDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <FileText className="h-5 w-5 text-gray-400 dark:bg-[#2A2A2A]" />
+                        <FileText className="h-5 w-5 text-gray-400 dark:text-slate-400" />
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {assignment.title}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-slate-400">
-                          Due {assignment.dueDate}
+                          Due: {assignment.dueDate}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <div className="w-32 bg-gray-200 rounded-full h-2.5">
-                        <div
-                          className="bg-indigo-600 h-2.5 rounded-full "
-                          style={{
-                            width: `${
-                              (assignment.submitted / assignment.total) * 100
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                      <span className="ml-2 text-sm text-gray-500 dark:text-slate-400">
-                        {assignment.submitted}/{assignment.total}
-                      </span>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
+                      {assignment.submitted}/{assignment.total} submitted
                     </div>
                   </div>
                 </li>
@@ -223,20 +214,8 @@ const ProfessorDashboard = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <div className="w-32 bg-gray-200 rounded-full h-2.5">
-                        <div
-                          className="bg-green-600 h-2.5 rounded-full"
-                          style={{
-                            width: `${
-                              (lecture.attended / lecture.total) * 100
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                      <span className="ml-2 text-sm text-gray-500 dark:text-slate-400">
-                        {lecture.attended}/{lecture.total}
-                      </span>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
+                      {lecture.attended}/{lecture.total} attended
                     </div>
                   </div>
                 </li>
@@ -248,4 +227,4 @@ const ProfessorDashboard = () => {
     );
 };
 
-export default ProfessorDashboard; 
+export default TeacherDashboard; 

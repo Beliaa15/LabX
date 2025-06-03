@@ -11,7 +11,7 @@ import { useUI } from '../../context/UIContext';
  * @returns {React.ReactNode} - The sidebar component
  */
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
-    const { user, logout, isAdmin, isProfessor, isStudent } = useAuth();
+    const { user, logout, isAdmin, isTeacher, isStudent } = useAuth();
     const { sidebarCollapsed, toggleSidebar } = useUI();
 
     const navigationLinks = [
@@ -83,7 +83,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                 active: window.location.pathname === '/admin',
             },
         ] : []),
-        ...(isProfessor() ? [
+        ...(isTeacher() ? [
             {
                 name: 'My Courses',
                 href: '/courses',

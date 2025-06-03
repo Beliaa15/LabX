@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
-import { getProfessors, assignCourse, unassignCourse } from '../../services/professorService';
+import { getTeachers, assignCourse, unassignCourse } from '../../services/teacherService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { 
@@ -43,17 +43,17 @@ const AdminCourseManagement = () => {
     return savedCourses ? JSON.parse(savedCourses) : [];
   });
   
-  const [professors, setProfessors] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Load professors from service
+  // Load teachers from service
   useEffect(() => {
-    const loadProfessors = () => {
-      const professorsList = getProfessors();
-      setProfessors(professorsList);
+    const loadTeachers = () => {
+      const teachersList = getTeachers();
+      setTeachers(teachersList);
     };
-    loadProfessors();
+    loadTeachers();
   }, []);
 
   // Save courses to localStorage whenever they change
@@ -78,7 +78,7 @@ const AdminCourseManagement = () => {
         code: courseCode,
         description: courseDescription,
         createdAt: new Date().toISOString(),
-        assignedProfessor: null,
+        assignedTeacher: null,
         enrolledStudents: [],
         status: 'draft',
       };
@@ -91,37 +91,37 @@ const AdminCourseManagement = () => {
     }
   };
 
-  const handleAssignProfessor = async (professorId) => {
+  const handleAssignTeacher = async (teacherId) => {
     if (selectedCourse) {
       try {
         // Call the service to assign the course
-        await assignCourse(professorId, selectedCourse.id);
+        await assignCourse(teacherId, selectedCourse.id);
 
-        // Update courses - ensure professorId is stored as string
+        // Update courses - ensure teacherId is stored as string
         setCourses(courses.map(course => 
           course.id === selectedCourse.id 
-            ? { ...course, assignedProfessor: String(professorId), status: 'active' }
+            ? { ...course, assignedTeacher: String(teacherId), status: 'active' }
             : course
         ));
 
-        // Update professors' assignedCourses count
-        setProfessors(professors.map(prof => {
-          if (prof.id === professorId) {
-            return { ...prof, assignedCourses: prof.assignedCourses + 1 };
+        // Update teachers' assignedCourses count
+        setTeachers(teachers.map(teacher => {
+          if (teacher.id === teacherId) {
+            return { ...teacher, assignedCourses: teacher.assignedCourses + 1 };
           }
-          if (selectedCourse.assignedProfessor && prof.id === selectedCourse.assignedProfessor) {
-            return { ...prof, assignedCourses: Math.max(0, prof.assignedCourses - 1) };
+          if (selectedCourse.assignedTeacher && teacher.id === selectedCourse.assignedTeacher) {
+            return { ...teacher, assignedCourses: Math.max(0, teacher.assignedCourses - 1) };
           }
-          return prof;
+          return teacher;
         }));
 
-        const professor = professors.find(p => p.id === professorId);
-        showSuccessAlert('Professor Assigned', `${professor.name} has been assigned to ${selectedCourse.name}`);
+        const teacher = teachers.find(t => t.id === teacherId);
+        showSuccessAlert('Teacher Assigned', `${teacher.name} has been assigned to ${selectedCourse.name}`);
         setShowAssignModal(false);
         setSelectedCourse(null);
       } catch (error) {
-        console.error('Failed to assign professor:', error);
-        showErrorAlert('Assignment Failed', 'Failed to assign professor to the course');
+        console.error('Failed to assign teacher:', error);
+        showErrorAlert('Assignment Failed', 'Failed to assign teacher to the course');
       }
     }
   };
@@ -138,20 +138,20 @@ const AdminCourseManagement = () => {
     );
 
     if (result.isConfirmed) {
-      if (courseToDelete && courseToDelete.assignedProfessor) {
+      if (courseToDelete && courseToDelete.assignedTeacher) {
         try {
           // Call the service to unassign the course
-          await unassignCourse(courseToDelete.assignedProfessor, courseId);
+          await unassignCourse(courseToDelete.assignedTeacher, courseId);
 
-          // Update professor's assigned courses count
-          setProfessors(professors.map(prof => 
-            prof.id === courseToDelete.assignedProfessor
-              ? { ...prof, assignedCourses: Math.max(0, prof.assignedCourses - 1) }
-              : prof
+          // Update teacher's assigned courses count
+          setTeachers(teachers.map(teacher => 
+            teacher.id === courseToDelete.assignedTeacher
+              ? { ...teacher, assignedCourses: Math.max(0, teacher.assignedCourses - 1) }
+              : teacher
           ));
         } catch (error) {
-          console.error('Failed to unassign professor:', error);
-          showErrorAlert('Error', 'Failed to unassign professor from the course');
+          console.error('Failed to unassign teacher:', error);
+          showErrorAlert('Error', 'Failed to unassign teacher from the course');
           return;
         }
       }
@@ -165,9 +165,9 @@ const AdminCourseManagement = () => {
     course.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getProfessorName = (professorId) => {
-    const professor = professors.find(p => p.id === professorId);
-    return professor ? professor.name : 'Unassigned';
+  const getTeacherName = (teacherId) => {
+    const teacher = teachers.find(t => t.id === teacherId);
+    return teacher ? teacher.name : 'Unassigned';
   };
 
   const CourseCard = ({ course }) => (
@@ -220,9 +220,9 @@ const AdminCourseManagement = () => {
         
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Professor:</span>
+            <span className="text-gray-500 dark:text-gray-400">Teacher:</span>
             <span className="font-medium text-gray-900 dark:text-white">
-              {getProfessorName(course.assignedProfessor)}
+              {getTeacherName(course.assignedTeacher)}
             </span>
           </div>
           <div className="flex items-center justify-between">
@@ -264,7 +264,7 @@ const AdminCourseManagement = () => {
               </span>
             </div>
             <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-              <span>Professor: {getProfessorName(course.assignedProfessor)}</span>
+              <span>Teacher: {getTeacherName(course.assignedTeacher)}</span>
               <span>{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0} students</span>
               <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
             </div>
@@ -504,29 +504,29 @@ const AdminCourseManagement = () => {
           </div>
         )}
 
-        {/* Assign Professor Modal */}
+        {/* Assign Teacher Modal */}
         {showAssignModal && selectedCourse && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl w-full max-w-md">
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Assign Professor
+                  Assign Teacher
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Course: <span className="font-medium">{selectedCourse.name}</span>
                 </p>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {professors.map((professor) => (
+                  {teachers.map((teacher) => (
                     <button
-                      key={professor.id}
-                      onClick={() => handleAssignProfessor(professor.id)}
+                      key={teacher.id}
+                      onClick={() => handleAssignTeacher(teacher.id)}
                       className="w-full p-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
                     >
                       <div className="font-medium text-gray-900 dark:text-white">
-                        {professor.name}
+                        {teacher.name}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {professor.email} • {professor.assignedCourses} courses assigned
+                        {teacher.email} • {teacher.assignedCourses} courses assigned
                       </div>
                     </button>
                   ))}

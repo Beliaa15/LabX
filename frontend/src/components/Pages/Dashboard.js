@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import Sidebar from '../Common/Sidebar';
 import StudentDashboard from './StudentDashboard';
-import ProfessorDashboard from './ProfessorDashboard';
+import TeacherDashboard from './TeacherDashboard';
 import AdminDashboard from './AdminDashboard';
 import ToggleButton from '../ui/ToggleButton';
 
@@ -12,7 +12,7 @@ import ToggleButton from '../ui/ToggleButton';
  * @returns {React.ReactNode} - The dashboard page component
  */
 const Dashboard = () => {
-    const { user, isAdmin, isProfessor, isStudent } = useAuth();
+    const { user, isAdmin, isTeacher, isStudent } = useAuth();
     const { sidebarCollapsed } = useUI();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -25,8 +25,8 @@ const Dashboard = () => {
     const renderDashboard = () => {
         if (isAdmin()) {
             return <AdminDashboard />;
-        } else if (isProfessor()) {
-            return <ProfessorDashboard />;
+        } else if (isTeacher()) {
+            return <TeacherDashboard />;
         } else if (isStudent()) {
             return <StudentDashboard />;
         }
@@ -79,7 +79,7 @@ const Dashboard = () => {
                                         {user?.firstName} {user?.lastName}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {isAdmin() ? 'Administrator' : isProfessor() ? 'Professor' : 'Student'}
+                                        {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
                                     </p>
                                 </div>
                             </div>

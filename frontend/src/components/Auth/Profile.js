@@ -9,7 +9,7 @@ import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
  * @returns {React.ReactNode} - The profile page component
  */
 const Profile = () => {
-  const { user, updateProfile, isAdmin, isProfessor, isStudent } = useAuth();
+  const { user, updateProfile, isAdmin, isTeacher, isStudent } = useAuth();
   const { sidebarCollapsed } = useUI();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -82,7 +82,7 @@ const Profile = () => {
                                         {user?.firstName} {user?.lastName}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {isAdmin() ? 'Administrator' : isProfessor() ? 'Professor' : 'Student'}
+                                        {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
                                     </p>
                                 </div>
                             </div>

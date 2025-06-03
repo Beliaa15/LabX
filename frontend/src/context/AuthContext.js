@@ -132,8 +132,8 @@ export const AuthProvider = ({ children }) => {
         return user?.role === 'admin';
     };
 
-    const isProfessor = () => {
-        return user?.role === 'professor';
+    const isTeacher = () => {
+        return user?.role === 'teacher';
     };
 
     const isStudent = () => {
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         isAuthenticated,
         isAdmin,
-        isProfessor,
+        isTeacher,
         isStudent
     };
 

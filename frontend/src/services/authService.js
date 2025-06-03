@@ -1,20 +1,27 @@
 import axios from 'axios';
 
 // Configure your API base URL here
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const AUTH_BASE_URL = `${API_BASE_URL}/auth`;
+const API_BASE_URL = 'http://localhost:3000';
 
 // Create axios instance with default config
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
-        'Content-Type': 'application/json',
-    },
+        'Content-Type': 'application/json'
+    }
 });
 
-// Add auth token to requests if available
+// Add request interceptor for logging and auth token
 api.interceptors.request.use(
     (config) => {
+        // Log the full request details
+        console.log('Request Details:', {
+            url: config.baseURL + config.url,
+            method: config.method,
+            headers: config.headers,
+            data: config.data
+        });
+        
         const token = localStorage.getItem('authToken');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -22,6 +29,22 @@ api.interceptors.request.use(
         return config;
     },
     (error) => Promise.reject(error)
+);
+
+// Add response interceptor for error logging
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        console.error('API Error Details:', {
+            url: error.config?.url,
+            method: error.config?.method,
+            requestData: error.config?.data,
+            status: error.response?.status,
+            responseData: error.response?.data,
+            message: error.message
+        });
+        return Promise.reject(error);
+    }
 );
 
 // Mock user data for development without backend
@@ -41,8 +64,8 @@ export const MOCK_USERS = [
         firstName: 'Sarah',
         lastName: 'Smith',
         email: 'sarah.smith@example.com',
-        role: 'professor',
-        bio: 'Mathematics Professor',
+        role: 'teacher',
+        bio: 'Mathematics Teacher',
         location: 'Boston, USA',
         courses: ['MATH201', 'MATH301', 'MATH401']
     },
@@ -71,8 +94,8 @@ export const MOCK_USERS = [
         firstName: 'David',
         lastName: 'Brown',
         email: 'david.brown@example.com',
-        role: 'professor',
-        bio: 'Computer Science Professor',
+        role: 'teacher',
+        bio: 'Computer Science Teacher',
         location: 'Seattle, USA',
         courses: ['CS101', 'CS201', 'CS301']
     }
@@ -81,120 +104,75 @@ export const MOCK_USERS = [
 // Mock token
 const MOCK_TOKEN = 'mock-jwt-token-for-development';
 
-// Auth services with mock implementations
+// Auth services with real API implementation
 export const login = async (credentials) => {
-    // For development without backend
-    if (!process.env.REACT_APP_USE_REAL_API) {
-        console.log('Using mock login with credentials:', credentials);
-
-        // Find user by email
-        const user = MOCK_USERS.find(u => u.email === credentials.email);
-
-        // Simple validation
-        if (user && credentials.password === 'password') {
-            return {
-                user: {
-                    ...user,
-                    isAuthenticated: true
-                },
-                token: MOCK_TOKEN,
-            };
+    try {
+        // Format login data
+        const loginData = {
+            email: credentials.email?.trim(),
+            password: credentials.password
+        };
+        
+        console.log('Sending login request with:', loginData);
+        
+        const response = await axios.post(`${API_BASE_URL}/api/auth/login`, loginData);
+        
+        console.log('Login response:', response.data);
+        
+        if (response.data.token) {
+            localStorage.setItem('authToken', response.data.token);
         }
-
-        // Simulate error for invalid credentials
-        const error = new Error('Invalid credentials');
-        error.response = { data: { message: 'Invalid email or password' } };
+        return response.data;
+    } catch (error) {
+        console.error('Login failed:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
         throw error;
     }
-
-    // Real API call
-    const response = await api.post(`${AUTH_BASE_URL}/login`, credentials);
-    return response.data;
 };
 
 export const signup = async (userData) => {
-    // For development without backend
-    if (!process.env.REACT_APP_USE_REAL_API) {
-        console.log('Using mock signup with data:', userData);
-
-        // Simulate successful signup
-        return {
-            user: {
-                ...MOCK_USERS[0],
-                firstName: userData.firstName,
-                lastName: userData.lastName,
-                email: userData.email,
-            },
-            token: MOCK_TOKEN,
-        };
+    try {
+        console.log('Attempting signup with:', userData);
+        const response = await axios.post(`${API_BASE_URL}/api/auth/register`, userData);
+        console.log('Signup response:', response.data);
+        if (response.data.token) {
+            localStorage.setItem('authToken', response.data.token);
+        }
+        return response.data;
+    } catch (error) {
+        console.error('Signup failed:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
     }
-
-    // Real API call
-    const response = await api.post(`${AUTH_BASE_URL}/signup`, userData);
-    return response.data;
 };
 
 export const logout = async () => {
-    // For development without backend
-    if (!process.env.REACT_APP_USE_REAL_API) {
-        console.log('Using mock logout');
-        return;
-    }
-
-    // Real API call
-    await api.post(`${AUTH_BASE_URL}/logout`);
+    localStorage.removeItem('authToken');
 };
 
 export const fetchUserProfile = async () => {
-    // For development without backend
-    if (!process.env.REACT_APP_USE_REAL_API) {
-        console.log('Using mock profile data');
-        return MOCK_USERS[0];
-    }
-
-    // Real API call
-    const response = await api.get(`${AUTH_BASE_URL}/profile`);
+    const response = await api.get('/api/auth/profile');
     return response.data;
 };
 
 export const updateUserProfile = async (userData) => {
-    // For development without backend
-    if (!process.env.REACT_APP_USE_REAL_API) {
-        console.log('Using mock profile update with data:', userData);
-
-        // Return updated user data
-        return {
-            ...MOCK_USERS[0],
-            ...userData,
-        };
-    }
-
-    // Real API call
-    const response = await api.put(`${AUTH_BASE_URL}/profile`, userData);
+    const response = await api.put('/api/auth/profile', userData);
     return response.data;
 };
 
 export const resetPassword = async (email) => {
-    // For development without backend
-    if (!process.env.REACT_APP_USE_REAL_API) {
-        console.log('Using mock password reset for email:', email);
-        return { message: 'Password reset email sent' };
-    }
-
-    // Real API call
-    const response = await api.post(`${AUTH_BASE_URL}/reset-password`, { email });
+    const response = await api.post('/api/auth/reset-password', { email });
     return response.data;
 };
 
 export const verifyEmail = async (token) => {
-    // For development without backend
-    if (!process.env.REACT_APP_USE_REAL_API) {
-        console.log('Using mock email verification for token:', token);
-        return { message: 'Email verified successfully' };
-    }
-
-    // Real API call
-    const response = await api.post(`${AUTH_BASE_URL}/verify-email`, { token });
+    const response = await api.post('/api/auth/verify-email', { token });
     return response.data;
 };
 
