@@ -346,6 +346,226 @@ const {
  *         description: Course or student not found
  */
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Folder:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         materials:
+ *           type: array
+ *           items:
+ *             type: string
+ *         createdAt:
+ *           type: string
+ *         updatedAt:
+ *           type: string
+ */
+
+/**
+ * @swagger
+ * /courses/{courseId}/folders:
+ *   post:
+ *     summary: Create a new folder in a course
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: "Week 1"
+ *     responses:
+ *       201:
+ *         description: Folder created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Folder'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Course not found
+ *   get:
+ *     summary: Get all folders for a course
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course
+ *     responses:
+ *       200:
+ *         description: List of folders
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 folders:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Folder'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Course not found
+ */
+
+/**
+ * @swagger
+ * /courses/{courseId}/folders/{folderId}:
+ *   get:
+ *     summary: Get a folder by ID
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course
+ *       - in: path
+ *         name: folderId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the folder
+ *     responses:
+ *       200:
+ *         description: Folder data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 folder:
+ *                   $ref: '#/components/schemas/Folder'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Course or folder not found
+ *   put:
+ *     summary: Update a folder in a course
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course
+ *       - in: path
+ *         name: folderId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the folder
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: "Updated Folder Title"
+ *     responses:
+ *       200:
+ *         description: Folder updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 folder:
+ *                   $ref: '#/components/schemas/Folder'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Course or folder not found
+ *   delete:
+ *     summary: Delete a folder from a course
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course
+ *       - in: path
+ *         name: folderId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the folder
+ *     responses:
+ *       200:
+ *         description: Folder deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Course or folder not found
+ */
+
 // List all courses
 router
     .route('/')
