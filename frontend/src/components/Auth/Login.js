@@ -1,32 +1,120 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 
 /**
- * Login component
+ * Login component with form validation
  * @returns {React.ReactNode} - The login component
  */
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false
+  });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Get the redirect path from location state or default to dashboard
-  const from = location.state?.from || '/dashboard';
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'email':
+        if (!value) {
+          return 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(value)) {
+          return 'Please enter a valid email address';
+        }
+        break;
+      case 'password':
+        if (!value) {
+          return 'Password is required';
+        } else if (value.length < 6) {
+          return 'Password must be at least 6 characters';
+        }
+        break;
+      default:
+        return '';
+    }
+    return '';
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, formData[key]);
+      if (error) {
+        newErrors[key] = error;
+      }
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // If field has been touched, validate on change
+    if (touched[name]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    
+    // Validate the field on blur
+    const error = validateField(name, formData[name]);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    setTouched({
+      email: true,
+      password: true
+    });
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await login({ email, password });
-      navigate(from, { replace: true });
+      await login(formData);
+      showSuccessAlert('Welcome back!', 'Successfully signed in');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
-      // Silent error handling for now
+      console.error('Login error:', err);
+      showErrorAlert(
+        'Login Failed',
+        err.response?.data?.message || 
+        'Failed to sign in. Please check your credentials and try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -49,7 +137,7 @@ const Login = () => {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="space-y-5">
             <div className="relative">
               <input
@@ -58,17 +146,31 @@ const Login = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                className={`peer w-full px-4 py-3.5 border ${
+                  touched.email && errors.email ? 'border-red-500' : 'border-gray-300'
+                } rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 ${
+                  touched.email && errors.email ? 'focus:ring-red-500' : 'focus:ring-indigo-500'
+                } focus:border-transparent transition-all duration-200`}
                 placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                aria-invalid={touched.email && errors.email ? 'true' : 'false'}
+                aria-describedby={errors.email ? 'email-error' : undefined}
               />
               <label
                 htmlFor="email-address"
-                className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
+                className={`absolute left-4 -top-2.5 bg-white px-1 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm ${
+                  touched.email && errors.email ? 'text-red-500' : 'text-gray-600 peer-focus:text-indigo-600'
+                }`}
               >
                 Email address
               </label>
+              {touched.email && errors.email && (
+                <p className="mt-1 text-sm text-red-500" id="email-error">
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             <div className="relative">
@@ -78,17 +180,31 @@ const Login = () => {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                className={`peer w-full px-4 py-3.5 border ${
+                  touched.password && errors.password ? 'border-red-500' : 'border-gray-300'
+                } rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 ${
+                  touched.password && errors.password ? 'focus:ring-red-500' : 'focus:ring-indigo-500'
+                } focus:border-transparent transition-all duration-200`}
                 placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                aria-invalid={touched.password && errors.password ? 'true' : 'false'}
+                aria-describedby={errors.password ? 'password-error' : undefined}
               />
               <label
                 htmlFor="password"
-                className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
+                className={`absolute left-4 -top-2.5 bg-white px-1 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm ${
+                  touched.password && errors.password ? 'text-red-500' : 'text-gray-600 peer-focus:text-indigo-600'
+                }`}
               >
                 Password
               </label>
+              {touched.password && errors.password && (
+                <p className="mt-1 text-sm text-red-500" id="password-error">
+                  {errors.password}
+                </p>
+              )}
             </div>
           </div>
 
@@ -116,7 +232,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
+              className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5"
             >
               {loading ? (
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
