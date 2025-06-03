@@ -3,17 +3,25 @@ const express = require('express');
 const router = express.Router();
 
 const {
-    getAllCourses, //
-    getCourseById, //
-    createCourse, //
-    updateCourse, //
-    deleteCourse, 
+    getAllCourses,
+    getCourseById,
+    createCourse,
+    updateCourse,
+    deleteCourse,
     enrollInCourse,
     unenrollFromCourse,
     enrollStudentByEmail,
     unenrollStudentByEmail,
     getCoursesForUser,
 } = require('../controllers/CourseController');
+
+const {
+    createFolder,
+    getFolders,
+    getFolderById,
+    deleteFolder,
+    updateFolder,
+} = require('../controllers/folderController');
 
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const {
@@ -345,10 +353,7 @@ router
     .post(authenticate, isTeacher, courseValidation.create, createCourse); // Teacher can create a course
 
 // Get courses for the authenticated user
-router.route('/me').get(
-    authenticate,
-    getCoursesForUser
-);
+router.route('/me').get(authenticate, getCoursesForUser);
 
 // Single course operations
 router
@@ -364,22 +369,14 @@ router
     .delete(authenticate, isTeacher, paramValidation.resourceId, deleteCourse); // Teacher can delete a course
 
 // Enroll in a course
-router
-    .route('/enroll')
-    .post(authenticate, isStudent, enrollInCourse); // Students can enroll in a course via code
+router.route('/enroll').post(authenticate, isStudent, enrollInCourse); // Students can enroll in a course via code
 
 // Unenroll from a course
-router
-    .route('/unenroll')
-    .post(
-        authenticate,
-        isStudent,
-        unenrollFromCourse
-    ); // Students can unenroll from a course
-
+router.route('/unenroll').post(authenticate, isStudent, unenrollFromCourse); // Students can unenroll from a course
 
 // Enroll student by email (only for teachers)
-router.route('/enroll-email')
+router
+    .route('/enroll-email')
     .post(
         authenticate,
         isTeacher,
@@ -388,12 +385,49 @@ router.route('/enroll-email')
     ); // Teachers can enroll students by email
 
 // Unenroll student by email (only for teachers)
-router.route('/unenroll-email')
+router
+    .route('/unenroll-email')
     .post(
         authenticate,
         isTeacher,
         courseValidation.enroll,
         unenrollStudentByEmail
     ); // Teachers can unenroll students by email
-    
+
+
+// Folder operations within a course
+router.route('/:courseId/folders')
+    .post(
+        authenticate,
+        isTeacher,
+        paramValidation.courseId,
+        createFolder
+    ) // Teacher can create a folder in a course
+    .get(
+        authenticate,
+        paramValidation.courseId,
+        getFolders
+    ); // Students and teachers can view folders in a course
+
+// Single folder operations
+router
+    .route('/:courseId/folders/:folderId')
+    .get(
+        authenticate,
+        paramValidation.courseId,
+        getFolderById
+    ) // Get a specific folder by ID
+    .put(
+        authenticate,
+        isTeacher,
+        paramValidation.courseId,
+        updateFolder
+    ) // Teacher can update a folder
+    .delete(
+        authenticate,
+        isTeacher,
+        paramValidation.courseId,
+        deleteFolder
+    ); // Teacher can delete a folder
+
 module.exports = router;

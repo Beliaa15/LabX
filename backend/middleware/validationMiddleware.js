@@ -144,6 +144,18 @@ const paramValidation = {
         validateResult,
     ],
 
+    // Validate course ID in URL parameters
+    courseId: [
+        check('courseId').isMongoId().withMessage('Invalid course ID format'),
+        validateResult,
+    ],
+
+    // Validate folder ID in URL parameters
+    folderId: [
+        check('folderId').isMongoId().withMessage('Invalid folder ID format'),
+        validateResult,
+    ],
+
     // Validate student ID in URL parameters
     studentId: [
         check('studentId').isMongoId().withMessage('Invalid student ID format'),
