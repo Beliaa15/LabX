@@ -1,5 +1,6 @@
 const express = require('express');
-
+const multer = require('multer');
+const upload = require('../config/multer');
 const router = express.Router();
 
 const {
@@ -23,6 +24,8 @@ const {
     updateFolder,
 } = require('../controllers/folderController');
 
+const { addMaterial } = require('../controllers/materialController');
+
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const {
     courseValidation,
@@ -34,7 +37,6 @@ const {
     isStudent,
     isTeacher,
 } = require('../middleware/roleMiddleware');
-
 
 // List all courses
 router
@@ -84,40 +86,27 @@ router
         unenrollStudentByEmail
     ); // Teachers can unenroll students by email
 
-
 // Folder operations within a course
-router.route('/:courseId/folders')
-    .post(
-        authenticate,
-        isTeacher,
-        paramValidation.courseId,
-        createFolder
-    ) // Teacher can create a folder in a course
-    .get(
-        authenticate,
-        paramValidation.courseId,
-        getFolders
-    ); // Students and teachers can view folders in a course
+router
+    .route('/:courseId/folders')
+    .post(authenticate, isTeacher, paramValidation.courseId, createFolder) // Teacher can create a folder in a course
+    .get(authenticate, paramValidation.courseId, getFolders); // Students and teachers can view folders in a course
 
 // Single folder operations
 router
     .route('/:courseId/folders/:folderId')
-    .get(
-        authenticate,
-        paramValidation.courseId,
-        getFolderById
-    ) // Get a specific folder by ID
-    .put(
-        authenticate,
-        isTeacher,
-        paramValidation.courseId,
-        updateFolder
-    ) // Teacher can update a folder
-    .delete(
-        authenticate,
-        isTeacher,
-        paramValidation.courseId,
-        deleteFolder
-    ); // Teacher can delete a folder
+    .get(authenticate, paramValidation.courseId, getFolderById) // Get a specific folder by ID
+    .put(authenticate, isTeacher, paramValidation.courseId, updateFolder) // Teacher can update a folder
+    .delete(authenticate, isTeacher, paramValidation.courseId, deleteFolder); // Teacher can delete a folder
+
+
+router.post('/:courseId/folders/:folderId/materials',
+    authenticate,
+    isTeacher,
+    paramValidation.courseId,
+    paramValidation.folderId,
+    upload.single('file'), // Use multer to handle file uploads
+    addMaterial
+); // Teacher can add materials to a folder in a course
 
 module.exports = router;
