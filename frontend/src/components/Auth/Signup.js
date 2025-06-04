@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signup } from '../../services/authService';
+import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 
 /**
- * Signup component
+ * Signup component with form validation and API integration
  * @returns {React.ReactNode} - The signup component
  */
 const Signup = () => {
@@ -14,11 +15,48 @@ const Signup = () => {
     password: '',
     confirmPassword: '',
   });
+
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [touched, setTouched] = useState({});
+  const [showRequirements, setShowRequirements] = useState({
+    firstName: false,
+    lastName: false,
+    email: false,
+    password: false,
+    confirmPassword: false
+  });
 
   const navigate = useNavigate();
+
+  const checkNameRequirements = (name) => ({
+    notEmpty: name.trim().length > 0,
+    minLength: name.trim().length >= 2
+  });
+
+  const checkEmailRequirements = (email) => ({
+    notEmpty: email.trim().length > 0,
+    validFormat: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  });
+
+  const checkPasswordRequirements = (password) => ({
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+  });
+
+  const checkConfirmPasswordRequirements = (confirmPassword) => ({
+    notEmpty: confirmPassword.length > 0,
+    matches: confirmPassword === formData.password
+  });
+
+  // Clear errors when user types
+  useEffect(() => {
+    if (Object.keys(touched).length > 0) {
+      validateField(Object.keys(touched)[0]);
+    }
+  }, [formData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,44 +64,161 @@ const Signup = () => {
       ...prev,
       [name]: value,
     }));
+    validateField(name);
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    validateField(name);
+  };
+
+  const handleFocus = (fieldName) => {
+    setShowRequirements(prev => ({
+      ...prev,
+      [fieldName]: true
+    }));
+  };
+
+  const validateField = (fieldName) => {
+    let newErrors = { ...errors };
+    
+    switch (fieldName) {
+      case 'firstName':
+        if (!formData.firstName.trim()) {
+          newErrors.firstName = 'First name is required';
+        } else if (formData.firstName.length < 2) {
+          newErrors.firstName = 'First name must be at least 2 characters';
+        } else {
+          delete newErrors.firstName;
+        }
+        break;
+
+      case 'lastName':
+        if (!formData.lastName.trim()) {
+          newErrors.lastName = 'Last name is required';
+        } else if (formData.lastName.length < 2) {
+          newErrors.lastName = 'Last name must be at least 2 characters';
+        } else {
+          delete newErrors.lastName;
+        }
+        break;
+
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!formData.email) {
+          newErrors.email = 'Email is required';
+        } else if (!emailRegex.test(formData.email)) {
+          newErrors.email = 'Please enter a valid email address';
+        } else {
+          delete newErrors.email;
+        }
+        break;
+
+      case 'password':
+        const requirements = checkPasswordRequirements(formData.password);
+        const passwordErrors = [];
+        
+        if (!formData.password) {
+          passwordErrors.push('Password is required');
+        } else {
+          if (!requirements.length) {
+            passwordErrors.push('Must be at least 8 characters');
+          }
+          if (!requirements.uppercase) {
+            passwordErrors.push('Must contain at least one uppercase letter');
+          }
+          if (!requirements.lowercase) {
+            passwordErrors.push('Must contain at least one lowercase letter');
+          }
+          if (!requirements.number) {
+            passwordErrors.push('Must contain at least one number');
+          }
+        }
+        
+        if (passwordErrors.length > 0) {
+          newErrors.password = passwordErrors;
+        } else {
+          delete newErrors.password;
+        }
+        break;
+
+      case 'confirmPassword':
+        if (!formData.confirmPassword) {
+          newErrors.confirmPassword = 'Please confirm your password';
+        } else if (formData.confirmPassword !== formData.password) {
+          newErrors.confirmPassword = 'Passwords do not match';
+        } else {
+          delete newErrors.confirmPassword;
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const validateForm = () => {
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return false;
-    }
-
-    return true;
+    let isValid = true;
+    ['firstName', 'lastName', 'email', 'password', 'confirmPassword'].forEach(field => {
+      if (!validateField(field)) {
+        isValid = false;
+      }
+      setTouched(prev => ({ ...prev, [field]: true }));
+    });
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
+      showErrorAlert('Validation Error', 'Please fix the errors in the form before submitting.');
       return;
     }
 
-    setError('');
     setLoading(true);
 
     try {
       const { confirmPassword, ...userData } = formData;
       await signup(userData);
-      setSuccess(true);
+      showSuccessAlert('Success', 'Account created successfully! Redirecting to login...');
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create account. Please try again.');
+      // Check for specific error cases
+      if (err.response?.status === 400 && err.response?.data?.error === 'User already exists') {
+        showErrorAlert('Registration Failed', 'An account with this email already exists. Please try logging in instead.');
+      } else if (err.response?.data?.message) {
+        showErrorAlert('Registration Failed', err.response.data.message);
+      } else {
+        showErrorAlert('Registration Failed', 'Failed to create account. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const getInputClassName = (fieldName) => `
+    peer w-full px-4 py-3.5 border rounded-lg text-gray-900 placeholder-transparent 
+    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent 
+    transition-all duration-200
+    ${touched[fieldName] && errors[fieldName] 
+      ? 'border-red-500 focus:ring-red-500' 
+      : 'border-gray-300'
+    }
+  `;
+
+  const currentRequirements = {
+    firstName: checkNameRequirements(formData.firstName),
+    lastName: checkNameRequirements(formData.lastName),
+    email: checkEmailRequirements(formData.email),
+    password: checkPasswordRequirements(formData.password),
+    confirmPassword: checkConfirmPasswordRequirements(formData.confirmPassword)
   };
 
   return (
@@ -83,35 +238,7 @@ const Signup = () => {
           </p>
         </div>
 
-        {error && (
-          <div className="rounded-lg bg-red-50 p-4 border border-red-200">
-            <div className="flex">
-              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{error}</h3>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {success && (
-          <div className="rounded-lg bg-green-50 p-4 border border-green-200">
-            <div className="flex">
-              <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
-                  Account created successfully! Redirecting to login...
-                </h3>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="relative">
@@ -120,17 +247,28 @@ const Signup = () => {
                   name="firstName"
                   type="text"
                   required
-                  className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                  className={getInputClassName('firstName')}
                   placeholder="First name"
                   value={formData.firstName}
                   onChange={handleChange}
+                  onBlur={handleBlur}
+                  onFocus={() => handleFocus('firstName')}
+                  aria-invalid={touched.firstName && errors.firstName ? 'true' : 'false'}
+                  aria-describedby="firstName-requirements"
                 />
-                <label
-                  htmlFor="firstName"
-                  className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
-                >
+                <label htmlFor="firstName" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                   First name
                 </label>
+                {showRequirements.firstName && (
+                  <div className="mt-1 space-y-1" id="firstName-requirements">
+                    <p className={`text-xs ${currentRequirements.firstName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.firstName.notEmpty ? '✓' : '•'} Field cannot be empty
+                    </p>
+                    <p className={`text-xs ${currentRequirements.firstName.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.firstName.minLength ? '✓' : '•'} Must be at least 2 characters
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="relative">
@@ -139,17 +277,28 @@ const Signup = () => {
                   name="lastName"
                   type="text"
                   required
-                  className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                  className={getInputClassName('lastName')}
                   placeholder="Last name"
                   value={formData.lastName}
                   onChange={handleChange}
+                  onBlur={handleBlur}
+                  onFocus={() => handleFocus('lastName')}
+                  aria-invalid={touched.lastName && errors.lastName ? 'true' : 'false'}
+                  aria-describedby="lastName-requirements"
                 />
-                <label
-                  htmlFor="lastName"
-                  className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
-                >
+                <label htmlFor="lastName" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                   Last name
                 </label>
+                {showRequirements.lastName && (
+                  <div className="mt-1 space-y-1" id="lastName-requirements">
+                    <p className={`text-xs ${currentRequirements.lastName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.lastName.notEmpty ? '✓' : '•'} Field cannot be empty
+                    </p>
+                    <p className={`text-xs ${currentRequirements.lastName.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.lastName.minLength ? '✓' : '•'} Must be at least 2 characters
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -160,17 +309,28 @@ const Signup = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                className={getInputClassName('email')}
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                onFocus={() => handleFocus('email')}
+                aria-invalid={touched.email && errors.email ? 'true' : 'false'}
+                aria-describedby="email-requirements"
               />
-              <label
-                htmlFor="email"
-                className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
-              >
+              <label htmlFor="email" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                 Email address
               </label>
+              {showRequirements.email && (
+                <div className="mt-1 space-y-1" id="email-requirements">
+                  <p className={`text-xs ${currentRequirements.email.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.email.notEmpty ? '✓' : '•'} Field cannot be empty
+                  </p>
+                  <p className={`text-xs ${currentRequirements.email.validFormat ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.email.validFormat ? '✓' : '•'} Must be a valid email address
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="relative">
@@ -180,17 +340,34 @@ const Signup = () => {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                className={getInputClassName('password')}
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                onFocus={() => handleFocus('password')}
+                aria-invalid={touched.password && errors.password ? 'true' : 'false'}
+                aria-describedby="password-requirements"
               />
-              <label
-                htmlFor="password"
-                className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
-              >
+              <label htmlFor="password" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                 Password
               </label>
+              {showRequirements.password && (
+                <div className="mt-1 space-y-1" id="password-requirements">
+                  <p className={`text-xs ${currentRequirements.password.length ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.password.length ? '✓' : '•'} Must be at least 8 characters
+                  </p>
+                  <p className={`text-xs ${currentRequirements.password.uppercase ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.password.uppercase ? '✓' : '•'} Must contain at least one uppercase letter
+                  </p>
+                  <p className={`text-xs ${currentRequirements.password.lowercase ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.password.lowercase ? '✓' : '•'} Must contain at least one lowercase letter
+                  </p>
+                  <p className={`text-xs ${currentRequirements.password.number ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.password.number ? '✓' : '•'} Must contain at least one number
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="relative">
@@ -200,17 +377,28 @@ const Signup = () => {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="peer w-full px-4 py-3.5 border border-gray-300 rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                className={getInputClassName('confirmPassword')}
                 placeholder="Confirm password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                onFocus={() => handleFocus('confirmPassword')}
+                aria-invalid={touched.confirmPassword && errors.confirmPassword ? 'true' : 'false'}
+                aria-describedby="confirmPassword-requirements"
               />
-              <label
-                htmlFor="confirmPassword"
-                className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600"
-              >
+              <label htmlFor="confirmPassword" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                 Confirm password
               </label>
+              {showRequirements.confirmPassword && (
+                <div className="mt-1 space-y-1" id="confirmPassword-requirements">
+                  <p className={`text-xs ${currentRequirements.confirmPassword.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.confirmPassword.notEmpty ? '✓' : '•'} Field cannot be empty
+                  </p>
+                  <p className={`text-xs ${currentRequirements.confirmPassword.matches ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.confirmPassword.matches ? '✓' : '•'} Passwords must match
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -218,7 +406,7 @@ const Signup = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
+              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -226,7 +414,7 @@ const Signup = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>Creating account...</span>
+                  Creating account...
                 </>
               ) : (
                 'Create account'

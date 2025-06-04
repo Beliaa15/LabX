@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { UIProvider } from './context/UIContext';
 import Toaster from './components/ui/toaster';
 import './index.css';
+import XorTask from './components/Tasks/XorTask';
 
 // Page imports
 // import Home from './components/Pages/Home';
@@ -52,6 +53,15 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <MyCourses />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/task/xor"
+              element={
+                <ProtectedRoute>
+                  <XorTask /> 
                 </ProtectedRoute>
               }
             />

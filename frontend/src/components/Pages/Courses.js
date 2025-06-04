@@ -580,40 +580,44 @@ const Courses = () => {
 
       <div className={`${sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'} flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-[#2A2A2A] border-b border-gray-200 dark:border-gray-700">
-          <div className="px-4 md:px-6 py-4">
-            <div className="flex items-center justify-between">
+        <header className="sticky top-0 z-10 bg-white/80 dark:bg-[#1e1f22] backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 transition-all duration-300">
+          <div className="h-16 px-4 md:px-6 flex items-center justify-between">
+            <div className="flex-1 flex items-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
+                {selectedCourse ? selectedCourse.name : 'My Courses'}
+              </h1>
+            </div>
+            <div className="flex items-center space-x-6">
+              {/* User Profile */}
               <div className="flex items-center space-x-4">
-                
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {selectedCourse ? selectedCourse.name : 'My Courses'}
-                  </h1>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <span className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center">
-                    <span className="text-sm font-medium leading-none text-white">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-gray-700 transform hover:scale-105 transition-all duration-200">
+                    <span className="text-sm font-semibold text-white">
                       {user?.firstName?.charAt(0)}
                       {user?.lastName?.charAt(0)}
                     </span>
-                  </span>
-                  <div className="hidden md:block">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {user?.firstName} {user?.lastName}
-                    </p>
                   </div>
+                  <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-gray-700"></div>
                 </div>
-                <ToggleButton
-                  isChecked={document.documentElement.classList.contains('dark')}
-                  onChange={handleToggle}
-                />
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                </div>
               </div>
+
+              {/* Divider */}
+              <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+
+              {/* Dark Mode Toggle */}
+              <ToggleButton
+                isChecked={document.documentElement.classList.contains('dark')}
+                onChange={handleToggle}
+                className="transform hover:scale-105 transition-transform duration-200"
+              />
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Main Content */}
         <div className="flex-1 p-4 md:p-6">
