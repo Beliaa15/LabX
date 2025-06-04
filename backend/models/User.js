@@ -34,6 +34,13 @@ const userSchema = new Schema(
             enum: ['teacher', 'student', 'admin'],
             default: 'student',
         },
+        phone: {
+            type: String,
+            match: [
+                /^\+?[1-9]\d{1,14}$/,
+                'Please provide a valid phone number',
+            ],
+        },
         courses: [
             {
                 type: Schema.Types.ObjectId,

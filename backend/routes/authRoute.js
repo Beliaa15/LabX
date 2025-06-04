@@ -17,6 +17,10 @@ router.post(
             .withMessage('Password must be at least 6 characters'),
         body('firstName').notEmpty().withMessage('First Name is required'),
         body('lastName').notEmpty().withMessage('Last Name is required'),
+        body('phone')
+            .optional()
+            .matches(/^\+?[1-9]\d{1,14}$/)
+            .withMessage('Please provide a valid phone number'),
     ],
     (req, res, next) => {
         const errors = validationResult(req);

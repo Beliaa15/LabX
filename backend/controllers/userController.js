@@ -70,6 +70,7 @@ const updateUser = asyncHandler(async (req, res) => {
     user.email = req.body.email || user.email;
     user.firstName = req.body.firstName || user.firstName;
     user.lastName = req.body.lastName || user.lastName;
+    user.phone = req.body.phone || user.phone;
 
     // Only update password if it's provided
     if (req.body.password) {
