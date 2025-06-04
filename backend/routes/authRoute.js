@@ -1,19 +1,22 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
-require('../config/passport'); 
+require('../config/passport');
 const { body, validationResult } = require('express-validator');
-const { signup, login } = require('../controllers/authController');
+const { register, login, logout } = require('../controllers/authController');
 
 const router = express.Router();
-//signup
+
+// Register route
 router.post(
-    '/signup',
+    '/register',
     [
         body('email').isEmail().withMessage('Enter a valid email'),
-        body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-        body('name').notEmpty().withMessage('Name is required'),
-        body('year').isInt().withMessage('Year must be an integer'),
+        body('password')
+            .isLength({ min: 6 })
+            .withMessage('Password must be at least 6 characters'),
+        body('firstName').notEmpty().withMessage('First Name is required'),
+        body('lastName').notEmpty().withMessage('Last Name is required'),
     ],
     (req, res, next) => {
         const errors = validationResult(req);
@@ -22,9 +25,10 @@ router.post(
         }
         next();
     },
-    signup
+    register
 );
-//login
+
+// Login route
 router.post(
     '/login',
     [
@@ -42,12 +46,17 @@ router.post(
 );
 
 // Google OAuth routes
-router.get('/google',
+router.get(
+    '/google',
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-router.get('/google/callback',
-    passport.authenticate('google', { session: false, failureRedirect: '/api/auth/login' }),
+router.get(
+    '/google/callback',
+    passport.authenticate('google', {
+        session: false,
+        failureRedirect: '/api/auth/login',
+    }),
     (req, res) => {
         // Issue a JWT after successful Google login
         const token = jwt.sign(
@@ -58,5 +67,8 @@ router.get('/google/callback',
         res.json({ token });
     }
 );
+
+// Logout route
+router.post('/logout', logout);
 
 module.exports = router;

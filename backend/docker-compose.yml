@@ -10,6 +10,8 @@ services:
     depends_on:
       - mongo
       - redis
+    volumes:
+      - ./uploads:/usr/src/app/uploads # Assuming uploads directory exists in the app
 
   mongo:
     image: mongo:6
