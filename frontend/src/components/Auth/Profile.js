@@ -27,7 +27,9 @@ const Profile = () => {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        await refreshUserData();
+        if (!user) {
+          await refreshUserData();
+        }
         setFormData({
           firstName: user?.firstName || '',
           lastName: user?.lastName || '',
