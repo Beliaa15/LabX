@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 
-const MaterialSchema = new Schema(
+const materialSchema = new Schema(
     {
         title: {
             type: String,
@@ -17,4 +17,4 @@ const MaterialSchema = new Schema(
     { timestamps: true }
 );
 
-module.exports = model('Material', MaterialSchema);
+module.exports = model('Material', materialSchema);

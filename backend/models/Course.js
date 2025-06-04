@@ -1,9 +1,12 @@
 const { Schema, model, models } = require('mongoose');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const Task = require('./Task');
 const StudentSubmission = require('./StudentSubmission');
 const Folder = require('./Folder');
+const Material = require('./Material');
 
 const courseSchema = new Schema(
     {
@@ -65,7 +68,7 @@ courseSchema.pre('validate', async function (next) {
     next();
 });
 
-courseSchema.statics.deleteCourseAndAssociatedData = async (courseId) => {
+courseSchema.statics.deleteCourseAndAssociatedData = async function (courseId) {
     const course = await this.findById(courseId);
     if (!course) {
         throw new Error('Course not found');
@@ -90,8 +93,25 @@ courseSchema.statics.deleteCourseAndAssociatedData = async (courseId) => {
     await Task.deleteMany({ course: courseId });
 
     // Delete all folders in the course
-    await Folder.deleteMany({ course: courseId });
+    for (const folderId of course.folders) {
+        const folder = await Folder.findById(folderId);
+        if (!folder) {
+            continue; // Skip if folder not found
+        }
+        const materials = await Material.find({
+            _id: { $in: folder.materials },
+        });
 
+        for (const material of materials) {
+            // Delete the file from the filesystem if it exists
+            if (material.filePath && fs.existsSync(material.filePath)) {
+                fs.unlinkSync(material.filePath);
+            }
+            await material.deleteOne();
+        }
+        // Remove the folder from the course
+        await folder.deleteOne();
+    }
     // Finally, delete the course itself
     await this.findByIdAndDelete(courseId);
 };

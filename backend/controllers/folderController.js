@@ -1,5 +1,8 @@
 const Folder = require('../models/Folder');
 const Course = require('../models/Course');
+const Material = require('../models/Material');
+const fs = require('fs');
+const path = require('path');
 const asyncHandler = require('express-async-handler');
 
 // @desc    Create a new folder
@@ -157,12 +160,23 @@ const deleteFolder = asyncHandler(async (req, res) => {
         throw new Error('You are not authorized to delete this folder');
     }
 
-    const folder = await Folder.findByIdAndDelete(folderId);
+    const folder = await Folder.findById(folderId);
     if (!folder) {
         res.status(404);
         throw new Error('Folder not found');
     }
 
+    if (folder.materials && folder.materials.length > 0) {
+        const materials = await Material.find({ _id: { $in: folder.materials } });
+        for (const material of materials) {
+            if (material.filePath && fs.existsSync(material.filePath)) {
+                fs.unlinkSync(material.filePath);
+            }
+            await material.deleteOne();
+        }
+    }
+
+    // Remove the folder from the database
     await folder.deleteOne();
 
     // Remove the folder from the course
