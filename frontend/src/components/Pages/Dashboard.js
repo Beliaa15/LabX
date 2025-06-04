@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import StudentDashboard from './StudentDashboard';
 import TeacherDashboard from './TeacherDashboard';
@@ -14,12 +15,8 @@ import ToggleButton from '../ui/ToggleButton';
 const Dashboard = () => {
     const { user, isAdmin, isTeacher, isStudent } = useAuth();
     const { sidebarCollapsed } = useUI();
+    const { isDarkMode, handleToggle } = useDarkMode();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    
-    // Add state to track dark mode
-    const [isDarkMode, setIsDarkMode] = useState(() => 
-        document.documentElement.classList.contains('dark')
-    );
 
     // Render the appropriate dashboard based on user role
     const renderDashboard = () => {
@@ -32,38 +29,6 @@ const Dashboard = () => {
         }
         return null;
     };
-
-    const handleToggle = (e) => {
-        const checked = e.target.checked;
-        setIsDarkMode(checked);
-        
-        if (checked) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('darkMode', 'true');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('darkMode', 'false');
-        }
-    };
-
-    // Listen for dark mode changes
-    useEffect(() => {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                    const hasDarkClass = document.documentElement.classList.contains('dark');
-                    setIsDarkMode(hasDarkClass);
-                }
-            });
-        });
-
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
-
-        return () => observer.disconnect();
-    }, []);
 
     return (
         <div className="min-h-screen surface-secondary">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { MOCK_USERS } from '../../services/authService';
@@ -20,12 +21,8 @@ import { downloadFile } from '../../services/fileService';
 const MyCourses = () => {
   const { user } = useAuth();
   const { sidebarCollapsed } = useUI();
+  const { isDarkMode, handleToggle } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  // Add state to track dark mode
-  const [isDarkMode, setIsDarkMode] = useState(() => 
-    document.documentElement.classList.contains('dark')
-  );
   
   // View states
   const [viewMode, setViewMode] = useState('grid');
@@ -75,38 +72,6 @@ const MyCourses = () => {
     const professor = professors.find(p => String(p.id) === String(professorId));
     return professor ? professor.name : 'Not assigned';
   };
-
-  const handleToggle = (e) => {
-    const checked = e.target.checked;
-    setIsDarkMode(checked);
-    
-    if (checked) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('darkMode', 'true');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('darkMode', 'false');
-    }
-  };
-
-  // Listen for dark mode changes
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const hasDarkClass = document.documentElement.classList.contains('dark');
-          setIsDarkMode(hasDarkClass);
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   const handleDownload = async (file) => {
     try {

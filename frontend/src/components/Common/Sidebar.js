@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import { useDarkMode } from './useDarkMode';
 import { cn } from '../../lib/utils';
 import {
   Home,
@@ -26,44 +27,8 @@ import {
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const { user, logout, isAdmin, isTeacher, isStudent } = useAuth();
   const { sidebarCollapsed, toggleSidebar } = useUI();
+  const { isDarkMode, handleToggle } = useDarkMode();
   const location = useLocation();
-  
-  // Add state to track dark mode
-  const [isDarkMode, setIsDarkMode] = useState(() => 
-    document.documentElement.classList.contains('dark')
-  );
-
-  const handleToggle = (e) => {
-    const checked = e.target.checked;
-    setIsDarkMode(checked);
-    
-    if (checked) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('darkMode', 'true');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('darkMode', 'false');
-    }
-  };
-
-  // Listen for dark mode changes from other components
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const hasDarkClass = document.documentElement.classList.contains('dark');
-          setIsDarkMode(hasDarkClass);
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   const navigationLinks = [
     {

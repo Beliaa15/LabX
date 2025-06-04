@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
@@ -12,13 +13,9 @@ import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 const Profile = () => {
   const { user, updateProfile, isAdmin, isTeacher, isStudent, refreshUserData } = useAuth();
   const { sidebarCollapsed } = useUI();
+  const { isDarkMode, handleToggle } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-  // Add state to track dark mode
-  const [isDarkMode, setIsDarkMode] = useState(() => 
-    document.documentElement.classList.contains('dark')
-  );
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -36,38 +33,6 @@ const Profile = () => {
       phone: user?.phone || '',
     });
   }, [user]);
-
-  const handleToggle = (e) => {
-    const checked = e.target.checked;
-    setIsDarkMode(checked);
-    
-    if (checked) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('darkMode', 'true');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('darkMode', 'false');
-    }
-  };
-
-  // Listen for dark mode changes
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const hasDarkClass = document.documentElement.classList.contains('dark');
-          setIsDarkMode(hasDarkClass);
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

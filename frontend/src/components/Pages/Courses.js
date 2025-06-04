@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import { useDarkMode } from '../Common/useDarkMode';
 import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
@@ -25,8 +26,9 @@ import {
 import { downloadFile } from '../../services/fileService';
 
 const Courses = () => {
-  const { user, isAdmin, isTeacher } = useAuth();
+  const { user } = useAuth();
   const { sidebarCollapsed } = useUI();
+  const { isDarkMode, handleToggle } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Form states
@@ -142,43 +144,6 @@ const Courses = () => {
       setAvailableStudents(students.filter(student => !enrolledIds.includes(student.id)));
     }
   }, [tempCourse, students]);
-
-  // Add state to track dark mode
-  const [isDarkMode, setIsDarkMode] = useState(() => 
-    document.documentElement.classList.contains('dark')
-  );
-
-  const handleToggle = (e) => {
-    const checked = e.target.checked;
-    setIsDarkMode(checked);
-    
-    if (checked) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('darkMode', 'true');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('darkMode', 'false');
-    }
-  };
-
-  // Listen for dark mode changes
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const hasDarkClass = document.documentElement.classList.contains('dark');
-          setIsDarkMode(hasDarkClass);
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   // Update handleAddStudent
   const handleAddStudent = (studentId) => {
@@ -610,46 +575,46 @@ const Courses = () => {
       <div className={`${sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'} flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
         {/* Header */}
         <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-primary transition-all duration-300">
-                    <div className="h-16 px-4 md:px-6 pr-16 md:pr-6 flex items-center justify-between">
-                        <div className="flex-1 flex items-center">
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
-                                My Courses
-                            </h1>
-                        </div>
-                        <div className="hidden md:flex items-center space-x-6">
-                            {/* User Profile */}
-                            <div className="flex items-center space-x-4">
-                                <div className="relative">
-                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-slate-700 transform hover:scale-105 transition-all duration-200">
-                                        <span className="text-sm font-semibold text-white">
-                                            {user?.firstName?.charAt(0)}
-                                            {user?.lastName?.charAt(0)}
-                                        </span>
-                                    </div>
-                                    <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-slate-700"></div>
-                                </div>
-                                <div className="block">
-                                    <p className="text-sm font-medium text-primary">
-                                        {user?.firstName} {user?.lastName}
-                                    </p>
-                                    <p className="text-xs text-muted">
-                                        {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
-                                    </p>
-                                </div>
-                            </div>
+          <div className="h-16 px-4 md:px-6 pr-16 md:pr-6 flex items-center justify-between">
+            <div className="flex-1 flex items-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
+                {selectedCourse ? selectedCourse.name : 'My Courses'}
+              </h1>
+            </div>
+            <div className="hidden md:flex items-center space-x-6">
+              {/* User Profile */}
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-slate-700 transform hover:scale-105 transition-all duration-200">
+                    <span className="text-sm font-semibold text-white">
+                      {user?.firstName?.charAt(0)}
+                      {user?.lastName?.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-slate-700"></div>
+                </div>
+                <div className="block">
+                  <p className="text-sm font-medium text-primary">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs text-muted">
+                    Teacher
+                  </p>
+                </div>
+              </div>
 
-                            {/* Divider */}
-                            <div className="h-6 w-px bg-gray-200 dark:bg-slate-700"></div>
+              {/* Divider */}
+              <div className="h-6 w-px bg-gray-200 dark:bg-slate-700"></div>
 
-                            {/* Dark Mode Toggle */}
-                            <ToggleButton
-                                isChecked={isDarkMode}
-                                onChange={handleToggle}
-                                className="transform hover:scale-105 transition-transform duration-200"
-                            />
-                        </div>
-                    </div>
-                </header>
+              {/* Dark Mode Toggle */}
+              <ToggleButton
+                isChecked={isDarkMode}
+                onChange={handleToggle}
+                className="transform hover:scale-105 transition-transform duration-200"
+              />
+            </div>
+          </div>
+        </header>
 
         {/* Main Content */}
         <div className="flex-1 p-4 md:p-6">
@@ -668,28 +633,29 @@ const Courses = () => {
               {selectedCourse ? (
                 <div className="space-y-6">
                   {selectedCourse && (
-                  <button
-                    onClick={() => {
-                      setSelectedCourse(null);
-                      setCurrentPath([]);
-                    }}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-2"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
+                    <button
+                      onClick={() => {
+                        setSelectedCourse(null);
+                        setCurrentPath([]);
+                      }}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                     >
-                      <path
-                        fillRule="evenodd"
-                        d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Back to Courses
-                  </button>
-                )}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-2"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Back to Courses
+                    </button>
+                  )}
+                  
                   {/* Course Header */}
                   <div className="flex items-center justify-between">
                     <div>
