@@ -145,9 +145,9 @@ const ApplicationDetail = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {editMode ? "Edit Application" : "Application Details"}
           </h2>
           <Button variant="ghost" onClick={onClose}>
@@ -605,7 +605,7 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
       <div className="max-w-7xl mx-auto py-12 px-4">
         {role === "student" ? (
@@ -658,7 +658,7 @@ const StudentDashboard = () => {
         )}
 
         {showFilters && (
-          <div className="mb-6 p-4 border rounded bg-white shadow-md">
+          <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 shadow-md">
             <div className="mb-4">
               <Label htmlFor="status">Status</Label>
               <Select
