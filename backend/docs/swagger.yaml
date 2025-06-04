@@ -107,6 +107,21 @@ components:
                     type: string
                 updatedAt:
                     type: string
+        Material:
+            type: object
+            properties:
+                _id:
+                    type: string
+                title:
+                    type: string
+                description:
+                    type: string
+                filePath:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
 
 security:
     - bearerAuth: []
@@ -822,3 +837,213 @@ paths:
                     description: Forbidden
                 404:
                     description: Course or folder not found
+
+    /courses/{courseId}/folders/{folderId}/materials:
+        post:
+            summary: Upload material to a folder in a course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+                - in: path
+                  name: folderId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the folder
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            properties:
+                                title:
+                                    type: string
+                                description:
+                                    type: string
+                                file:
+                                    type: string
+                                    format: binary
+            responses:
+                201:
+                    description: Material uploaded successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                                    material:
+                                        $ref: '#/components/schemas/Material'
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course or folder not found
+        get:
+            summary: Get all materials in a folder
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+                - in: path
+                  name: folderId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the folder
+            responses:
+                200:
+                    description: List of materials
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    materials:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Material'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Course or folder not found
+
+    /courses/{courseId}/folders/{folderId}/materials/{materialId}:
+        get:
+            summary: Get a material by ID
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+                - in: path
+                  name: folderId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the folder
+                - in: path
+                  name: materialId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the material
+            responses:
+                200:
+                    description: Material data
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Material'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Material not found
+        delete:
+            summary: Delete a material from a folder
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+                - in: path
+                  name: folderId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the folder
+                - in: path
+                  name: materialId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the material
+            responses:
+                200:
+                    description: Material deleted successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Material not found
+
+    /courses/{courseId}/folders/{folderId}/materials/{materialId}/download:
+        get:
+            summary: Download a material file
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the course
+                - in: path
+                  name: folderId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the folder
+                - in: path
+                  name: materialId
+                  schema:
+                      type: string
+                  required: true
+                  description: The ID of the material
+            responses:
+                200:
+                    description: File download
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden
+                404:
+                    description: Material not found

@@ -24,7 +24,13 @@ const {
     updateFolder,
 } = require('../controllers/folderController');
 
-const { addMaterial } = require('../controllers/materialController');
+const {
+    addMaterial,
+    getMaterials,
+    getMaterialById,
+    downloadMaterial,
+    deleteMaterial,
+} = require('../controllers/materialController');
 
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const {
@@ -99,8 +105,8 @@ router
     .put(authenticate, isTeacher, paramValidation.courseId, updateFolder) // Teacher can update a folder
     .delete(authenticate, isTeacher, paramValidation.courseId, deleteFolder); // Teacher can delete a folder
 
-
-router.post('/:courseId/folders/:folderId/materials',
+router.post(
+    '/:courseId/folders/:folderId/materials',
     authenticate,
     isTeacher,
     paramValidation.courseId,
@@ -108,5 +114,38 @@ router.post('/:courseId/folders/:folderId/materials',
     upload.single('file'), // Use multer to handle file uploads
     addMaterial
 ); // Teacher can add materials to a folder in a course
+
+router.get(
+    '/:courseId/folders/:folderId/materials',
+    authenticate,
+    paramValidation.courseId,
+    paramValidation.folderId,
+    getMaterials
+); // Get all materials in a folder
+
+router.get(
+    '/:courseId/folders/:folderId/materials/:materialId',
+    authenticate,
+    paramValidation.courseId,
+    paramValidation.folderId,
+    getMaterialById
+); // Get a single material by ID
+
+router.get(
+    '/:courseId/folders/:folderId/materials/:materialId/download',
+    authenticate,
+    paramValidation.courseId,
+    paramValidation.folderId,
+    downloadMaterial
+); // Download a material by ID
+
+router.delete(
+    '/:courseId/folders/:folderId/materials/:materialId',
+    authenticate,
+    isTeacher,
+    paramValidation.courseId,
+    paramValidation.folderId,
+    deleteMaterial
+)
 
 module.exports = router;
