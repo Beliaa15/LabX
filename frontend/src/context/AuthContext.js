@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const isAuthenticated = () => {
-        return !!token && !!user;
+        return !!(token && user);
     };
 
     const isAdmin = () => {
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         isAdmin,
         isTeacher,
-        isStudent
+        isStudent,
     };
 
     return (
