@@ -47,6 +47,11 @@ const AdminCourseManagement = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Add state to track dark mode
+  const [isDarkMode, setIsDarkMode] = useState(() => 
+    document.documentElement.classList.contains('dark')
+  );
+
   // Load teachers from service
   useEffect(() => {
     const loadTeachers = () => {
@@ -62,12 +67,36 @@ const AdminCourseManagement = () => {
   }, [courses]);
 
   const handleToggle = (e) => {
-    if (e.target.checked) {
+    const checked = e.target.checked;
+    setIsDarkMode(checked);
+    
+    if (checked) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('darkMode', 'true');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('darkMode', 'false');
     }
   };
+
+  // Listen for dark mode changes
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const hasDarkClass = document.documentElement.classList.contains('dark');
+          setIsDarkMode(hasDarkClass);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleCreateCourse = (e) => {
     e.preventDefault();
@@ -171,8 +200,8 @@ const AdminCourseManagement = () => {
   };
 
   const CourseCard = ({ course }) => (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700">
-      <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 relative">
+    <div className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary">
+      <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
         <div className="absolute top-3 right-3">
           <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 
@@ -209,31 +238,31 @@ const AdminCourseManagement = () => {
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2 line-clamp-1">
+        <h3 className="font-semibold text-primary text-lg mb-2 line-clamp-1">
           {course.name}
         </h3>
         {course.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
+          <p className="text-sm text-muted mb-3 line-clamp-2">
             {course.description}
           </p>
         )}
         
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Teacher:</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-muted">Teacher:</span>
+            <span className="font-medium text-primary">
               {getTeacherName(course.assignedTeacher)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Students:</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-muted">Students:</span>
+            <span className="font-medium text-primary">
               {Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Created:</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-muted">Created:</span>
+            <span className="font-medium text-primary">
               {new Date(course.createdAt).toLocaleDateString()}
             </span>
           </div>
@@ -243,18 +272,18 @@ const AdminCourseManagement = () => {
   );
 
   const CourseListItem = ({ course }) => (
-    <div className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200">
+    <div className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface">
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center space-x-2 mb-1">
-              <h3 className="font-semibold text-gray-900 dark:text-white">
+              <h3 className="font-semibold text-primary">
                 {course.name}
               </h3>
-              <span className="text-sm text-gray-500">({course.code})</span>
+              <span className="text-sm text-muted">({course.code})</span>
               <span className={`text-xs px-2 py-1 rounded ${
                 course.status === 'active' 
                   ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
@@ -263,7 +292,7 @@ const AdminCourseManagement = () => {
                 {course.status === 'active' ? 'Active' : 'Draft'}
               </span>
             </div>
-            <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center space-x-4 text-sm text-secondary">
               <span>Teacher: {getTeacherName(course.assignedTeacher)}</span>
               <span>{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0} students</span>
               <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
@@ -277,13 +306,13 @@ const AdminCourseManagement = () => {
               setSelectedCourse(course);
               setShowAssignModal(true);
             }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
           >
-            <UserPlus className="w-4 h-4 text-gray-400" />
+            <UserPlus className="w-4 h-4 text-muted" />
           </button>
           <button
             onClick={() => handleDeleteCourse(course.id)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
           >
             <Trash2 className="w-4 h-4 text-red-400" />
           </button>
@@ -293,12 +322,12 @@ const AdminCourseManagement = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#121212]">
+    <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
       <div className={`${sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'} flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-white/80 dark:bg-[#1e1f22] backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 transition-all duration-300">
+        <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-primary transition-all duration-300">
           <div className="h-16 px-4 md:px-6 flex items-center justify-between">
             <div className="flex-1 flex items-center">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
@@ -309,30 +338,30 @@ const AdminCourseManagement = () => {
               {/* User Profile */}
               <div className="flex items-center space-x-4">
                 <div className="relative">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-gray-700 transform hover:scale-105 transition-all duration-200">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-slate-700 transform hover:scale-105 transition-all duration-200">
                     <span className="text-sm font-semibold text-white">
                       {user?.firstName?.charAt(0)}
                       {user?.lastName?.charAt(0)}
                     </span>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-gray-700"></div>
+                  <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-slate-700"></div>
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  <p className="text-sm font-medium text-primary">
                     {user?.firstName} {user?.lastName}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted">
                     Administrator
                   </p>
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-6 w-px bg-gray-200 dark:bg-slate-700"></div>
 
               {/* Dark Mode Toggle */}
               <ToggleButton
-                isChecked={document.documentElement.classList.contains('dark')}
+                isChecked={isDarkMode}
                 onChange={handleToggle}
                 className="transform hover:scale-105 transition-transform duration-200"
               />
@@ -341,40 +370,40 @@ const AdminCourseManagement = () => {
         </header>
 
         {/* Controls */}
-        <div className="bg-white dark:bg-[#1e1f22] border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4">
+        <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Course
               </button>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-secondary">
                 {courses.length} course{courses.length !== 1 ? 's' : ''}
               </span>
             </div>
 
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   type="text"
                   placeholder="Search courses..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-64 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
 
-              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-md transition-colors ${
                     viewMode === 'grid'
-                      ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
+                      : 'text-muted hover:text-secondary'
                   }`}
                 >
                   <Grid3X3 className="w-4 h-4" />
@@ -383,8 +412,8 @@ const AdminCourseManagement = () => {
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-md transition-colors ${
                     viewMode === 'list'
-                      ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
+                      : 'text-muted hover:text-secondary'
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -398,17 +427,17 @@ const AdminCourseManagement = () => {
         <div className="flex-1 p-4 md:p-6">
           {filteredCourses.length === 0 ? (
             <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
-              <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              <BookOpen className="w-12 h-12 text-muted mb-4" />
+              <h3 className="text-lg font-medium text-primary mb-2">
                 {searchQuery ? 'No courses found' : 'No courses created yet'}
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 text-center mb-8">
+              <p className="text-secondary text-center mb-8">
                 {searchQuery ? 'Try adjusting your search terms' : 'Create your first course to get started'}
               </p>
               {!searchQuery && (
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                  className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Create First Course
@@ -437,15 +466,15 @@ const AdminCourseManagement = () => {
         {/* Create Course Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl w-full max-w-lg">
+            <div className="surface-primary rounded-xl shadow-xl w-full max-w-lg border border-primary">
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-xl font-semibold text-primary mb-4">
                   Create New Course
                 </h3>
                 <form onSubmit={handleCreateCourse}>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-secondary mb-2">
                         Course Code
                       </label>
                       <input
@@ -453,12 +482,12 @@ const AdminCourseManagement = () => {
                         value={courseCode}
                         onChange={(e) => setCourseCode(e.target.value)}
                         placeholder="e.g., CS101"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-secondary mb-2">
                         Course Name
                       </label>
                       <input
@@ -466,12 +495,12 @@ const AdminCourseManagement = () => {
                         value={courseName}
                         onChange={(e) => setCourseName(e.target.value)}
                         placeholder="Enter course name..."
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-secondary mb-2">
                         Description (Optional)
                       </label>
                       <textarea
@@ -479,7 +508,7 @@ const AdminCourseManagement = () => {
                         onChange={(e) => setCourseDescription(e.target.value)}
                         placeholder="Enter course description..."
                         rows="3"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
@@ -487,13 +516,13 @@ const AdminCourseManagement = () => {
                     <button
                       type="button"
                       onClick={() => setShowCreateModal(false)}
-                      className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                     >
                       Create Course
                     </button>
@@ -507,25 +536,25 @@ const AdminCourseManagement = () => {
         {/* Assign Teacher Modal */}
         {showAssignModal && selectedCourse && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-xl w-full max-w-md">
+            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-xl font-semibold text-primary mb-4">
                   Assign Teacher
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Course: <span className="font-medium">{selectedCourse.name}</span>
+                <p className="text-secondary mb-4">
+                  Course: <span className="font-medium text-primary">{selectedCourse.name}</span>
                 </p>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {teachers.map((teacher) => (
                     <button
                       key={teacher.id}
                       onClick={() => handleAssignTeacher(teacher.id)}
-                      className="w-full p-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                      className="w-full p-3 text-left bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition-colors"
                     >
-                      <div className="font-medium text-gray-900 dark:text-white">
+                      <div className="font-medium text-primary">
                         {teacher.name}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-secondary">
                         {teacher.email} • {teacher.assignedCourses} courses assigned
                       </div>
                     </button>
@@ -534,7 +563,7 @@ const AdminCourseManagement = () => {
                 <div className="flex justify-end space-x-3 mt-6">
                   <button
                     onClick={() => setShowAssignModal(false)}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
                   >
                     Cancel
                   </button>

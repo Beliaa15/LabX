@@ -24,29 +24,29 @@ const TeacherDashboard = () => {
     return (
       <div className="space-y-6">
         {/* Welcome Section */}
-        <div className="bg-white shadow rounded-lg p-6 dark:bg-[#2A2A2A]">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="surface-primary shadow-sm rounded-xl p-6 border border-primary">
+          <h2 className="text-2xl font-bold text-primary">
             Teacher Dashboard
           </h2>
-          <p className="mt-2 text-gray-600 dark:text-slate-400">
+          <p className="mt-2 text-secondary">
             Overview of your courses and student engagement.
           </p>
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-[#2A2A2A]">
+          <div className="surface-primary overflow-hidden shadow-sm rounded-xl border border-primary">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <BookOpen className="h-6 w-6 text-indigo-600" />
+                  <BookOpen className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-bold text-gray-500 truncate dark:text-white">
+                    <dt className="text-sm font-bold text-muted truncate">
                       Teaching Courses
                     </dt>
-                    <dd className="text-lg font-medium text-gray-900 dark:text-slate-400">
+                    <dd className="text-lg font-medium text-primary">
                       3
                     </dd>
                   </dl>
@@ -55,18 +55,18 @@ const TeacherDashboard = () => {
             </div>
           </div>
           
-          <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-[#2A2A2A]">
+          <div className="surface-primary overflow-hidden shadow-sm rounded-xl border border-primary">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Users className="h-6 w-6 text-green-600" />
+                  <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-bold text-gray-500 truncate dark:text-white">
+                    <dt className="text-sm font-bold text-muted truncate">
                       Total Students
                     </dt>
-                    <dd className="text-lg font-medium text-gray-900 dark:text-slate-400">
+                    <dd className="text-lg font-medium text-primary">
                       135
                     </dd>
                   </dl>
@@ -75,18 +75,18 @@ const TeacherDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-[#2A2A2A]">
+          <div className="surface-primary overflow-hidden shadow-sm rounded-xl border border-primary">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <FileText className="h-6 w-6 text-yellow-600" />
+                  <FileText className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-bold text-gray-500 truncate dark:text-white">
+                    <dt className="text-sm font-bold text-muted truncate">
                       Pending Grading
                     </dt>
-                    <dd className="text-lg font-medium text-gray-900 dark:text-slate-400">
+                    <dd className="text-lg font-medium text-primary">
                       12
                     </dd>
                   </dl>
@@ -95,18 +95,18 @@ const TeacherDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-[#2A2A2A]">
+          <div className="surface-primary overflow-hidden shadow-sm rounded-xl border border-primary">
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Calendar className="h-6 w-6 text-blue-600" />
+                  <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate dark:text-white">
+                    <dt className="text-sm font-medium text-muted truncate">
                       Upcoming Lectures
                     </dt>
-                    <dd className="text-lg font-medium text-gray-900 dark:text-slate-400">
+                    <dd className="text-lg font-medium text-primary">
                       3
                     </dd>
                   </dl>
@@ -117,33 +117,33 @@ const TeacherDashboard = () => {
         </div>
 
         {/* Teaching Courses */}
-        <div className="bg-white shadow rounded-lg dark:bg-[#2A2A2A]">
+        <div className="surface-primary shadow-sm rounded-xl border border-primary">
           <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+            <h3 className="text-lg leading-6 font-medium text-primary">
               Teaching Courses
             </h3>
           </div>
-          <div className="border-t border-gray-200">
-            <ul className="divide-y divide-gray-200">
+          <div className="border-t border-primary">
+            <ul className="divide-y divide-gray-200 dark:divide-slate-700">
               {teachingCourses.map((course) => (
-                <li key={course.id} className="px-4 py-4 sm:px-6">
+                <li key={course.id} className="px-4 py-4 sm:px-6 hover-surface transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <BookOpen className="h-5 w-5 text-gray-400 dark:text-slate-400" />
+                        <BookOpen className="h-5 w-5 text-muted" />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-primary">
                           {course.name}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-slate-400">
+                        <div className="text-sm text-secondary">
                           Next lecture: {course.nextLecture}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center">
-                      <Users className="h-5 w-5 text-gray-400 dark:text-slate-400" />
-                      <span className="ml-2 text-sm text-gray-500 dark:text-slate-400">
+                      <Users className="h-5 w-5 text-muted" />
+                      <span className="ml-2 text-sm text-muted">
                         {course.students} students
                       </span>
                     </div>
@@ -155,31 +155,31 @@ const TeacherDashboard = () => {
         </div>
 
         {/* Assignment Statistics */}
-        <div className="bg-white shadow rounded-lg dark:bg-[#2A2A2A]">
+        <div className="surface-primary shadow-sm rounded-xl border border-primary">
           <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+            <h3 className="text-lg leading-6 font-medium text-primary">
               Assignment Statistics
             </h3>
           </div>
-          <div className="border-t border-gray-200">
-            <ul className="divide-y divide-gray-200">
+          <div className="border-t border-primary">
+            <ul className="divide-y divide-gray-200 dark:divide-slate-700">
               {assignmentStats.map((assignment) => (
-                <li key={assignment.id} className="px-4 py-4 sm:px-6">
+                <li key={assignment.id} className="px-4 py-4 sm:px-6 hover-surface transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <FileText className="h-5 w-5 text-gray-400 dark:text-slate-400" />
+                        <FileText className="h-5 w-5 text-muted" />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-primary">
                           {assignment.title}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-slate-400">
+                        <div className="text-sm text-secondary">
                           Due: {assignment.dueDate}
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-slate-400">
+                    <div className="text-sm text-muted">
                       {assignment.submitted}/{assignment.total} submitted
                     </div>
                   </div>
@@ -190,31 +190,31 @@ const TeacherDashboard = () => {
         </div>
 
         {/* Lecture Attendance */}
-        <div className="bg-white shadow rounded-lg dark:bg-[#2A2A2A]">
+        <div className="surface-primary shadow-sm rounded-xl border border-primary">
           <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+            <h3 className="text-lg leading-6 font-medium text-primary">
               Recent Lecture Attendance
             </h3>
           </div>
-          <div className="border-t border-gray-200">
-            <ul className="divide-y divide-gray-200">
+          <div className="border-t border-primary">
+            <ul className="divide-y divide-gray-200 dark:divide-slate-700">
               {lectureAttendance.map((lecture) => (
-                <li key={lecture.id} className="px-4 py-4 sm:px-6">
+                <li key={lecture.id} className="px-4 py-4 sm:px-6 hover-surface transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <Calendar className="h-5 w-5 text-gray-400 dark:text-slate-400" />
+                        <Calendar className="h-5 w-5 text-muted" />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-primary">
                           {lecture.course}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-slate-400">
+                        <div className="text-sm text-secondary">
                           Date: {lecture.date}
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-slate-400">
+                    <div className="text-sm text-muted">
                       {lecture.attended}/{lecture.total} attended
                     </div>
                   </div>
@@ -227,4 +227,4 @@ const TeacherDashboard = () => {
     );
 };
 
-export default TeacherDashboard; 
+export default TeacherDashboard;

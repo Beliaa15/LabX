@@ -14,6 +14,7 @@ import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
 import Profile from './components/Auth/Profile';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import PublicRoute from './components/Auth/PublicRoute';
 import MyCourses from './components/Pages/MyCourses';
 import Courses from './components/Pages/Courses';
 import AdminPanal from './components/Pages/AdminPanal';
@@ -24,10 +25,23 @@ const App = () => {
       <UIProvider>
         <Router>
           <Routes>
-            {/* Public routes */}
-            {/* <Route path="/" element={<Home />} /> */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            {/* Public routes - redirect to dashboard if authenticated */}
+            <Route 
+              path="/login" 
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/signup" 
+              element={
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              } 
+            />
 
             {/* Protected routes */}
             <Route
@@ -47,9 +61,8 @@ const App = () => {
               }
             />
 
-            {/* Fallback route */}
             <Route
-              path="my-courses"
+              path="/my-courses"
               element={
                 <ProtectedRoute>
                   <MyCourses />
@@ -66,7 +79,7 @@ const App = () => {
               }
             />
             <Route
-              path="courses"
+              path="/courses"
               element={
                 <ProtectedRoute>
                   <Courses />
@@ -74,12 +87,28 @@ const App = () => {
               }
             />
             <Route
-              path="admin"
+              path="/admin"
               element={
                 <ProtectedRoute>
                   <AdminPanal />
                 </ProtectedRoute>
               }
+            />
+
+            {/* Default redirect - send to dashboard if authenticated, login if not */}
+            <Route 
+              path="/" 
+              element={
+                <Navigate to="/dashboard" replace />
+              } 
+            />
+            
+            {/* Fallback for unknown routes */}
+            <Route 
+              path="*" 
+              element={
+                <Navigate to="/dashboard" replace />
+              } 
             />
           </Routes>
           <Toaster />

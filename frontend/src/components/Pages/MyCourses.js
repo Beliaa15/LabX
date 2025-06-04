@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { MOCK_USERS } from '../../services/authService';
@@ -20,6 +21,7 @@ import { downloadFile } from '../../services/fileService';
 const MyCourses = () => {
   const { user } = useAuth();
   const { sidebarCollapsed } = useUI();
+  const { isDarkMode, handleToggle } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // View states
@@ -71,14 +73,6 @@ const MyCourses = () => {
     return professor ? professor.name : 'Not assigned';
   };
 
-  const handleToggle = (e) => {
-    if (e.target.checked) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-
   const handleDownload = async (file) => {
     try {
       await downloadFile(file);
@@ -121,9 +115,9 @@ const MyCourses = () => {
   const CourseCard = ({ course }) => (
     <div 
       onClick={() => setSelectedCourse(course)}
-      className="group relative bg-white dark:bg-[#2A2A2A] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 cursor-pointer"
+      className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer"
     >
-      <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 relative">
+      <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
         <div className="absolute bottom-3 left-3 right-3">
           <span className="text-xs font-medium text-white bg-white/20 px-2 py-1 rounded">
             {course.code}
@@ -132,26 +126,26 @@ const MyCourses = () => {
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
+        <h3 className="font-semibold text-primary text-lg mb-2">
           {course.name}
         </h3>
         
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Professor:</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-muted">Professor:</span>
+            <span className="font-medium text-primary">
               {getProfessorName(course.assignedProfessor)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Materials:</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-muted">Materials:</span>
+            <span className="font-medium text-primary">
               {materials.filter(m => m.courseId === course.id).length}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Students:</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-muted">Students:</span>
+            <span className="font-medium text-primary">
               {(course.enrolledStudents || []).length}
             </span>
           </div>
@@ -163,21 +157,21 @@ const MyCourses = () => {
   const CourseListItem = ({ course }) => (
     <div 
       onClick={() => setSelectedCourse(course)}
-      className="bg-white dark:bg-[#2A2A2A] rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 cursor-pointer"
+      className="surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 cursor-pointer hover-surface"
     >
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center space-x-2 mb-1">
-              <h3 className="font-semibold text-gray-900 dark:text-white">
+              <h3 className="font-semibold text-primary">
                 {course.name}
               </h3>
-              <span className="text-sm text-gray-500">({course.code})</span>
+              <span className="text-sm text-muted">({course.code})</span>
             </div>
-            <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center space-x-4 text-sm text-secondary">
               <span>Professor: {getProfessorName(course.assignedProfessor)}</span>
               <span>{materials.filter(m => m.courseId === course.id).length} materials</span>
               <span>{(course.enrolledStudents || []).length} students</span>
@@ -189,7 +183,7 @@ const MyCourses = () => {
   );
 
   const MaterialItem = ({ item }) => (
-    <div className="bg-white dark:bg-[#2A2A2A] rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 group relative">
+    <div className="surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-primary group relative">
       <div className="p-6">
         <div className="flex flex-col items-center text-center space-y-4">
           {/* Icon Container */}
@@ -207,11 +201,11 @@ const MyCourses = () => {
 
           {/* Name and Info */}
           <div className="space-y-1">
-            <h3 className="font-medium text-gray-900 dark:text-white text-lg truncate max-w-[200px]" title={item.name}>
+            <h3 className="font-medium text-primary text-lg truncate max-w-[200px]" title={item.name}>
               {item.name}
             </h3>
             {item.type === 'file' && (
-              <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center justify-center space-x-2 text-sm text-muted">
                 <span>{formatFileSize(item.size)}</span>
                 <span>•</span>
                 <span>{new Date(item.uploadedAt || Date.now()).toLocaleDateString()}</span>
@@ -245,74 +239,82 @@ const MyCourses = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#121212]">
+    <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
       <div className={`${sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'} flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-[#2A2A2A] border-b border-gray-200 dark:border-gray-700">
-          <div className="px-4 md:px-6 py-4">
-            <div className="flex items-center justify-between">
+        <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-primary transition-all duration-300">
+          <div className="h-16 px-4 md:px-6 pr-16 md:pr-6 flex items-center justify-between">
+            <div className="flex-1 flex items-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
+                {selectedCourse ? selectedCourse.name : 'My Courses'}
+              </h1>
+            </div>
+            <div className="hidden md:flex items-center space-x-6">
+              {/* User Profile */}
               <div className="flex items-center space-x-4">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {selectedCourse ? selectedCourse.name : 'My Courses'}
-                  </h1>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <span className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center">
-                    <span className="text-sm font-medium leading-none text-white">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-slate-700 transform hover:scale-105 transition-all duration-200">
+                    <span className="text-sm font-semibold text-white">
                       {user?.firstName?.charAt(0)}
                       {user?.lastName?.charAt(0)}
                     </span>
-                  </span>
-                  <div className="hidden md:block">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {user?.firstName} {user?.lastName}
-                    </p>
                   </div>
+                  <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-slate-700"></div>
                 </div>
-                <ToggleButton
-                  isChecked={document.documentElement.classList.contains('dark')}
-                  onChange={handleToggle}
-                />
+                <div className="block">
+                  <p className="text-sm font-medium text-primary">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs text-muted">
+                    Student
+                  </p>
+                </div>
               </div>
+
+              {/* Divider */}
+              <div className="h-6 w-px bg-gray-200 dark:bg-slate-700"></div>
+
+              {/* Dark Mode Toggle */}
+              <ToggleButton
+                isChecked={isDarkMode}
+                onChange={handleToggle}
+                className="transform hover:scale-105 transition-transform duration-200"
+              />
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Controls */}
         {!selectedCourse && (
-          <div className="bg-white dark:bg-[#2A2A2A] border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4">
+          <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-secondary">
                   {courses.length} course{courses.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                   <input
                     type="text"
                     placeholder="Search courses..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2 w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-10 pr-4 py-2 w-64 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                 </div>
 
-                <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded-md transition-colors ${
                       viewMode === 'grid'
-                        ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
+                        : 'text-muted hover:text-secondary'
                     }`}
                   >
                     <Grid3X3 className="w-4 h-4" />
@@ -321,8 +323,8 @@ const MyCourses = () => {
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded-md transition-colors ${
                       viewMode === 'list'
-                        ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
+                        : 'text-muted hover:text-secondary'
                     }`}
                   >
                     <List className="w-4 h-4" />
@@ -362,7 +364,7 @@ const MyCourses = () => {
 
               {/* Breadcrumb */}
               {currentPath.length > 0 && (
-                <div className="flex items-center space-x-2 text-sm bg-white dark:bg-[#2A2A2A] p-3 rounded-lg shadow-sm">
+                <div className="flex items-center space-x-2 text-sm bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
                   <button
                     onClick={navigateBack}
                     className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -389,12 +391,12 @@ const MyCourses = () => {
               </div>
 
               {getCurrentMaterials().length === 0 && (
-                <div className="text-center py-12 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-sm">
-                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                <div className="text-center py-12 surface-primary rounded-xl shadow-sm">
+                  <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-primary mb-2">
                     No materials yet
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400">
+                  <p className="text-secondary">
                     Check back later for course materials
                   </p>
                 </div>
@@ -404,11 +406,11 @@ const MyCourses = () => {
             <>
               {courses.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
-                  <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  <BookOpen className="w-12 h-12 text-muted mb-4" />
+                  <h3 className="text-lg font-medium text-primary mb-2">
                     No courses enrolled
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-center">
+                  <p className="text-secondary text-center">
                     You are not enrolled in any courses yet
                   </p>
                 </div>

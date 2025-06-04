@@ -148,6 +148,7 @@ export const signup = async (userData) => {
             data: error.response?.data,
             message: error.message
         });
+        // Re-throw the error so components can handle it
         throw error;
     }
 };

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { login as loginService, logout as logoutService } from '../services/authService';
 import { getCurrentUser, updateUserProfile } from '../services/userService';
 
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
             setToken(response.token);
             
             // Get fresh user data from API
-            await refreshUserData();
+            //await refreshUserData();
             return response;
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed');
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const isAuthenticated = () => {
-        return !!token && !!user;
+        return !!(token && user);
     };
 
     const isAdmin = () => {
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         isAdmin,
         isTeacher,
-        isStudent
+        isStudent,
     };
 
     return (
