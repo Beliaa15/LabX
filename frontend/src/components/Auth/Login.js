@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 /**
  * Login component with form validation
@@ -12,6 +13,7 @@ const Login = () => {
     email: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [touched, setTouched] = useState({
     email: false,
     password: false
@@ -174,32 +176,41 @@ const Login = () => {
             </div>
 
             <div className="relative">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className={`peer w-full px-4 py-3.5 border ${
-                  touched.password && errors.password ? 'border-red-500' : 'border-gray-300'
-                } rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 ${
-                  touched.password && errors.password ? 'focus:ring-red-500' : 'focus:ring-indigo-500'
-                } focus:border-transparent transition-all duration-200`}
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                aria-invalid={touched.password && errors.password ? 'true' : 'false'}
-                aria-describedby={errors.password ? 'password-error' : undefined}
-              />
-              <label
-                htmlFor="password"
-                className={`absolute left-4 -top-2.5 bg-white px-1 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm ${
-                  touched.password && errors.password ? 'text-red-500' : 'text-gray-600 peer-focus:text-indigo-600'
-                }`}
-              >
-                Password
-              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  className={`peer w-full px-4 py-3.5 border ${
+                    touched.password && errors.password ? 'border-red-500' : 'border-gray-300'
+                  } rounded-lg text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 ${
+                    touched.password && errors.password ? 'focus:ring-red-500' : 'focus:ring-indigo-500'
+                  } focus:border-transparent transition-all duration-200`}
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  aria-invalid={touched.password && errors.password ? 'true' : 'false'}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                </button>
+                <label
+                  htmlFor="password"
+                  className={`absolute left-4 -top-2.5 bg-white px-1 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm ${
+                    touched.password && errors.password ? 'text-red-500' : 'text-gray-600 peer-focus:text-indigo-600'
+                  }`}
+                >
+                  Password
+                </label>
+              </div>
               {touched.password && errors.password && (
                 <p className="mt-1 text-sm text-red-500" id="password-error">
                   {errors.password}

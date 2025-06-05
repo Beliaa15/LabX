@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signup } from '../../services/authService';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 /**
  * Signup component with form validation and API integration
@@ -26,6 +27,9 @@ const Signup = () => {
     password: false,
     confirmPassword: false
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -259,16 +263,18 @@ const Signup = () => {
                 <label htmlFor="firstName" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                   First name
                 </label>
-                {showRequirements.firstName && (
-                  <div className="mt-1 space-y-1" id="firstName-requirements">
-                    <p className={`text-xs ${currentRequirements.firstName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                      {currentRequirements.firstName.notEmpty ? '✓' : '•'} Field cannot be empty
-                    </p>
-                    <p className={`text-xs ${currentRequirements.firstName.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                      {currentRequirements.firstName.minLength ? '✓' : '•'} Must be at least 2 characters
-                    </p>
-                  </div>
-                )}
+                <div className="min-h-[40px]">
+                  {showRequirements.firstName && (
+                    <div className="mt-1 space-y-1" id="firstName-requirements">
+                      <p className={`text-xs ${currentRequirements.firstName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                        {currentRequirements.firstName.notEmpty ? '✓' : '•'} Field cannot be empty
+                      </p>
+                      <p className={`text-xs ${currentRequirements.firstName.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                        {currentRequirements.firstName.minLength ? '✓' : '•'} Must be at least 2 characters
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="relative">
@@ -289,16 +295,18 @@ const Signup = () => {
                 <label htmlFor="lastName" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                   Last name
                 </label>
-                {showRequirements.lastName && (
-                  <div className="mt-1 space-y-1" id="lastName-requirements">
-                    <p className={`text-xs ${currentRequirements.lastName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                      {currentRequirements.lastName.notEmpty ? '✓' : '•'} Field cannot be empty
-                    </p>
-                    <p className={`text-xs ${currentRequirements.lastName.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                      {currentRequirements.lastName.minLength ? '✓' : '•'} Must be at least 2 characters
-                    </p>
-                  </div>
-                )}
+                <div className="min-h-[40px]">
+                  {showRequirements.lastName && (
+                    <div className="mt-1 space-y-1" id="lastName-requirements">
+                      <p className={`text-xs ${currentRequirements.lastName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                        {currentRequirements.lastName.notEmpty ? '✓' : '•'} Field cannot be empty
+                      </p>
+                      <p className={`text-xs ${currentRequirements.lastName.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                        {currentRequirements.lastName.minLength ? '✓' : '•'} Must be at least 2 characters
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -321,37 +329,48 @@ const Signup = () => {
               <label htmlFor="email" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                 Email address
               </label>
-              {showRequirements.email && (
-                <div className="mt-1 space-y-1" id="email-requirements">
-                  <p className={`text-xs ${currentRequirements.email.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                    {currentRequirements.email.notEmpty ? '✓' : '•'} Field cannot be empty
-                  </p>
-                  <p className={`text-xs ${currentRequirements.email.validFormat ? 'text-green-600' : 'text-red-600'}`}>
-                    {currentRequirements.email.validFormat ? '✓' : '•'} Must be a valid email address
-                  </p>
-                </div>
-              )}
+              <div className="min-h-[40px]">
+                {showRequirements.email && (
+                  <div className="mt-1 space-y-1" id="email-requirements">
+                    <p className={`text-xs ${currentRequirements.email.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.email.notEmpty ? '✓' : '•'} Field cannot be empty
+                    </p>
+                    <p className={`text-xs ${currentRequirements.email.validFormat ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.email.validFormat ? '✓' : '•'} Must be a valid email address
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="relative">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className={getInputClassName('password')}
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                onFocus={() => handleFocus('password')}
-                aria-invalid={touched.password && errors.password ? 'true' : 'false'}
-                aria-describedby="password-requirements"
-              />
-              <label htmlFor="password" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
-                Password
-              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  className={getInputClassName('password')}
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  onFocus={() => handleFocus('password')}
+                  aria-invalid={touched.password && errors.password ? 'true' : 'false'}
+                  aria-describedby="password-requirements"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                </button>
+                <label htmlFor="password" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
+                  Password
+                </label>
+              </div>
               {showRequirements.password && (
                 <div className="mt-1 space-y-1" id="password-requirements">
                   <p className={`text-xs ${currentRequirements.password.length ? 'text-green-600' : 'text-red-600'}`}>
@@ -371,24 +390,33 @@ const Signup = () => {
             </div>
 
             <div className="relative">
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                className={getInputClassName('confirmPassword')}
-                placeholder="Confirm password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                onFocus={() => handleFocus('confirmPassword')}
-                aria-invalid={touched.confirmPassword && errors.confirmPassword ? 'true' : 'false'}
-                aria-describedby="confirmPassword-requirements"
-              />
-              <label htmlFor="confirmPassword" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
-                Confirm password
-              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  className={getInputClassName('confirmPassword')}
+                  placeholder="Confirm password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  onFocus={() => handleFocus('confirmPassword')}
+                  aria-invalid={touched.confirmPassword && errors.confirmPassword ? 'true' : 'false'}
+                  aria-describedby="confirmPassword-requirements"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showConfirmPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                </button>
+                <label htmlFor="confirmPassword" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
+                  Confirm password
+                </label>
+              </div>
               {showRequirements.confirmPassword && (
                 <div className="mt-1 space-y-1" id="confirmPassword-requirements">
                   <p className={`text-xs ${currentRequirements.confirmPassword.notEmpty ? 'text-green-600' : 'text-red-600'}`}>

@@ -29,13 +29,10 @@ const AdminCourseManagement = () => {
   const { sidebarCollapsed } = useUI();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState(null);
   
   // Form states
   const [courseName, setCourseName] = useState('');
   const [courseDescription, setCourseDescription] = useState('');
-  const [courseCode, setCourseCode] = useState('');
   
   // Data states
   const [courses, setCourses] = useState(() => {
@@ -43,7 +40,6 @@ const AdminCourseManagement = () => {
     return savedCourses ? JSON.parse(savedCourses) : [];
   });
   
-  const [teachers, setTeachers] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -52,106 +48,23 @@ const AdminCourseManagement = () => {
     document.documentElement.classList.contains('dark')
   );
 
-  // Load teachers from service
-  useEffect(() => {
-    const loadTeachers = () => {
-      const teachersList = getTeachers();
-      setTeachers(teachersList);
-    };
-    loadTeachers();
-  }, []);
-
-  // Save courses to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('adminCourses', JSON.stringify(courses));
-  }, [courses]);
-
-  const handleToggle = (e) => {
-    const checked = e.target.checked;
-    setIsDarkMode(checked);
-    
-    if (checked) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('darkMode', 'true');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('darkMode', 'false');
-    }
-  };
-
-  // Listen for dark mode changes
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const hasDarkClass = document.documentElement.classList.contains('dark');
-          setIsDarkMode(hasDarkClass);
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
   const handleCreateCourse = (e) => {
     e.preventDefault();
-    if (courseName.trim() && courseCode.trim()) {
+    if (courseName.trim()) {
       const newCourse = {
         id: Date.now(),
         name: courseName,
-        code: courseCode,
         description: courseDescription,
         createdAt: new Date().toISOString(),
-        assignedTeacher: null,
+        assignedTeacher: user.id, // Automatically assign to current user
         enrolledStudents: [],
-        status: 'draft',
+        status: 'active', // Set as active since teacher is automatically assigned
       };
       setCourses([...courses, newCourse]);
       setCourseName('');
-      setCourseCode('');
       setCourseDescription('');
       setShowCreateModal(false);
       showSuccessAlert('Course Created', `Course "${courseName}" has been created successfully`);
-    }
-  };
-
-  const handleAssignTeacher = async (teacherId) => {
-    if (selectedCourse) {
-      try {
-        // Call the service to assign the course
-        await assignCourse(teacherId, selectedCourse.id);
-
-        // Update courses - ensure teacherId is stored as string
-        setCourses(courses.map(course => 
-          course.id === selectedCourse.id 
-            ? { ...course, assignedTeacher: String(teacherId), status: 'active' }
-            : course
-        ));
-
-        // Update teachers' assignedCourses count
-        setTeachers(teachers.map(teacher => {
-          if (teacher.id === teacherId) {
-            return { ...teacher, assignedCourses: teacher.assignedCourses + 1 };
-          }
-          if (selectedCourse.assignedTeacher && teacher.id === selectedCourse.assignedTeacher) {
-            return { ...teacher, assignedCourses: Math.max(0, teacher.assignedCourses - 1) };
-          }
-          return teacher;
-        }));
-
-        const teacher = teachers.find(t => t.id === teacherId);
-        showSuccessAlert('Teacher Assigned', `${teacher.name} has been assigned to ${selectedCourse.name}`);
-        setShowAssignModal(false);
-        setSelectedCourse(null);
-      } catch (error) {
-        console.error('Failed to assign teacher:', error);
-        showErrorAlert('Assignment Failed', 'Failed to assign teacher to the course');
-      }
     }
   };
 
@@ -167,52 +80,20 @@ const AdminCourseManagement = () => {
     );
 
     if (result.isConfirmed) {
-      if (courseToDelete && courseToDelete.assignedTeacher) {
-        try {
-          // Call the service to unassign the course
-          await unassignCourse(courseToDelete.assignedTeacher, courseId);
-
-          // Update teacher's assigned courses count
-          setTeachers(teachers.map(teacher => 
-            teacher.id === courseToDelete.assignedTeacher
-              ? { ...teacher, assignedCourses: Math.max(0, teacher.assignedCourses - 1) }
-              : teacher
-          ));
-        } catch (error) {
-          console.error('Failed to unassign teacher:', error);
-          showErrorAlert('Error', 'Failed to unassign teacher from the course');
-          return;
-        }
-      }
       setCourses(courses.filter(course => course.id !== courseId));
       showSuccessAlert('Course Deleted', `Course "${courseToDelete.name}" has been deleted successfully`);
     }
   };
 
   const filteredCourses = courses.filter(course =>
-    course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.code.toLowerCase().includes(searchQuery.toLowerCase())
+    course.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const getTeacherName = (teacherId) => {
-    const teacher = teachers.find(t => t.id === teacherId);
-    return teacher ? teacher.name : 'Unassigned';
-  };
 
   const CourseCard = ({ course }) => (
     <div className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary">
       <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
         <div className="absolute top-3 right-3">
           <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
-              onClick={() => {
-                setSelectedCourse(course);
-                setShowAssignModal(true);
-              }}
-              className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30"
-            >
-              <UserPlus className="w-3 h-3 text-white" />
-            </button>
             <button 
               onClick={() => handleDeleteCourse(course.id)}
               className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30"
@@ -223,9 +104,6 @@ const AdminCourseManagement = () => {
         </div>
         <div className="absolute bottom-3 left-3 right-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-white bg-white/20 px-2 py-1 rounded">
-              {course.code}
-            </span>
             <span className={`text-xs px-2 py-1 rounded ${
               course.status === 'active' 
                 ? 'bg-green-500/20 text-green-100' 
@@ -248,12 +126,6 @@ const AdminCourseManagement = () => {
         )}
         
         <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-muted">Teacher:</span>
-            <span className="font-medium text-primary">
-              {getTeacherName(course.assignedTeacher)}
-            </span>
-          </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Students:</span>
             <span className="font-medium text-primary">
@@ -283,7 +155,6 @@ const AdminCourseManagement = () => {
               <h3 className="font-semibold text-primary">
                 {course.name}
               </h3>
-              <span className="text-sm text-muted">({course.code})</span>
               <span className={`text-xs px-2 py-1 rounded ${
                 course.status === 'active' 
                   ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
@@ -293,7 +164,6 @@ const AdminCourseManagement = () => {
               </span>
             </div>
             <div className="flex items-center space-x-4 text-sm text-secondary">
-              <span>Teacher: {getTeacherName(course.assignedTeacher)}</span>
               <span>{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0} students</span>
               <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
             </div>
@@ -301,15 +171,6 @@ const AdminCourseManagement = () => {
         </div>
 
         <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={() => {
-              setSelectedCourse(course);
-              setShowAssignModal(true);
-            }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-          >
-            <UserPlus className="w-4 h-4 text-muted" />
-          </button>
           <button
             onClick={() => handleDeleteCourse(course.id)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
@@ -362,7 +223,17 @@ const AdminCourseManagement = () => {
               {/* Dark Mode Toggle */}
               <ToggleButton
                 isChecked={isDarkMode}
-                onChange={handleToggle}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setIsDarkMode(checked);
+                  if (checked) {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('darkMode', 'true');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('darkMode', 'false');
+                  }
+                }}
                 className="transform hover:scale-105 transition-transform duration-200"
               />
             </div>
@@ -473,43 +344,38 @@ const AdminCourseManagement = () => {
                 </h3>
                 <form onSubmit={handleCreateCourse}>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary mb-2">
-                        Course Code
-                      </label>
+                    <div className="relative">
                       <input
                         type="text"
-                        value={courseCode}
-                        onChange={(e) => setCourseCode(e.target.value)}
-                        placeholder="e.g., CS101"
-                        className="w-full px-4 py-3 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-secondary mb-2">
-                        Course Name
-                      </label>
-                      <input
-                        type="text"
+                        id="courseName"
                         value={courseName}
                         onChange={(e) => setCourseName(e.target.value)}
-                        placeholder="Enter course name..."
-                        className="w-full px-4 py-3 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder="Course Name"
+                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
                         required
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-secondary mb-2">
-                        Description (Optional)
+                      <label
+                        htmlFor="courseName"
+                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
+                      >
+                        Course Name
                       </label>
+                    </div>
+                    <div className="relative">
                       <textarea
+                        id="courseDescription"
                         value={courseDescription}
                         onChange={(e) => setCourseDescription(e.target.value)}
-                        placeholder="Enter course description..."
+                        placeholder="Course Description"
                         rows="3"
-                        className="w-full px-4 py-3 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary resize-none"
                       />
+                      <label
+                        htmlFor="courseDescription"
+                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
+                      >
+                        Course Description (Optional)
+                      </label>
                     </div>
                   </div>
                   <div className="flex justify-end space-x-3 mt-6">
@@ -528,46 +394,6 @@ const AdminCourseManagement = () => {
                     </button>
                   </div>
                 </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Assign Teacher Modal */}
-        {showAssignModal && selectedCourse && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-primary mb-4">
-                  Assign Teacher
-                </h3>
-                <p className="text-secondary mb-4">
-                  Course: <span className="font-medium text-primary">{selectedCourse.name}</span>
-                </p>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {teachers.map((teacher) => (
-                    <button
-                      key={teacher.id}
-                      onClick={() => handleAssignTeacher(teacher.id)}
-                      className="w-full p-3 text-left bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition-colors"
-                    >
-                      <div className="font-medium text-primary">
-                        {teacher.name}
-                      </div>
-                      <div className="text-sm text-secondary">
-                        {teacher.email} • {teacher.assignedCourses} courses assigned
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    onClick={() => setShowAssignModal(false)}
-                    className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </div>
             </div>
           </div>
