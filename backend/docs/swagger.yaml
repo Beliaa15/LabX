@@ -29,6 +29,9 @@ components:
                 role:
                     type: string
                     enum: [student, teacher, admin]
+                phone:
+                    type: string
+                    description: Optional phone number
                 courses:
                     type: array
                     items:
@@ -44,6 +47,9 @@ components:
                     type: string
                 password:
                     type: string
+                phone:
+                    type: string
+                    description: Optional phone number
         Course:
             type: object
             properties:
@@ -163,6 +169,10 @@ paths:
                                 password:
                                     type: string
                                     example: strongpassword
+                                phone:
+                                    type: String,
+                                    example: '+1234567890'
+                                    description: Optional phone number
             responses:
                 201:
                     description: User created successfully
@@ -216,6 +226,20 @@ paths:
                                     token:
                                         type: string
                                         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                                    user:
+                                        type: object
+                                        properties:
+                                            id: 
+                                                type: string
+                                            email:
+                                                type: string
+                                            firstName:
+                                                type: string
+                                            lastName:
+                                                type: string
+                                            role:
+                                                type: string
+                                                enum: [student, teacher, admin]
                 400:
                     description: Invalid credentials or Google login required
                     content:
