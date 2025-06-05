@@ -51,7 +51,16 @@ const userValidation = {
             .withMessage('Please provide a valid email')
             .normalizeEmail(),
 
-        check('name')
+        check('firstName')
+            .optional()
+            .trim()
+            .not()
+            .isEmpty()
+            .withMessage('Name cannot be empty if provided')
+            .isLength({ min: 2, max: 50 })
+            .withMessage('Name must be between 2 and 50 characters'),
+
+        check('lastName')
             .optional()
             .trim()
             .not()
@@ -65,6 +74,11 @@ const userValidation = {
             .isLength({ min: 6 })
             .withMessage('Password must be at least 6 characters'),
 
+        check('phone')
+            .optional()
+            .matches(/^\+?[1-9]\d{1,14}$/)
+            .withMessage('Please provide a valid phone number'),
+        
         validateResult,
     ],
 };
@@ -126,9 +140,7 @@ const courseValidation = {
             .isEmpty()
             .withMessage('Course ID is required'),
 
-        check('email')
-            .isEmail()
-            .withMessage('Please provide a valid email'),
+        check('email').isEmail().withMessage('Please provide a valid email'),
 
         validateResult,
     ],

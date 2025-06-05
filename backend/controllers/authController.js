@@ -12,7 +12,7 @@ const blacklistToken = async (token) => {
 };
 
 exports.register = asyncHandler(async (req, res) => {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, phone } = req.body;
     const hashedPassword = await bcrypt.hash(password, 12);
     try {
         const user = new User({
@@ -20,6 +20,7 @@ exports.register = asyncHandler(async (req, res) => {
             password: hashedPassword,
             firstName,
             lastName,
+            phone,
         });
         // Check if user already exists
         await user.save();
