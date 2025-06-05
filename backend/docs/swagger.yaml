@@ -128,6 +128,81 @@ components:
                     type: string
                 updatedAt:
                     type: string
+        Task:
+            type: object
+            properties:
+                _id:
+                    type: string
+                title:
+                    type: string
+                description:
+                    type: string
+                courseTasks:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            course:
+                                type: string
+                            dueDate:
+                                type: string
+                                format: date-time
+                            assingedAt:
+                                type: string
+                                format: date-time
+                submissions:
+                    type: array
+                    items:
+                        type: string
+                webglUrl:
+                    type: string
+                    nullable: true
+                score:
+                    type: number
+                    default: 100
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+
+        TaskCreate:
+            type: object
+            required:
+                - title
+                - description
+            properties:
+                title:
+                    type: string
+                    example: 'WebGL 3D Scene Assignment'
+                description:
+                    type: string
+                    example: 'Create a 3D scene using WebGL with lighting and textures'
+                webglUrl:
+                    type: string
+                    example: 'https://example.com/webgl-app'
+                    description: Optional WebGL application URL
+                score:
+                    type: number
+                    example: 100
+                    description: Maximum score for the task (default 100)
+
+        TaskUpdate:
+            type: object
+            properties:
+                title:
+                    type: string
+                    example: 'Updated WebGL Assignment'
+                description:
+                    type: string
+                    example: 'Updated description for the 3D scene assignment'
+                webglUrl:
+                    type: string
+                    example: 'https://example.com/updated-webgl-app'
+                score:
+                    type: number
+                    example: 150
 
 security:
     - bearerAuth: []
@@ -139,6 +214,8 @@ tags:
       description: User management and Retrieval
     - name: Courses
       description: Course management and enrollment
+    - name: Tasks
+      description: Task management and assignment
 
 paths:
     /auth/register:
@@ -229,7 +306,7 @@ paths:
                                     user:
                                         type: object
                                         properties:
-                                            id: 
+                                            id:
                                                 type: string
                                             email:
                                                 type: string
@@ -1071,3 +1148,378 @@ paths:
                     description: Forbidden
                 404:
                     description: Material not found
+
+    /tasks:
+        get:
+            summary: Get all tasks (Teachers only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: List of all tasks
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Tasks retrieved successfully
+                                    count:
+                                        type: number
+                                    tasks:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Task'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Teachers only
+        post:
+            summary: Create a new task (Admin only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TaskCreate'
+            responses:
+                201:
+                    description: Task created successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Task created successfully
+                                    task:
+                                        $ref: '#/components/schemas/Task'
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Admin only
+
+    /tasks/{id}:
+        get:
+            summary: Get task by ID (Teachers only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Task ID
+            responses:
+                200:
+                    description: Task details
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Task retrieved successfully
+                                    task:
+                                        $ref: '#/components/schemas/Task'
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Teachers only
+                404:
+                    description: Task not found
+        put:
+            summary: Update task (Admin only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Task ID
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TaskUpdate'
+            responses:
+                200:
+                    description: Task updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Task updated successfully
+                                    task:
+                                        $ref: '#/components/schemas/Task'
+                400:
+                    description: Bad request
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Admin only
+                404:
+                    description: Task not found
+        delete:
+            summary: Delete task (Admin only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Task ID
+            responses:
+                200:
+                    description: Task deleted successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Task deleted successfully
+                                    taskId:
+                                        type: string
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Admin only
+                404:
+                    description: Task not found
+
+    /tasks/{id}/assign:
+        post:
+            summary: Assign task to course with due date (Teacher only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Task ID
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - courseId
+                                - dueDate
+                            properties:
+                                courseId:
+                                    type: string
+                                    example: '675a1b2c3d4e5f6789012345'
+                                dueDate:
+                                    type: string
+                                    format: date-time
+                                    example: '2024-12-25T23:59:59.000Z'
+            responses:
+                200:
+                    description: Task assigned successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Task assigned to course successfully
+                                    task:
+                                        $ref: '#/components/schemas/Task'
+                                    course:
+                                        $ref: '#/components/schemas/Course'
+                400:
+                    description: Bad request - Task already assigned or invalid data
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Not authorized for this course
+                404:
+                    description: Task or course not found
+
+    /tasks/{id}/unassign:
+        delete:
+            summary: Unassign task from course (Teacher only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Task ID
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - courseId
+                            properties:
+                                courseId:
+                                    type: string
+                                    example: '675a1b2c3d4e5f6789012345'
+            responses:
+                200:
+                    description: Task unassigned successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                        example: true
+                                    message:
+                                        type: string
+                                        example: Task unassigned from course successfully
+                400:
+                    description: Bad request - Task not assigned to course
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Not authorized for this course
+                404:
+                    description: Task or course not found
+
+    /tasks/{id}/assign/{courseId}:
+        put:
+            summary: Update task due date for specific course (Teacher only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  schema:
+                      type: string
+                  required: true
+                  description: Task ID
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: Course ID
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - dueDate
+                            properties:
+                                dueDate:
+                                    type: string
+                                    format: date-time
+                                    example: '2024-12-30T23:59:59.000Z'
+            responses:
+                200:
+                    description: Task assignment updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                        example: true
+                                    message:
+                                        type: string
+                                        example: Task assignment updated successfully
+                                    assingment:
+                                        type: object
+                                        properties:
+                                            course:
+                                                type: string
+                                            dueDate:
+                                                type: string
+                                                format: date-time
+                                            assingedAt:
+                                                type: string
+                                                format: date-time
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Not authorized for this course
+                404:
+                    description: Task not found or not assigned to course
+
+    /courses/{courseId}/tasks:
+        get:
+            summary: Get all tasks assigned to a course
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  schema:
+                      type: string
+                  required: true
+                  description: Course ID
+            responses:
+                200:
+                    description: List of course tasks with due dates
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                        example: true
+                                    count:
+                                        type: number
+                                    tasks:
+                                        type: array
+                                        items:
+                                            allOf:
+                                                - $ref: '#/components/schemas/Task'
+                                                - type: object
+                                                  properties:
+                                                      dueDate:
+                                                          type: string
+                                                          format: date-time
+                                                          description: Course-specific due date
+                                                      assignedAt:
+                                                          type: string
+                                                          format: date-time
+                                                          description: When task was assigned to this course
+                401:
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Not enrolled in course
+                404:
+                    description: Course not found
