@@ -1,7 +1,10 @@
 const { Schema, model } = require('mongoose');
 const Course = require('./Course');
 const Task = require('./Task');
+const Folder = require('./Folder');
+const Material = require('./Material');
 const StudentSubmission = require('./StudentSubmission');
+const fs = require('fs');
 
 const userSchema = new Schema(
     {
@@ -64,7 +67,37 @@ userSchema.statics.deleteUserAndAssociatedData = async function (userId) {
         const teacherCourses = await Course.find({ teacher: userId });
         const courseIds = teacherCourses.map((course) => course._id);
 
+        for (const course of teacherCourses) {
+            for (const folderId of course.folders) {
+                const folder = await Folder.findById(folderId);
+                if (folder) {
+                    // Delete all materials in the folder
+                    for (const materialId of folder.materials) {
+                        const material = await Material.findById(materialId);
+                        if (material) {
+                            // Delete the file from the filesystem if it exists
+                            if (
+                                material.filePath &&
+                                fs.existsSync(material.filePath)
+                            ) {
+                                try {
+                                    fs.unlinkSync(material.filePath);
+                                } catch (err) {
+                                    // Log error but continue deletion
+                                    console.error('Error deleting file:', err);
+                                }
+                            }
+                            await material.deleteOne();
+                        }
+                    }
+                    // Delete the folder
+                    await folder.deleteOne();
+                }
+            }
+        }
+
         // Delete all tasks in teacher's courses
+        // may remove it if tasks are creaded by admins
         await Task.deleteMany({ course: { $in: courseIds } });
 
         // Delete all submissions in teacher's courses
