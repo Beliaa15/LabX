@@ -26,21 +26,21 @@ const App = () => {
         <Router>
           <Routes>
             {/* Public routes - redirect to dashboard if authenticated */}
-            <Route 
-              path="/login" 
+            <Route
+              path="/login"
               element={
                 <PublicRoute>
                   <Login />
                 </PublicRoute>
-              } 
+              }
             />
-            <Route 
-              path="/signup" 
+            <Route
+              path="/signup"
               element={
                 <PublicRoute>
                   <Signup />
                 </PublicRoute>
-              } 
+              }
             />
 
             {/* Protected routes */}
@@ -74,15 +74,16 @@ const App = () => {
               path="/task/xor"
               element={
                 <ProtectedRoute>
-                  <XorTask /> 
+                  <XorTask />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/courses"
               element={
+                // edit to test admin panal for teacher
                 <ProtectedRoute>
-                  <Courses />
+                  <AdminPanal />
                 </ProtectedRoute>
               }
             />
@@ -96,20 +97,10 @@ const App = () => {
             />
 
             {/* Default redirect - send to dashboard if authenticated, login if not */}
-            <Route 
-              path="/" 
-              element={
-                <Navigate to="/dashboard" replace />
-              } 
-            />
-            
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
             {/* Fallback for unknown routes */}
-            <Route 
-              path="*" 
-              element={
-                <Navigate to="/dashboard" replace />
-              } 
-            />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
           <Toaster />
         </Router>

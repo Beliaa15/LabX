@@ -154,18 +154,33 @@ export const signup = async (userData) => {
 };
 
 export const logout = async () => {
-    localStorage.removeItem('token');
+    try {
+        // Call the logout endpoint
+        await api.post('/api/auth/logout');
+        // Clear local storage after successful logout
+        localStorage.removeItem('token');
+    } catch (error) {
+        console.error('Logout failed:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        // Still remove the token from localStorage even if the API call fails
+        localStorage.removeItem('token');
+        // Re-throw the error so components can handle it if needed
+        throw error;
+    }
 };
 
-export const fetchUserProfile = async () => {
-    const response = await api.get('/api/auth/profile');
-    return response.data;
-};
+// export const fetchUserProfile = async () => {
+//     const response = await api.get('/api/auth/profile');
+//     return response.data;
+// };
 
-export const updateUserProfile = async (userData) => {
-    const response = await api.put('/api/auth/profile', userData);
-    return response.data;
-};
+// export const updateUserProfile = async (userData) => {
+//     const response = await api.put('/api/auth/profile', userData);
+//     return response.data;
+// };
 
 export const resetPassword = async (email) => {
     const response = await api.post('/api/auth/reset-password', { email });
