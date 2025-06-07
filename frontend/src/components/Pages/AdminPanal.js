@@ -33,7 +33,7 @@ import {
   FolderPlus,
   FileText,
 } from 'lucide-react';
-import { createCourse, getUserCourses } from '../../services/courseService';
+import { createCourse, getUserCourses, getAllCourses } from '../../services/courseService';
 
 const AdminCourseManagement = () => {
   const { user, token } = useAuth();
@@ -102,8 +102,17 @@ const AdminCourseManagement = () => {
   const fetchCourses = async () => {
     try {
       setIsLoading(true);
-      const userCourses = await getUserCourses();
-      setCourses(userCourses);
+      let fetchedCourses;
+      
+      if (user.role === 'admin') {
+        // Admin sees all courses
+        fetchedCourses = await getAllCourses();
+      } else {
+        // Teachers see only their courses
+        fetchedCourses = await getUserCourses();
+      }
+      
+      setCourses(fetchedCourses);
     } catch (error) {
       showErrorAlert(
         'Error Loading Courses',

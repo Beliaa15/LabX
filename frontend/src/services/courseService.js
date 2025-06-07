@@ -7,11 +7,31 @@ import { default as authApi } from './authService';
 export const getUserCourses = async () => {
     try {
         console.log('Fetching user courses');
-        const response = await authApi.get('/api/courses');
+        const response = await authApi.get('/api/courses/me');
         console.log('User courses fetched successfully:', response.data);
         return response.data;
     } catch (error) {
         console.error('Failed to fetch user courses:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};
+
+/**
+ * Get all courses in the system
+ * @returns {Promise} - Array of all courses
+ */
+export const getAllCourses = async () => {
+    try {
+        console.log('Fetching all courses');
+        const response = await authApi.get('/api/courses');
+        console.log('All courses fetched successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch all courses:', {
             status: error.response?.status,
             data: error.response?.data,
             message: error.message
