@@ -33,7 +33,7 @@ import {
   FolderPlus,
   FileText,
 } from 'lucide-react';
-import { createCourse, getUserCourses } from '../../services/courseService';
+import { createCourse, getUserCourses, getAllCourses, deleteCourse } from '../../services/courseService';
 
 const AdminCourseManagement = () => {
   const { user, token } = useAuth();
@@ -102,15 +102,28 @@ const AdminCourseManagement = () => {
   const fetchCourses = async () => {
     try {
       setIsLoading(true);
-      const userCourses = await getUserCourses();
-      setCourses(userCourses);
+      let fetchedCourses;
+      
+      if (user.role === 'admin') {
+        // Admin sees all courses
+        fetchedCourses = await getAllCourses();
+      } else {
+        // Teachers see only their courses
+        fetchedCourses = await getUserCourses();
+      }
+      
+      // Ensure we always set an array, even if empty
+      setCourses(Array.isArray(fetchedCourses) ? fetchedCourses : []);
     } catch (error) {
-      showErrorAlert(
-        'Error Loading Courses',
-        'Failed to load courses. Please try again later.'
-      );
       console.error('Error fetching courses:', error);
-      // Clear courses on error
+      // Only show error alert if it's not the "no courses" case
+      if (!(error.response?.status === 500)) {
+        showErrorAlert(
+          'Error Loading Courses',
+          'Failed to load courses. Please try again later.'
+        );
+      }
+      // Set empty array for courses on error
       setCourses([]);
     } finally {
       setIsLoading(false);
@@ -150,7 +163,7 @@ const AdminCourseManagement = () => {
   };
 
   const handleDeleteCourse = async (courseId) => {
-    const courseToDelete = courses.find(c => c.id === courseId);
+    const courseToDelete = courses.find(c => c._id === courseId);
     
     // Show confirmation dialog before deleting
     const result = await showConfirmDialog(
@@ -161,8 +174,17 @@ const AdminCourseManagement = () => {
     );
 
     if (result.isConfirmed) {
-      setCourses(courses.filter(course => course.id !== courseId));
-      showSuccessAlert('Course Deleted', `Course "${courseToDelete.name}" has been deleted successfully`);
+      try {
+        await deleteCourse(courseId);
+        setCourses(courses.filter(course => course._id !== courseId));
+        showSuccessAlert('Course Deleted', `Course "${courseToDelete.name}" has been deleted successfully`);
+      } catch (error) {
+        console.error('Failed to delete course:', error);
+        showErrorAlert(
+          'Error Deleting Course',
+          error.response?.data?.message || 'Failed to delete course. Please try again.'
+        );
+      }
     }
   };
 
@@ -209,7 +231,7 @@ const AdminCourseManagement = () => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDeleteCourse(course.id);
+                  handleDeleteCourse(course._id);
                 }}
                 className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
                 title="Delete Course"
