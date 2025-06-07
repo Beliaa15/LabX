@@ -15,7 +15,7 @@ const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoute');
 const courseRoutes = require('./routes/courseRoute');
 const userRoutes = require('./routes/userRoute');
-
+const taskRoutes = require('./routes/taskRoute');
 
 const app = express();
 
@@ -44,6 +44,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/tasks', taskRoutes);
 
 
 // Root endpoint

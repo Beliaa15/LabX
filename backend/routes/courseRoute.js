@@ -32,6 +32,8 @@ const {
     deleteMaterial,
 } = require('../controllers/materialController');
 
+const {getTasksByCourse} = require('../controllers/taskController');
+
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const {
     courseValidation,
@@ -147,5 +149,12 @@ router.delete(
     paramValidation.folderId,
     deleteMaterial
 )
+
+router.get(
+    '/:courseId/tasks',
+    authenticate,
+    paramValidation.courseId,
+    getTasksByCourse
+); // Get all tasks assigned to a course
 
 module.exports = router;

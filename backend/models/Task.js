@@ -10,20 +10,28 @@ const taskSchema = new Schema(
             type: String,
             required: true,
         },
-        dueDate: {
-            type: Date,
-            required: true,
-        },
         // type: {
         //     type: String,
         //     enum: ['webGl', 'assignment', 'quiz'],
         //     required: true,
         // },
-        course: {
-            type: Schema.Types.ObjectId,
-            ref: 'Course',
-            required: true,
-        },
+        courseTasks: [
+            {
+                course: {
+                    type: Schema.Types.ObjectId,
+                    ref: 'Course',
+                    required: true,
+                },
+                dueDate: {
+                    type: Date,
+                    required: true,
+                },
+                assingedAt: {
+                    type: Date,
+                    default: Date.now,
+                },
+            },
+        ],
         submissions: [
             {
                 type: Schema.Types.ObjectId,
