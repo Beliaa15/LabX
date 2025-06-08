@@ -47,7 +47,7 @@ A comprehensive full-stack educational platform that enables teachers to create 
 ## 📁 Project Structure
 
 ```
-GP-website/
+LabX/
 ├── backend/                 # Node.js/Express API server
 │   ├── config/             # Database and Redis configuration
 │   ├── controllers/        # Route controllers
@@ -87,8 +87,8 @@ GP-website/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Beliaa15/GP-website.git
-   cd GP-website
+   git clone https://github.com/Beliaa15/LabX.git
+   cd LabX
    ```
 
 2. **Set up environment variables**
