@@ -92,3 +92,59 @@ export const deleteCourse = async (courseId) => {
     }
 };
 
+/**
+ * Enroll a student in a course using their email
+ * @param {string} courseId - The MongoDB _id of the course
+ * @param {string} email - The email of the student to enroll
+ * @returns {Promise} - The response data from the server
+ */
+export const enrollStudent = async (courseId, email) => {
+    try {
+        console.log('Attempting to enroll student with data:', { courseId, email });
+        const response = await authApi.post('/api/courses/enroll-email', {
+            courseId,
+            email
+        });
+        console.log('Student enrollment successful:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to enroll student. Details:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message,
+            courseId,
+            email
+        });
+        throw error;
+    }
+};
+
+/**
+ * Unenroll a student from a course using their email
+ * @param {string} courseId - The MongoDB _id of the course
+ * @param {string} email - The email of the student to unenroll
+ * @returns {Promise} - The response data from the server
+ */
+export const unenrollStudent = async (courseId, email) => {
+    try {
+        console.log('Attempting to unenroll student with data:', { courseId, email });
+        const response = await authApi.post('/api/courses/unenroll-email', {
+            courseId,
+            email
+        });
+        console.log('Student unenrollment successful:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to unenroll student. Details:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message,
+            courseId,
+            email
+        });
+        throw error;
+    }
+};
+
