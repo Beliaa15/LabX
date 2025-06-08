@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { downloadFile } from '../../services/fileService';
-import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { 
@@ -67,7 +66,6 @@ const AdminCourseManagement = () => {
   });
 
   const [students, setStudents] = useState([]);
-
   const [availableStudents, setAvailableStudents] = useState([]);
   
   // View states
