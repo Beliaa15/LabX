@@ -16,7 +16,6 @@ import Profile from './components/Auth/Profile';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import PublicRoute from './components/Auth/PublicRoute';
 import MyCourses from './components/Pages/MyCourses';
-import Courses from './components/Pages/Courses';
 import AdminPanal from './components/Pages/AdminPanal';
 
 const App = () => {
