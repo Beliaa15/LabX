@@ -4,7 +4,6 @@ import { useUI } from '../../context/UIContext';
 import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
-import { MOCK_USERS } from '../../services/authService';
 import {
   BookOpen,
   FileText,
@@ -17,12 +16,14 @@ import {
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { downloadFile } from '../../services/fileService';
+import { getUserCourses } from '../../services/courseService';
 
 const MyCourses = () => {
   const { user } = useAuth();
   const { sidebarCollapsed } = useUI();
   const { isDarkMode, handleToggle } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // View states
   const [viewMode, setViewMode] = useState('grid');
@@ -31,47 +32,97 @@ const MyCourses = () => {
   const [currentPath, setCurrentPath] = useState([]);
 
   // Data states
-  const [courses, setCourses] = useState(() => {
-    const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
-    // Filter courses where the student is enrolled
-    return allCourses.filter(course => 
-      course.enrolledStudents?.some(student => student.id === user.id)
-    );
-  });
-
-  const [professors] = useState(() => {
-    // Get professors from MOCK_USERS
-    return MOCK_USERS.filter(user => user.role === 'professor').map(prof => ({
-      id: prof.id,
-      name: `${prof.firstName} ${prof.lastName}`,
-      email: prof.email
-    }));
-  });
+  const [courses, setCourses] = useState([]);
 
   const [materials] = useState(() => {
     const savedMaterials = localStorage.getItem('courseMaterials');
     return savedMaterials ? JSON.parse(savedMaterials) : [];
   });
 
-  // Update courses when adminCourses in localStorage changes
+  // Fetch courses when component mounts
   useEffect(() => {
-    const handleStorageChange = () => {
-      const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
-      const myCourses = allCourses.filter(course => 
-        course.enrolledStudents?.some(student => student.id === user.id)
-      );
-      setCourses(myCourses);
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedCourses = await getUserCourses();
+        setCourses(fetchedCourses);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        showErrorAlert(
+          'Error Loading Courses',
+          'Failed to load your courses. Please try again later.'
+        );
+        setCourses([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user.id]);
+    fetchCourses();
+  }, []);
 
-  const getProfessorName = (professorId) => {
-    if (!professorId) return 'Not assigned';
-    const professor = professors.find(p => String(p.id) === String(professorId));
-    return professor ? professor.name : 'Not assigned';
-  };
+  const CourseCard = ({ course }) => (
+    <div 
+      onClick={() => setSelectedCourse(course)}
+      className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer"
+    >
+      <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
+        <div className="absolute bottom-3 left-3 right-3">
+          <span className="text-xs font-medium text-white bg-white/20 px-2 py-1 rounded">
+            {course.code}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4">
+        <h3 className="font-semibold text-primary text-lg mb-2">
+          {course.name}
+        </h3>
+        
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted">Teacher:</span>
+            <span className="font-medium text-primary">
+              {`${course.teacher.firstName} ${course.teacher.lastName}`}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted">Materials:</span>
+            <span className="font-medium text-primary">
+              {materials.filter(m => m.courseId === course.id).length}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const CourseListItem = ({ course }) => (
+    <div 
+      onClick={() => setSelectedCourse(course)}
+      className="surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 cursor-pointer hover-surface"
+    >
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2 mb-1">
+              <h3 className="font-semibold text-primary">
+                {course.name}
+              </h3>
+              <span className="text-sm text-muted">({course.code})</span>
+            </div>
+            <div className="flex items-center space-x-4 text-sm text-secondary">
+              <span>Teacher: {`${course.teacher.firstName} ${course.teacher.lastName}`}</span>
+              <span>{materials.filter(m => m.courseId === course.id).length} materials</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const handleDownload = async (file) => {
     try {
@@ -111,76 +162,6 @@ const MyCourses = () => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
-
-  const CourseCard = ({ course }) => (
-    <div 
-      onClick={() => setSelectedCourse(course)}
-      className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer"
-    >
-      <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
-        <div className="absolute bottom-3 left-3 right-3">
-          <span className="text-xs font-medium text-white bg-white/20 px-2 py-1 rounded">
-            {course.code}
-          </span>
-        </div>
-      </div>
-
-      <div className="p-4">
-        <h3 className="font-semibold text-primary text-lg mb-2">
-          {course.name}
-        </h3>
-        
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-muted">Professor:</span>
-            <span className="font-medium text-primary">
-              {getProfessorName(course.assignedProfessor)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted">Materials:</span>
-            <span className="font-medium text-primary">
-              {materials.filter(m => m.courseId === course.id).length}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted">Students:</span>
-            <span className="font-medium text-primary">
-              {(course.enrolledStudents || []).length}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const CourseListItem = ({ course }) => (
-    <div 
-      onClick={() => setSelectedCourse(course)}
-      className="surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 cursor-pointer hover-surface"
-    >
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="font-semibold text-primary">
-                {course.name}
-              </h3>
-              <span className="text-sm text-muted">({course.code})</span>
-            </div>
-            <div className="flex items-center space-x-4 text-sm text-secondary">
-              <span>Professor: {getProfessorName(course.assignedProfessor)}</span>
-              <span>{materials.filter(m => m.courseId === course.id).length} materials</span>
-              <span>{(course.enrolledStudents || []).length} students</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const MaterialItem = ({ item }) => (
     <div className="surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-primary group relative">
@@ -404,7 +385,14 @@ const MyCourses = () => {
             </div>
           ) : (
             <>
-              {courses.length === 0 ? (
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <h3 className="text-lg font-medium text-primary mb-2">
+                    Loading your courses...
+                  </h3>
+                </div>
+              ) : courses.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <BookOpen className="w-12 h-12 text-muted mb-4" />
                   <h3 className="text-lg font-medium text-primary mb-2">
