@@ -32,7 +32,6 @@ import {
   FileText,
 } from 'lucide-react';
 import { createCourse, getUserCourses, getAllCourses, deleteCourse, enrollStudent, unenrollStudent } from '../../services/courseService';
-import { getAllStudents, getAllTeachers } from '../../services/userService';
 
 const AdminCourseManagement = () => {
   const { user, token } = useAuth();
@@ -654,43 +653,8 @@ const AdminCourseManagement = () => {
     return user?.role === 'admin' ? 'Administrator' : 'Teacher';
   };
 
-  // Add this new function to fetch students
-  const fetchStudents = async () => {
-    try {
-      const fetchedStudents = await getAllStudents();
-      console.log('Fetched students:', fetchedStudents);
-      
-      // Make sure tempCourse is available
-      if (tempCourse) {
-        // Filter out students that are already enrolled
-        const enrolledStudentIds = tempCourse.students?.map(student => student._id) || [];
-        console.log('Enrolled student IDs:', enrolledStudentIds);
-        
-        const available = fetchedStudents.filter(student => 
-          !enrolledStudentIds.includes(student._id)
-        );
-        console.log('Available students:', available);
-        
-        setAvailableStudents(available);
-      } else {
-        setAvailableStudents([]);
-      }
-    } catch (error) {
-      console.error('Error fetching students:', error);
-      showErrorAlert(
-        'Error Loading Students',
-        'Failed to load students. Please try again later.'
-      );
-      setAvailableStudents([]);
-    }
-  };
-
   // Update useEffect to depend on tempCourse
-  useEffect(() => {
-    if (showAddStudentModal && tempCourse) {
-      fetchStudents();
-    }
-  }, [showAddStudentModal, tempCourse]);
+
 
   return (
     <div className="min-h-screen surface-secondary">
