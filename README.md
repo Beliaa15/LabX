@@ -1,48 +1,62 @@
 # LabX - Educational Platform
 
-A comprehensive full-stack educational platform that enables teachers to create courses, manage students, and facilitate online learning through interactive content and assignments.
+A comprehensive full-stack educational platform that enables teachers to create courses, manage students, and facilitate online learning through **3D interactive laboratory experiences** and engaging educational content.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Beliaa15/GP-website)
 
+## 🎯 Main Feature
+
+### 🔬 3D Interactive Labs
+The core innovation of LabX is its **3D interactive laboratory environment** that allows students to:
+- **Virtual Experiments** - Conduct realistic laboratory experiments in a safe, controlled 3D environment
+- **Interactive Simulations** - Manipulate virtual equipment and observe real-time results
+- **Immersive Learning** - Experience hands-on learning without physical lab constraints
+- **Safety Training** - Practice laboratory procedures without safety risks
+- **Accessibility** - Access advanced lab equipment regardless of physical location or availability
 
 ## 🚀 Features
 
-### Core Functionality
-- **User Authentication & Authorization** - Complete authentication system with JWT tokens and Google OAuth integration [1](#0-0) 
-- **Course Management** - Teachers can create, update, and manage courses with enrollment capabilities [2](#0-1) 
-- **Student Dashboard** - Dedicated dashboard for students to view enrolled courses and assignments [3](#0-2) 
-- **Teacher Dashboard** - Comprehensive teacher interface for course and student management [4](#0-3) 
-- **Admin Panel** - Administrative interface for platform management [5](#0-4) 
-- **File Upload & Management** - Support for course materials and student submissions [6](#0-5) 
-- **Interactive Tasks** - Including specialized tasks like XOR logic exercises [7](#0-6) 
+### Core Educational Functionality
+- **3D Interactive Labs** - Immersive virtual laboratory experiences for practical learning
+- **User Authentication & Authorization** - Complete authentication system with JWT tokens and Google OAuth integration
+- **Course Management** - Teachers can create, update, and manage courses with enrollment capabilities
+- **Student Dashboard** - Dedicated dashboard for students to view enrolled courses, assignments, and access 3D labs
+- **Teacher Dashboard** - Comprehensive teacher interface for course, student, and lab management
+- **Admin Panel** - Administrative interface for platform management
+- **File Upload & Management** - Support for course materials and student submissions
+- **Interactive Tasks** - Including specialized tasks like XOR logic exercises and lab assignments
 
 ### Technical Features
-- **API Documentation** - Comprehensive Swagger/OpenAPI documentation [8](#0-7) 
-- **Security** - Helmet for security headers, CORS protection, and rate limiting [9](#0-8) 
-- **Caching** - Redis integration for improved performance [10](#0-9) 
-- **Responsive Design** - Modern UI with Tailwind CSS and custom components [11](#0-10) 
+- **3D Rendering Engine** - Advanced 3D graphics for realistic laboratory simulations
+- **Real-time Interactions** - Responsive 3D environment with physics simulation
+- **Progress Tracking** - Monitor student performance in virtual lab exercises
+- **API Documentation** - Comprehensive Swagger/OpenAPI documentation
+- **Security** - Helmet for security headers, CORS protection, and rate limiting
+- **Caching** - Redis integration for improved performance
+- **Responsive Design** - Modern UI with Tailwind CSS and custom components
 
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Runtime**: Node.js with Express.js framework [12](#0-11) 
-- **Database**: MongoDB with Mongoose ODM [13](#0-12) 
-- **Caching**: Redis for session management and caching [10](#0-9) 
-- **Authentication**: JWT tokens with Passport.js and Google OAuth 2.0 [14](#0-13) 
-- **Security**: Helmet, CORS, bcrypt for password hashing, and express-rate-limit [15](#0-14) 
-- **File Handling**: Multer for file uploads [6](#0-5) 
+- **Runtime**: Node.js with Express.js framework
+- **Database**: MongoDB with Mongoose ODM
+- **Caching**: Redis for session management and caching
+- **Authentication**: JWT tokens with Passport.js and Google OAuth 2.0
+- **Security**: Helmet, CORS, bcrypt for password hashing, and express-rate-limit
+- **File Handling**: Multer for file uploads
 
 ### Frontend
-- **Framework**: React 18 with modern hooks and functional components [16](#0-15) 
-- **Routing**: React Router v6 for navigation [17](#0-16) 
-- **Styling**: Tailwind CSS with Radix UI components [18](#0-17) 
-- **State Management**: Zustand for global state management [19](#0-18) 
-- **HTTP Client**: Axios for API communication [20](#0-19) 
-- **UI Components**: Lucide React icons, React Icons, and custom UI components [21](#0-20) 
+- **Framework**: React 18 with modern hooks and functional components
+- **3D Graphics**: Unity WebGL builds integrated for 3D laboratory environments and simulations
+- **Routing**: React Router v6 for navigation
+- **Styling**: Tailwind CSS with Radix UI components
+- **State Management**: Zustand for global state management
+- **HTTP Client**: Axios for API communication
+- **UI Components**: Lucide React icons, React Icons, and custom UI components
 
 ### DevOps & Deployment
-- **Containerization**: Docker with Docker Compose for easy deployment [22](#0-21) 
-- **Environment Management**: dotenv for configuration management [23](#0-22) 
+- **Containerization**: Docker with Docker Compose for easy deployment
+- **Environment Management**: dotenv for configuration management
 
 ## 📁 Project Structure
 
@@ -65,11 +79,13 @@ GP-website/
     │   ├── components/    # React components
     │   │   ├── Auth/     # Authentication components
     │   │   ├── Pages/    # Page components
+    │   │   ├── Labs/     # 3D interactive lab components
     │   │   ├── Tasks/    # Interactive task components
     │   │   └── ui/       # Reusable UI components
     │   ├── context/      # React Context providers
     │   ├── hooks/        # Custom React hooks
     │   ├── services/     # API service layer
+    │   ├── three/        # 3D graphics and lab configurations
     │   └── utils/        # Utility functions
     ├── package.json      # Frontend dependencies
     └── tailwind.config.js # Tailwind CSS configuration
@@ -82,6 +98,7 @@ GP-website/
 - MongoDB (v4.4 or later)
 - Redis (v6 or later)
 - npm or yarn package manager
+- Modern browser with WebGL support for 3D labs
 
 ### Quick Start with Docker (Recommended)
 
@@ -161,35 +178,53 @@ The API includes endpoints for:
 - User authentication and management
 - Course creation and management
 - Student enrollment and progress tracking
+- 3D lab configuration and progress tracking
 - File upload and management
 - Task assignment and submission
+
+## 🔬 3D Lab Features
+
+### Virtual Laboratory Equipment
+- Interactive 3D models of laboratory instruments
+- Realistic physics simulation for equipment behavior
+- Step-by-step guided experiments
+- Real-time result visualization
+
+### Educational Benefits
+- **Safe Learning Environment** - Practice without physical risks
+- **Cost-Effective** - Access expensive equipment virtually
+- **Accessibility** - Available 24/7 from anywhere
+- **Repeatability** - Students can repeat experiments multiple times
+- **Immediate Feedback** - Real-time guidance and assessment
 
 ## 🔧 Development
 
 ### Backend Development
-The backend follows a modular structure with separate layers for routes, controllers, models, and middleware [24](#0-23) .
+The backend follows a modular structure with separate layers for routes, controllers, models, and middleware.
 
 ### Frontend Development  
-The frontend uses modern React patterns with context providers for state management [25](#0-24)  and protected routes for authentication [26](#0-25) .
+The frontend uses modern React patterns with context providers for state management and protected routes for authentication. 3D labs are implemented using Three.js for immersive experiences.
 
 ### Database Models
 The application includes models for:
 - Users (students, teachers, admins)
-- Courses with teacher-student relationships [27](#0-26) 
-- Tasks and assignments [28](#0-27) 
-- Student submissions [29](#0-28) 
-- Course materials and folders [30](#0-29) 
+- Courses with teacher-student relationships
+- 3D lab configurations and progress tracking
+- Tasks and assignments
+- Student submissions
+- Course materials and folders
 
 ## 🚀 Deployment
 
 ### Docker Deployment (Recommended)
-The application includes a complete Docker setup with MongoDB and Redis services [31](#0-30) .
+The application includes a complete Docker setup with MongoDB and Redis services.
 
 ### Manual Deployment
 1. Build the frontend for production
 2. Configure production environment variables
 3. Set up MongoDB and Redis instances
 4. Deploy using your preferred hosting platform
+5. Ensure WebGL support for 3D lab functionality
 
 ## 🤝 Contributing
 
@@ -201,7 +236,7 @@ The application includes a complete Docker setup with MongoDB and Redis services
 
 ## 📄 License
 
-This project is licensed under the ISC License [32](#0-31) .
+This project is licensed under the ISC License.
 
 ## 🆘 Support
 
@@ -209,4 +244,4 @@ For support and questions, please open an issue in the GitHub repository or cont
 
 ---
 
-**Notes**: This educational platform is designed to facilitate online learning with modern web technologies. The application supports multiple user roles (students, teachers, admins) and provides comprehensive course management capabilities. The Docker configuration makes deployment straightforward, while the modular architecture ensures maintainability and scalability.
+**LabX** revolutionizes online education by combining traditional course management with cutting-edge 3D interactive laboratory experiences. Students can now access realistic virtual labs, conduct experiments safely, and gain hands-on experience regardless of physical limitations or equipment availability.
