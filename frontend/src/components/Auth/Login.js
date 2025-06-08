@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
 
 /**
  * Login component with form validation
@@ -122,11 +122,29 @@ const Login = () => {
     }
   };
 
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1); // Go back one page
+    } else {
+      navigate('/'); // Fallback to home if no history
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="absolute top-0 left-0 w-full h-64 bg-indigo-600" aria-hidden="true" />
       
-      <div className="relative max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-10 border border-gray-100">
+      {/* Back Button */}
+      <div className="relative w-full max-w-md mb-6 z-10">
+        <button
+          onClick={handleGoBack}
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white hover:text-indigo-100 transition-all duration-200 group bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/20"
+        >
+          <FaArrowLeft className=" h-4 w-4 transition-transform duration-200 group-hover:-translate-x-1" />
+        </button>
+      </div>
+      
+      <div className="relative max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-10 border border-gray-100 z-10">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
             Welcome back

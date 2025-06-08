@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signup } from '../../services/authService';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
 
 /**
  * Signup component with form validation and API integration
@@ -75,6 +75,11 @@ const Signup = () => {
     const { name } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
     validateField(name);
+    // Hide requirements when input loses focus
+    setShowRequirements(prev => ({
+      ...prev,
+      [name]: false
+    }));
   };
 
   const handleFocus = (fieldName) => {
@@ -207,6 +212,14 @@ const Signup = () => {
     }
   };
 
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1); // Go back one page
+    } else {
+      navigate('/'); // Fallback to home if no history
+    }
+  };
+
   const getInputClassName = (fieldName) => `
     peer w-full px-4 py-3.5 border rounded-lg text-gray-900 placeholder-transparent 
     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent 
@@ -226,10 +239,20 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="absolute top-0 left-0 w-full h-64 bg-indigo-600" aria-hidden="true" />
       
-      <div className="relative max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-10 border border-gray-100">
+      {/* Back Button */}
+      <div className="relative w-full max-w-md mb-6 z-10">
+        <button
+          onClick={handleGoBack}
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white hover:text-indigo-100 transition-all duration-200 group bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/20"
+        >
+          <FaArrowLeft className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-1" />
+        </button>
+      </div>
+      
+      <div className="relative max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-10 border border-gray-100 z-10">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
             Create your account
@@ -263,18 +286,16 @@ const Signup = () => {
                 <label htmlFor="firstName" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                   First name
                 </label>
-                <div className="min-h-[40px]">
-                  {showRequirements.firstName && (
-                    <div className="mt-1 space-y-1" id="firstName-requirements">
-                      <p className={`text-xs ${currentRequirements.firstName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                        {currentRequirements.firstName.notEmpty ? '✓' : '•'} Field cannot be empty
-                      </p>
-                      <p className={`text-xs ${currentRequirements.firstName.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                        {currentRequirements.firstName.minLength ? '✓' : '•'} Must be at least 2 characters
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {showRequirements.firstName && (
+                  <div className="mt-1 space-y-1" id="firstName-requirements">
+                    <p className={`text-xs ${currentRequirements.firstName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.firstName.notEmpty ? '✓' : '•'} Field cannot be empty
+                    </p>
+                    <p className={`text-xs ${currentRequirements.firstName.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.firstName.minLength ? '✓' : '•'} Must be at least 2 characters
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="relative">
@@ -295,18 +316,16 @@ const Signup = () => {
                 <label htmlFor="lastName" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                   Last name
                 </label>
-                <div className="min-h-[40px]">
-                  {showRequirements.lastName && (
-                    <div className="mt-1 space-y-1" id="lastName-requirements">
-                      <p className={`text-xs ${currentRequirements.lastName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                        {currentRequirements.lastName.notEmpty ? '✓' : '•'} Field cannot be empty
-                      </p>
-                      <p className={`text-xs ${currentRequirements.lastName.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                        {currentRequirements.lastName.minLength ? '✓' : '•'} Must be at least 2 characters
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {showRequirements.lastName && (
+                  <div className="mt-1 space-y-1" id="lastName-requirements">
+                    <p className={`text-xs ${currentRequirements.lastName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.lastName.notEmpty ? '✓' : '•'} Field cannot be empty
+                    </p>
+                    <p className={`text-xs ${currentRequirements.lastName.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.lastName.minLength ? '✓' : '•'} Must be at least 2 characters
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -329,18 +348,16 @@ const Signup = () => {
               <label htmlFor="email" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                 Email address
               </label>
-              <div className="min-h-[40px]">
-                {showRequirements.email && (
-                  <div className="mt-1 space-y-1" id="email-requirements">
-                    <p className={`text-xs ${currentRequirements.email.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                      {currentRequirements.email.notEmpty ? '✓' : '•'} Field cannot be empty
-                    </p>
-                    <p className={`text-xs ${currentRequirements.email.validFormat ? 'text-green-600' : 'text-red-600'}`}>
-                      {currentRequirements.email.validFormat ? '✓' : '•'} Must be a valid email address
-                    </p>
-                  </div>
-                )}
-              </div>
+              {showRequirements.email && (
+                <div className="mt-1 space-y-1" id="email-requirements">
+                  <p className={`text-xs ${currentRequirements.email.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.email.notEmpty ? '✓' : '•'} Field cannot be empty
+                  </p>
+                  <p className={`text-xs ${currentRequirements.email.validFormat ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.email.validFormat ? '✓' : '•'} Must be a valid email address
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="relative">

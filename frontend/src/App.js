@@ -8,7 +8,7 @@ import './index.css';
 import XorTask from './components/Tasks/XorTask';
 
 // Page imports
-// import Home from './components/Pages/Home';
+import Home from './components/Pages/Home';
 import Dashboard from './components/Pages/Dashboard';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
@@ -25,6 +25,14 @@ const App = () => {
         <Router>
           <Routes>
             {/* Public routes - redirect to dashboard if authenticated */}
+            <Route
+              path="/"
+              element={
+                <PublicRoute>
+                  <Home />
+                </PublicRoute>
+              }
+            />
             <Route
               path="/login"
               element={
@@ -95,11 +103,8 @@ const App = () => {
               }
             />
 
-            {/* Default redirect - send to dashboard if authenticated, login if not */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
             {/* Fallback for unknown routes */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Toaster />
         </Router>
