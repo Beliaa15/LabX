@@ -61,7 +61,7 @@ The core innovation of LabX is its **3D interactive laboratory environment** tha
 ## 📁 Project Structure
 
 ```
-GP-website/
+LabX/
 ├── backend/                 # Node.js/Express API server
 │   ├── config/             # Database and Redis configuration
 │   ├── controllers/        # Route controllers
@@ -104,8 +104,8 @@ GP-website/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Beliaa15/GP-website.git
-   cd GP-website
+   git clone https://github.com/Beliaa15/LabX.git
+   cd LabX
    ```
 
 2. **Set up environment variables**
