@@ -18,6 +18,8 @@ import PublicRoute from './components/Auth/PublicRoute';
 import MyCourses from './components/Pages/MyCourses';
 import Courses from './components/Pages/Courses';
 import AdminPanal from './components/Pages/AdminPanal';
+import About from './components/Pages/About';
+import Features from './components/Pages/Features';
 
 const App = () => {
   return (
@@ -47,6 +49,22 @@ const App = () => {
               element={
                 <PublicRoute>
                   <Signup />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/about"
+              element={
+                <PublicRoute>
+                  <About />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/features"
+              element={
+                <PublicRoute>
+                  <Features />
                 </PublicRoute>
               }
             />
