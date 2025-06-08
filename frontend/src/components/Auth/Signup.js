@@ -75,6 +75,11 @@ const Signup = () => {
     const { name } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
     validateField(name);
+    // Hide requirements when input loses focus
+    setShowRequirements(prev => ({
+      ...prev,
+      [name]: false
+    }));
   };
 
   const handleFocus = (fieldName) => {
@@ -263,18 +268,16 @@ const Signup = () => {
                 <label htmlFor="firstName" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                   First name
                 </label>
-                <div className="min-h-[40px]">
-                  {showRequirements.firstName && (
-                    <div className="mt-1 space-y-1" id="firstName-requirements">
-                      <p className={`text-xs ${currentRequirements.firstName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                        {currentRequirements.firstName.notEmpty ? '✓' : '•'} Field cannot be empty
-                      </p>
-                      <p className={`text-xs ${currentRequirements.firstName.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                        {currentRequirements.firstName.minLength ? '✓' : '•'} Must be at least 2 characters
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {showRequirements.firstName && (
+                  <div className="mt-1 space-y-1" id="firstName-requirements">
+                    <p className={`text-xs ${currentRequirements.firstName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.firstName.notEmpty ? '✓' : '•'} Field cannot be empty
+                    </p>
+                    <p className={`text-xs ${currentRequirements.firstName.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.firstName.minLength ? '✓' : '•'} Must be at least 2 characters
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="relative">
@@ -295,18 +298,16 @@ const Signup = () => {
                 <label htmlFor="lastName" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                   Last name
                 </label>
-                <div className="min-h-[40px]">
-                  {showRequirements.lastName && (
-                    <div className="mt-1 space-y-1" id="lastName-requirements">
-                      <p className={`text-xs ${currentRequirements.lastName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                        {currentRequirements.lastName.notEmpty ? '✓' : '•'} Field cannot be empty
-                      </p>
-                      <p className={`text-xs ${currentRequirements.lastName.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                        {currentRequirements.lastName.minLength ? '✓' : '•'} Must be at least 2 characters
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {showRequirements.lastName && (
+                  <div className="mt-1 space-y-1" id="lastName-requirements">
+                    <p className={`text-xs ${currentRequirements.lastName.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.lastName.notEmpty ? '✓' : '•'} Field cannot be empty
+                    </p>
+                    <p className={`text-xs ${currentRequirements.lastName.minLength ? 'text-green-600' : 'text-red-600'}`}>
+                      {currentRequirements.lastName.minLength ? '✓' : '•'} Must be at least 2 characters
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -329,18 +330,16 @@ const Signup = () => {
               <label htmlFor="email" className="absolute left-4 -top-2.5 bg-white px-1 text-sm text-gray-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600">
                 Email address
               </label>
-              <div className="min-h-[40px]">
-                {showRequirements.email && (
-                  <div className="mt-1 space-y-1" id="email-requirements">
-                    <p className={`text-xs ${currentRequirements.email.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
-                      {currentRequirements.email.notEmpty ? '✓' : '•'} Field cannot be empty
-                    </p>
-                    <p className={`text-xs ${currentRequirements.email.validFormat ? 'text-green-600' : 'text-red-600'}`}>
-                      {currentRequirements.email.validFormat ? '✓' : '•'} Must be a valid email address
-                    </p>
-                  </div>
-                )}
-              </div>
+              {showRequirements.email && (
+                <div className="mt-1 space-y-1" id="email-requirements">
+                  <p className={`text-xs ${currentRequirements.email.notEmpty ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.email.notEmpty ? '✓' : '•'} Field cannot be empty
+                  </p>
+                  <p className={`text-xs ${currentRequirements.email.validFormat ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentRequirements.email.validFormat ? '✓' : '•'} Must be a valid email address
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="relative">
