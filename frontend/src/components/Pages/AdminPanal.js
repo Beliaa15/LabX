@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
-import { getTeachers, assignCourse, unassignCourse } from '../../services/teacherService';
 import { downloadFile } from '../../services/fileService';
 import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
@@ -34,7 +33,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { createCourse, getUserCourses, getAllCourses, deleteCourse, enrollStudent, unenrollStudent } from '../../services/courseService';
-import { getAllStudents } from '../../services/userService';
+import { getAllStudents, getAllTeachers } from '../../services/userService';
 
 const AdminCourseManagement = () => {
   const { user, token } = useAuth();
