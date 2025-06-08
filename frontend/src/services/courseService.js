@@ -148,3 +148,28 @@ export const unenrollStudent = async (courseId, email) => {
     }
 };
 
+/**
+ * Enroll a student in a course using a course code
+ * @param {string} code - The enrollment code of the course
+ * @returns {Promise} - The response data from the server
+ */
+export const enrollStudentByCode = async (code) => {
+    try {
+        console.log('Attempting to enroll student with course code:', code);
+        const response = await authApi.post('/api/courses/enroll', {
+            code
+        });
+        console.log('Student enrollment by code successful:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to enroll student by code. Details:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message,
+            code
+        });
+        throw error;
+    }
+};
+
