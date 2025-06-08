@@ -4,7 +4,6 @@ import { useUI } from '../../context/UIContext';
 import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
-import { MOCK_USERS } from '../../services/authService';
 import {
   BookOpen,
   FileText,
@@ -14,15 +13,19 @@ import {
   Search,
   Grid3X3,
   List,
+  Plus
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { downloadFile } from '../../services/fileService';
+import { getUserCourses, enrollStudentByCode } from '../../services/courseService';
+import { Button } from '../ui/button';
 
 const MyCourses = () => {
   const { user } = useAuth();
   const { sidebarCollapsed } = useUI();
   const { isDarkMode, handleToggle } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // View states
   const [viewMode, setViewMode] = useState('grid');
@@ -30,87 +33,36 @@ const MyCourses = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [currentPath, setCurrentPath] = useState([]);
 
+  // Enrollment states
+  const [showEnrollDialog, setShowEnrollDialog] = useState(false);
+  const [enrollCode, setEnrollCode] = useState('');
+  const [isEnrolling, setIsEnrolling] = useState(false);
+
   // Data states
-  const [courses, setCourses] = useState(() => {
-    const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
-    // Filter courses where the student is enrolled
-    return allCourses.filter(course => 
-      course.enrolledStudents?.some(student => student.id === user.id)
-    );
-  });
+  const [courses, setCourses] = useState([]);
+  const [materials, setMaterials] = useState([]);
 
-  const [professors] = useState(() => {
-    // Get professors from MOCK_USERS
-    return MOCK_USERS.filter(user => user.role === 'professor').map(prof => ({
-      id: prof.id,
-      name: `${prof.firstName} ${prof.lastName}`,
-      email: prof.email
-    }));
-  });
-
-  const [materials] = useState(() => {
-    const savedMaterials = localStorage.getItem('courseMaterials');
-    return savedMaterials ? JSON.parse(savedMaterials) : [];
-  });
-
-  // Update courses when adminCourses in localStorage changes
+  // Fetch courses when component mounts
   useEffect(() => {
-    const handleStorageChange = () => {
-      const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
-      const myCourses = allCourses.filter(course => 
-        course.enrolledStudents?.some(student => student.id === user.id)
-      );
-      setCourses(myCourses);
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedCourses = await getUserCourses();
+        setCourses(fetchedCourses);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        showErrorAlert(
+          'Error Loading Courses',
+          'Failed to load your courses. Please try again later.'
+        );
+        setCourses([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user.id]);
-
-  const getProfessorName = (professorId) => {
-    if (!professorId) return 'Not assigned';
-    const professor = professors.find(p => String(p.id) === String(professorId));
-    return professor ? professor.name : 'Not assigned';
-  };
-
-  const handleDownload = async (file) => {
-    try {
-      await downloadFile(file);
-      showSuccessAlert('Download Started', `${file.name} is being downloaded`);
-    } catch (error) {
-      console.error('Download failed:', error);
-      showErrorAlert('Download Failed', 'There was an error downloading the file. Please try again.');
-    }
-  };
-
-  const navigateToFolder = (folder) => {
-    setCurrentPath(prev => [...prev, folder.name]);
-  };
-
-  const navigateBack = () => {
-    setCurrentPath(prev => prev.slice(0, -1));
-  };
-
-  const getCurrentMaterials = () => {
-    return materials.filter(item => 
-      item.courseId === selectedCourse?.id &&
-      JSON.stringify(item.path) === JSON.stringify(currentPath)
-    );
-  };
-
-  const filteredCourses = courses.filter(course =>
-    course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Format file size helper
-  const formatFileSize = (bytes) => {
-    if (!bytes) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+    fetchCourses();
+  }, []);
 
   const CourseCard = ({ course }) => (
     <div 
@@ -132,21 +84,15 @@ const MyCourses = () => {
         
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-muted">Professor:</span>
+            <span className="text-muted">Teacher:</span>
             <span className="font-medium text-primary">
-              {getProfessorName(course.assignedProfessor)}
+              {`${course.teacher?.firstName} ${course.teacher?.lastName}`}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Materials:</span>
             <span className="font-medium text-primary">
-              {materials.filter(m => m.courseId === course.id).length}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted">Students:</span>
-            <span className="font-medium text-primary">
-              {(course.enrolledStudents || []).length}
+              {course.materials?.length || 0}
             </span>
           </div>
         </div>
@@ -172,15 +118,53 @@ const MyCourses = () => {
               <span className="text-sm text-muted">({course.code})</span>
             </div>
             <div className="flex items-center space-x-4 text-sm text-secondary">
-              <span>Professor: {getProfessorName(course.assignedProfessor)}</span>
-              <span>{materials.filter(m => m.courseId === course.id).length} materials</span>
-              <span>{(course.enrolledStudents || []).length} students</span>
+              <span>Teacher: {`${course.teacher?.firstName} ${course.teacher?.lastName}`}</span>
+              <span>{course.materials?.length || 0} materials</span>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
+
+  const handleDownload = async (file) => {
+    try {
+      await downloadFile(file);
+      showSuccessAlert('Download Started', `${file.name} is being downloaded`);
+    } catch (error) {
+      console.error('Download failed:', error);
+      showErrorAlert('Download Failed', 'There was an error downloading the file. Please try again.');
+    }
+  };
+
+  const navigateToFolder = (folder) => {
+    setCurrentPath(prev => [...prev, folder.name]);
+  };
+
+  const navigateBack = () => {
+    setCurrentPath(prev => prev.slice(0, -1));
+  };
+
+  const getCurrentMaterials = () => {
+    if (!selectedCourse?.materials) return [];
+    return selectedCourse.materials.filter(item => 
+      JSON.stringify(item.path) === JSON.stringify(currentPath)
+    );
+  };
+
+  const filteredCourses = courses.filter(course =>
+    course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Format file size helper
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const MaterialItem = ({ item }) => (
     <div className="surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-primary group relative">
@@ -238,6 +222,28 @@ const MyCourses = () => {
     </div>
   );
 
+  const handleEnrollSubmit = async (e) => {
+    e.preventDefault();
+    setIsEnrolling(true);
+    
+    try {
+      await enrollStudentByCode(enrollCode);
+      showSuccessAlert('Success', 'Successfully enrolled in the course!');
+      setEnrollCode('');
+      setShowEnrollDialog(false);
+      // Refresh courses list
+      const fetchedCourses = await getUserCourses();
+      setCourses(fetchedCourses);
+    } catch (error) {
+      showErrorAlert(
+        'Enrollment Failed',
+        error.response?.data?.message || 'Failed to enroll in the course. Please check the code and try again.'
+      );
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
+
   return (
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
@@ -278,7 +284,7 @@ const MyCourses = () => {
 
               {/* Dark Mode Toggle */}
               <ToggleButton
-                isChecked={isDarkMode}
+                checked={isDarkMode}
                 onChange={handleToggle}
                 className="transform hover:scale-105 transition-transform duration-200"
               />
@@ -297,6 +303,14 @@ const MyCourses = () => {
               </div>
 
               <div className="flex items-center space-x-3">
+                <Button
+                  onClick={() => setShowEnrollDialog(true)}
+                  className="flex items-center gap-2"
+                  variant="default"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Course
+                </Button>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                   <input
@@ -404,7 +418,14 @@ const MyCourses = () => {
             </div>
           ) : (
             <>
-              {courses.length === 0 ? (
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <h3 className="text-lg font-medium text-primary mb-2">
+                    Loading your courses...
+                  </h3>
+                </div>
+              ) : courses.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <BookOpen className="w-12 h-12 text-muted mb-4" />
                   <h3 className="text-lg font-medium text-primary mb-2">
@@ -432,6 +453,51 @@ const MyCourses = () => {
             </>
           )}
         </div>
+
+        {/* Enroll Course Dialog */}
+        {showEnrollDialog && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-primary mb-4">
+                  Enroll in Course
+                </h3>
+                <form onSubmit={handleEnrollSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Course Code
+                    </label>
+                    <input
+                      type="text"
+                      id="code"
+                      value={enrollCode}
+                      onChange={(e) => setEnrollCode(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+                      placeholder="Enter course code"
+                      required
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowEnrollDialog(false)}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <Button
+                      type="submit"
+                      disabled={isEnrolling}
+                      loading={isEnrolling}
+                    >
+                      Enroll
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
-import { getTeachers, assignCourse, unassignCourse } from '../../services/teacherService';
 import { downloadFile } from '../../services/fileService';
-import { MOCK_USERS } from '../../services/authService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { 
@@ -33,7 +31,7 @@ import {
   FolderPlus,
   FileText,
 } from 'lucide-react';
-import { createCourse, getUserCourses, getAllCourses, deleteCourse } from '../../services/courseService';
+import { createCourse, getUserCourses, getAllCourses, deleteCourse, enrollStudent, unenrollStudent } from '../../services/courseService';
 
 const AdminCourseManagement = () => {
   const { user, token } = useAuth();
@@ -51,6 +49,7 @@ const AdminCourseManagement = () => {
   const [courseDescription, setCourseDescription] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [studentEmail, setStudentEmail] = useState('');
   
   // Selected states
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -65,18 +64,7 @@ const AdminCourseManagement = () => {
     return savedMaterials ? JSON.parse(savedMaterials) : [];
   });
 
-  const [students, setStudents] = useState(() => {
-    const studentUsers = MOCK_USERS
-      .filter(user => user.role === 'student')
-      .map(user => ({
-        id: user.id,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        courses: user.courses || []
-      }));
-    return studentUsers;
-  });
-
+  const [students, setStudents] = useState([]);
   const [availableStudents, setAvailableStudents] = useState([]);
   
   // View states
@@ -195,11 +183,18 @@ const AdminCourseManagement = () => {
   const CourseCard = ({ course }) => {
     const handleCardClick = () => {
       setSelectedCourse(course);
+      setTempCourse(course);
       setCurrentPath([]);
     };
 
+    const handleAddStudentsClick = (e) => {
+      e.stopPropagation();
+      setTempCourse(course);
+      setShowAddStudentModal(true);
+    };
+
     return (
-      <div 
+      <div  
         onClick={handleCardClick}
         className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer"
       >
@@ -207,11 +202,7 @@ const AdminCourseManagement = () => {
           <div className="absolute top-3 right-3">
             <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAddStudentModal(true);
-                  setTempCourse(course);
-                }}
+                onClick={handleAddStudentsClick}
                 className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
                 title="Add Student"
               >
@@ -266,7 +257,7 @@ const AdminCourseManagement = () => {
             <div className="flex items-center justify-between">
               <span className="text-muted">Students:</span>
               <span className="font-medium text-primary">
-                {Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0}
+                {Array.isArray(course.students) ? course.students.length : 0}
               </span>
             </div>
             {user?.role === 'admin' && (
@@ -311,7 +302,7 @@ const AdminCourseManagement = () => {
               )}
             </div>
             <div className="flex items-center space-x-4 text-sm text-secondary">
-              <span>{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0} students</span>
+              <span>{Array.isArray(course.students) ? course.students.length : 0} students</span>
               <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
               {user?.role === 'admin' && (
                 <span className="text-muted">{course.teacher.email}</span>
@@ -332,57 +323,66 @@ const AdminCourseManagement = () => {
     </div>
   );
 
-  const handleAddStudent = (studentId) => {
-    if (tempCourse) {
-      const studentToAdd = students.find(s => s.id === studentId);
-      if (studentToAdd) {
-        // Update the courses state
-        setCourses(prevCourses => 
-          prevCourses.map(course => {
-            if (course.id === tempCourse.id) {
-              return {
-                ...course,
-                enrolledStudents: [...(course.enrolledStudents || []), studentToAdd]
-              };
-            }
-            return course;
-          })
-        );
-
-        // Update tempCourse
-        setTempCourse({
-          ...tempCourse,
-          enrolledStudents: [...(tempCourse.enrolledStudents || []), studentToAdd]
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    if (tempCourse && studentEmail.trim()) {
+      try {
+        console.log('Attempting to add student:', {
+          studentEmail,
+          courseId: tempCourse._id,
+          courseName: tempCourse.name
         });
 
-        // Update localStorage
-        const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
-        const updatedCourses = allCourses.map(course => {
-          if (course.id === tempCourse.id) {
-            return {
-              ...course,
-              enrolledStudents: [...(course.enrolledStudents || []), studentToAdd]
-            };
-          }
-          return course;
-        });
-        localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
+        // Call the API to enroll the student
+        await enrollStudent(tempCourse._id, studentEmail);
 
-        // Update available students
-        setAvailableStudents(prev => prev.filter(s => s.id !== studentId));
+        // Clear the input
+        setStudentEmail('');
         setShowAddStudentModal(false);
 
         showSuccessAlert(
           'Student Added',
-          `${studentToAdd.name} has been successfully enrolled in ${tempCourse.name}`
+          `Student with email ${studentEmail} has been successfully enrolled in ${tempCourse.name}`
+        );
+
+        // Refresh the course data to get the updated enrolled students
+        const updatedCourses = await (user.role === 'admin' ? getAllCourses() : getUserCourses());
+        setCourses(updatedCourses);
+
+      } catch (error) {
+        console.error('Failed to add student. Error details:', {
+          error,
+          response: error.response,
+          data: error.response?.data,
+          status: error.response?.status
+        });
+
+        let errorMessage = 'Failed to add student to the course. ';
+        
+        if (error.response?.status === 500) {
+          errorMessage += 'Server error occurred. The student might already be enrolled in this course.';
+        } else if (error.response?.data?.message) {
+          errorMessage += error.response.data.message;
+        } else {
+          errorMessage += 'Please try again later.';
+        }
+
+        showErrorAlert(
+          'Error Adding Student',
+          errorMessage
         );
       }
+    } else {
+      showErrorAlert(
+        'Error Adding Student',
+        'Please enter a valid email address.'
+      );
     }
   };
 
   const handleRemoveStudent = async (studentId) => {
     if (tempCourse) {
-      const studentToRemove = tempCourse.enrolledStudents.find(s => s.id === studentId);
+      const studentToRemove = tempCourse.students.find(s => s.id === studentId);
       
       const result = await showConfirmDialog(
         'Remove Student',
@@ -398,7 +398,7 @@ const AdminCourseManagement = () => {
             if (course.id === tempCourse.id) {
               return {
                 ...course,
-                enrolledStudents: (course.enrolledStudents || []).filter(s => s.id !== studentId)
+                students: (course.students || []).filter(s => s.id !== studentId)
               };
             }
             return course;
@@ -408,7 +408,7 @@ const AdminCourseManagement = () => {
         // Update tempCourse
         setTempCourse({
           ...tempCourse,
-          enrolledStudents: tempCourse.enrolledStudents.filter(s => s.id !== studentId)
+          students: tempCourse.students.filter(s => s.id !== studentId)
         });
 
         // Update localStorage
@@ -417,7 +417,7 @@ const AdminCourseManagement = () => {
           if (course.id === tempCourse.id) {
             return {
               ...course,
-              enrolledStudents: (course.enrolledStudents || []).filter(s => s.id !== studentId)
+              students: (course.students || []).filter(s => s.id !== studentId)
             };
           }
           return course;
@@ -653,6 +653,9 @@ const AdminCourseManagement = () => {
     return user?.role === 'admin' ? 'Administrator' : 'Teacher';
   };
 
+  // Update useEffect to depend on tempCourse
+
+
   return (
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
@@ -830,7 +833,7 @@ const AdminCourseManagement = () => {
                         {selectedCourse.name}
                       </h2>
                       <p className="text-sm text-muted">
-                        {selectedCourse.code} • {(selectedCourse.enrolledStudents || []).length} students
+                        {selectedCourse.code} • {(selectedCourse.students || []).length} students
                       </p>
                     </div>
                     <div className="flex space-x-3">
@@ -973,41 +976,47 @@ const AdminCourseManagement = () => {
             <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-primary mb-4">
-                  Add Students to {tempCourse.name}
+                  Add Student to {tempCourse.name}
                 </h3>
-                {availableStudents.length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {availableStudents.map((student) => (
-                      <button
-                        key={student.id}
-                        onClick={() => handleAddStudent(student.id)}
-                        className="w-full p-3 text-left bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors border border-gray-200 dark:border-slate-600"
+                <form onSubmit={handleAddStudent}>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <input
+                        type="email"
+                        id="studentEmail"
+                        value={studentEmail}
+                        onChange={(e) => setStudentEmail(e.target.value)}
+                        placeholder="Student Email"
+                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
+                        required
+                      />
+                      <label
+                        htmlFor="studentEmail"
+                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
                       >
-                        <div className="font-medium text-primary">
-                          {student.name}
-                        </div>
-                        <div className="text-sm text-muted">
-                          {student.email}
-                        </div>
-                      </button>
-                    ))}
+                        Student Email
+                      </label>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-center text-muted py-4">
-                    No available students to add
-                  </p>
-                )}
-                <div className="flex justify-end mt-6">
-                  <button
-                    onClick={() => {
-                      setShowAddStudentModal(false);
-                      setTempCourse(null);
-                    }}
-                    className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors border border-gray-300 dark:border-slate-600"
-                  >
-                    Close
-                  </button>
-                </div>
+                  <div className="flex justify-end space-x-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddStudentModal(false);
+                        setStudentEmail('');
+                      }}
+                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                    >
+                      Add Student
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
@@ -1021,27 +1030,86 @@ const AdminCourseManagement = () => {
                 <h3 className="text-xl font-semibold text-primary mb-4">
                   Enrolled Students - {tempCourse.name}
                 </h3>
-                {(tempCourse.enrolledStudents || []).length > 0 ? (
+                {(tempCourse.students || []).length > 0 ? (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {(tempCourse.enrolledStudents || []).map((student) => (
+                    {(tempCourse.students || []).map((student) => (
                       <div
-                        key={student.id}
+                        key={student._id}
                         className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-600"
                       >
                         <div>
                           <div className="font-medium text-primary">
-                            {student.name}
+                            {student.firstName} {student.lastName}
                           </div>
                           <div className="text-sm text-muted">
                             {student.email}
                           </div>
                         </div>
                         <button
-                          onClick={() => handleRemoveStudent(student.id)}
-                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                          title="Remove student"
+                          onClick={async () => {
+                            try {
+                              const result = await showConfirmDialog(
+                                'Remove Student',
+                                `Are you sure you want to remove ${student.firstName} ${student.lastName} from this course?`,
+                                'Yes, Remove',
+                                'Cancel'
+                              );
+
+                              if (result.isConfirmed) {
+                                setIsLoading(true);
+                                await unenrollStudent(tempCourse._id, student.email);
+                                
+                                // First update tempCourse to trigger UI update
+                                const updatedStudents = tempCourse.students.filter(s => s._id !== student._id);
+                                setTempCourse(prev => ({
+                                  ...prev,
+                                  students: updatedStudents
+                                }));
+
+                                // Then update the main courses list
+                                setCourses(prevCourses => 
+                                  prevCourses.map(course => {
+                                    if (course._id === tempCourse._id) {
+                                      return {
+                                        ...course,
+                                        students: updatedStudents
+                                      };
+                                    }
+                                    return course;
+                                  })
+                                );
+
+                                showSuccessAlert(
+                                  'Student Removed',
+                                  `${student.firstName} ${student.lastName} has been removed from the course`
+                                );
+
+                                // If no more students, close the modal
+                                if (updatedStudents.length === 0) {
+                                  setShowEnrolledStudentsModal(false);
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Failed to remove student:', error);
+                              let errorMessage = 'Failed to remove student. ';
+                              
+                              if (error.response?.status === 403) {
+                                errorMessage += 'You do not have permission to remove students from this course.';
+                              } else if (error.response?.data?.message) {
+                                errorMessage += error.response.data.message;
+                              } else {
+                                errorMessage += 'Please try again later.';
+                              }
+
+                              showErrorAlert('Remove Failed', errorMessage);
+                            } finally {
+                              setIsLoading(false);
+                            }
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                          title="Remove student from course"
                         >
-                          <UserMinus className="w-4 h-4" />
+                          <UserMinus className="w-5 h-5" />
                         </button>
                       </div>
                     ))}
@@ -1055,7 +1123,6 @@ const AdminCourseManagement = () => {
                   <button
                     onClick={() => {
                       setShowEnrolledStudentsModal(false);
-                      setTempCourse(null);
                     }}
                     className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors border border-gray-300 dark:border-slate-600"
                   >
