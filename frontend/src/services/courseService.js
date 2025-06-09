@@ -173,3 +173,29 @@ export const enrollStudentByCode = async (code) => {
     }
 };
 
+/**
+ * Update a course's details
+ * @param {string} courseId - The MongoDB _id of the course to update
+ * @param {Object} updateData - The data to update
+ * @param {string} [updateData.name] - The new name of the course (optional)
+ * @param {string} [updateData.description] - The new description of the course (optional)
+ * @returns {Promise} - The updated course data
+ */
+export const updateCourse = async (courseId, updateData) => {
+    try {
+        console.log('Updating course with data:', { courseId, updateData });
+        const response = await authApi.put(`/api/courses/${courseId}`, updateData);
+        console.log('Course updated successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to update course:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+            courseId,
+            updateData
+        });
+        throw error;
+    }
+};
+

@@ -31,7 +31,7 @@ import {
   FolderPlus,
   FileText,
 } from 'lucide-react';
-import { createCourse, getUserCourses, getAllCourses, deleteCourse, enrollStudent, unenrollStudent } from '../../services/courseService';
+import { createCourse, getUserCourses, getAllCourses, deleteCourse, enrollStudent, unenrollStudent, updateCourse } from '../../services/courseService';
 
 const AdminCourseManagement = () => {
   const { user, token } = useAuth();
@@ -42,11 +42,14 @@ const AdminCourseManagement = () => {
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showEnrolledStudentsModal, setShowEnrolledStudentsModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
   // Form states
   const [courseName, setCourseName] = useState('');
   const [courseDescription, setCourseDescription] = useState('');
+  const [updateCourseName, setUpdateCourseName] = useState('');
+  const [updateCourseDescription, setUpdateCourseDescription] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [studentEmail, setStudentEmail] = useState('');
@@ -193,6 +196,13 @@ const AdminCourseManagement = () => {
       setShowAddStudentModal(true);
     };
 
+    const handleUpdateCourse = (course) => {
+      setTempCourse(course);
+      setUpdateCourseName(course.name);
+      setUpdateCourseDescription(course.description || '');
+      setShowUpdateModal(true);
+    };
+
     return (
       <div  
         onClick={handleCardClick}
@@ -218,6 +228,16 @@ const AdminCourseManagement = () => {
                 title="View Enrolled Students"
               >
                 <Eye className="w-3 h-3 text-white" />
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUpdateCourse(course);
+                }}
+                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                title="Update Course"
+              >
+                <Edit2 className="w-3 h-3 text-white" />
               </button>
               <button
                 onClick={(e) => {
@@ -653,8 +673,37 @@ const AdminCourseManagement = () => {
     return user?.role === 'admin' ? 'Administrator' : 'Teacher';
   };
 
-  // Update useEffect to depend on tempCourse
+  const handleSubmitUpdate = async (e) => {
+    e.preventDefault();
+    if (!tempCourse) return;
 
+    try {
+      const updateData = {
+        name: updateCourseName.trim(),
+        description: updateCourseDescription.trim()
+      };
+
+      await updateCourse(tempCourse._id, updateData);
+      
+      // Update the courses list with the new data
+      setCourses(prevCourses => 
+        prevCourses.map(course => 
+          course._id === tempCourse._id 
+            ? { ...course, ...updateData }
+            : course
+        )
+      );
+
+      setShowUpdateModal(false);
+      showSuccessAlert('Course Updated', `Course "${updateCourseName}" has been updated successfully`);
+    } catch (error) {
+      console.error('Failed to update course:', error);
+      showErrorAlert(
+        'Error Updating Course',
+        error.response?.data?.message || 'Failed to update course. Please try again.'
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen surface-secondary">
@@ -1218,6 +1267,63 @@ const AdminCourseManagement = () => {
                     Cancel
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Update Course Modal */}
+        {showUpdateModal && tempCourse && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="surface-primary rounded-xl shadow-xl w-full max-w-lg border border-primary">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-primary mb-4">
+                  Update Course
+                </h3>
+                <form onSubmit={handleSubmitUpdate}>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="updateCourseName" className="block text-sm font-medium text-primary mb-1">
+                        Course Name
+                      </label>
+                      <input
+                        type="text"
+                        id="updateCourseName"
+                        value={updateCourseName}
+                        onChange={(e) => setUpdateCourseName(e.target.value)}
+                        className="w-full px-4 py-2 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="updateCourseDescription" className="block text-sm font-medium text-primary mb-1">
+                        Course Description
+                      </label>
+                      <textarea
+                        id="updateCourseDescription"
+                        value={updateCourseDescription}
+                        onChange={(e) => setUpdateCourseDescription(e.target.value)}
+                        rows={4}
+                        className="w-full px-4 py-2 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowUpdateModal(false)}
+                      className="px-4 py-2 border border-primary rounded-lg text-primary hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                      Update Course
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
