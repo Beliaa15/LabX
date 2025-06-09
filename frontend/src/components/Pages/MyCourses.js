@@ -13,10 +13,12 @@ import {
   Search,
   Grid3X3,
   List,
-  Plus
+  Plus,
+  FolderPlus
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { downloadFile } from '../../services/fileService';
+import { getFolders } from '../../services/folderService';
 import { getUserCourses, enrollStudentByCode } from '../../services/courseService';
 import { Button } from '../ui/button';
 
@@ -41,6 +43,11 @@ const MyCourses = () => {
   // Data states
   const [courses, setCourses] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [folders, setFolders] = useState([]);
+
+  // Add new state for materials search
+  const [materialsSearchQuery, setMaterialsSearchQuery] = useState('');
+  const [materialsViewMode, setMaterialsViewMode] = useState('grid');
 
   // Fetch courses when component mounts
   useEffect(() => {
@@ -64,35 +71,64 @@ const MyCourses = () => {
     fetchCourses();
   }, []);
 
+  // Add useEffect to fetch folders when course is selected
+  useEffect(() => {
+    const loadFolders = async () => {
+      if (selectedCourse && selectedCourse._id) {
+        try {
+          console.log('Fetching folders for course:', selectedCourse._id);
+          const response = await getFolders(selectedCourse._id);
+          setFolders(response.folders || []);
+        } catch (error) {
+          console.error('Failed to fetch folders:', error);
+          showErrorAlert(
+            'Error Loading Folders',
+            'Failed to load course folders. Please try again later.'
+          );
+        }
+      } else {
+        // Reset folders when no course is selected
+        setFolders([]);
+      }
+    };
+
+    loadFolders();
+  }, [selectedCourse]);
+
   const CourseCard = ({ course }) => (
     <div 
       onClick={() => setSelectedCourse(course)}
       className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer"
     >
       <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
-        <div className="absolute bottom-3 left-3 right-3">
-          <span className="text-xs font-medium text-white bg-white/20 px-2 py-1 rounded">
-            {course.code}
+        <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+          <span className="text-xs px-2 py-1 rounded bg-white/20 text-white backdrop-blur-sm">
+            Code: {course.code}
           </span>
         </div>
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-primary text-lg mb-2">
+        <h3 className="font-semibold text-primary text-lg mb-2 line-clamp-1">
           {course.name}
         </h3>
+        {course.description && (
+          <p className="text-sm text-muted mb-3 line-clamp-2">
+            {course.description}
+          </p>
+        )}
         
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <span className="text-muted">Teacher:</span>
-            <span className="font-medium text-primary">
-              {`${course.teacher?.firstName} ${course.teacher?.lastName}`}
+            <span className="font-medium text-primary truncate ml-2">
+              {course.teacher?.firstName} {course.teacher?.lastName}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted">Materials:</span>
+            <span className="text-muted">Created:</span>
             <span className="font-medium text-primary">
-              {course.materials?.length || 0}
+              {new Date(course.createdAt).toLocaleDateString()}
             </span>
           </div>
         </div>
@@ -103,7 +139,7 @@ const MyCourses = () => {
   const CourseListItem = ({ course }) => (
     <div 
       onClick={() => setSelectedCourse(course)}
-      className="surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 cursor-pointer hover-surface"
+      className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
     >
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -115,11 +151,20 @@ const MyCourses = () => {
               <h3 className="font-semibold text-primary">
                 {course.name}
               </h3>
-              <span className="text-sm text-muted">({course.code})</span>
+              <span className="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                Code: {course.code}
+              </span>
             </div>
             <div className="flex items-center space-x-4 text-sm text-secondary">
-              <span>Teacher: {`${course.teacher?.firstName} ${course.teacher?.lastName}`}</span>
-              <span>{course.materials?.length || 0} materials</span>
+              <span>Teacher: {course.teacher?.firstName} {course.teacher?.lastName}</span>
+              <span>•</span>
+              <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
+              {course.description && (
+                <>
+                  <span>•</span>
+                  <span className="text-muted line-clamp-1">{course.description}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -146,10 +191,28 @@ const MyCourses = () => {
   };
 
   const getCurrentMaterials = () => {
-    if (!selectedCourse?.materials) return [];
-    return selectedCourse.materials.filter(item => 
+    console.log('Current folders:', folders);
+    console.log('Current path:', currentPath);
+    
+    // For root level (no current path), show all folders
+    const currentFolders = Array.isArray(folders) ? 
+      folders.map(folder => ({
+        ...folder,
+        id: folder._id,
+        name: folder.title,
+        type: 'folder'
+      })).filter(folder => currentPath.length === 0) : 
+      [];
+
+    const currentFiles = materials.filter(item => 
+      item.courseId === selectedCourse?._id &&
+      item.type === 'file' &&
       JSON.stringify(item.path) === JSON.stringify(currentPath)
     );
+
+    const result = [...currentFolders, ...currentFiles];
+    console.log('Materials to display:', result);
+    return result;
   };
 
   const filteredCourses = courses.filter(course =>
@@ -166,61 +229,157 @@ const MyCourses = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const MaterialItem = ({ item }) => (
-    <div className="surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-primary group relative">
-      <div className="p-6">
-        <div className="flex flex-col items-center text-center space-y-4">
-          {/* Icon Container */}
-          <div className={`w-16 h-16 flex items-center justify-center rounded-xl transition-transform group-hover:scale-110 duration-300 ${
+  const MaterialItem = ({ item }) => {
+    return (
+      <div className="surface-primary rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-primary/10 hover:border-primary/20 overflow-hidden group backdrop-blur-sm">
+        <div className="relative">
+          {/* Top Gradient Banner */}
+          <div className={`h-24 w-full ${
             item.type === 'folder' 
-              ? 'bg-yellow-100 dark:bg-yellow-900/30' 
-              : 'bg-blue-100 dark:bg-blue-900/30'
-          }`}>
-            {item.type === 'folder' ? (
-              <Folder className="w-8 h-8 text-yellow-500" />
-            ) : (
-              <File className="w-8 h-8 text-blue-500" />
-            )}
-          </div>
+              ? 'bg-gradient-to-br from-amber-500/10 to-amber-600/10 dark:from-amber-500/20 dark:to-amber-600/20' 
+              : 'bg-gradient-to-br from-blue-500/10 to-blue-600/10 dark:from-blue-500/20 dark:to-blue-600/20'
+          }`} />
 
-          {/* Name and Info */}
-          <div className="space-y-1">
-            <h3 className="font-medium text-primary text-lg truncate max-w-[200px]" title={item.name}>
-              {item.name}
-            </h3>
-            {item.type === 'file' && (
-              <div className="flex items-center justify-center space-x-2 text-sm text-muted">
-                <span>{formatFileSize(item.size)}</span>
-                <span>•</span>
-                <span>{new Date(item.uploadedAt || Date.now()).toLocaleDateString()}</span>
+          {/* Main Content */}
+          <div className="px-6 pb-6 -mt-12">
+            {/* Icon Container with hover effect */}
+            <div 
+              onClick={() => item.type === 'folder' ? navigateToFolder(item) : handleDownload(item)}
+              className={`mx-auto w-20 h-20 flex items-center justify-center rounded-2xl cursor-pointer transform group-hover:scale-105 transition-all duration-300 shadow-lg ${
+                item.type === 'folder' 
+                  ? 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800 dark:to-amber-900 group-hover:from-amber-100 group-hover:to-amber-200 dark:group-hover:from-amber-700 dark:group-hover:to-amber-800' 
+                  : 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-800 dark:to-blue-900 group-hover:from-blue-100 group-hover:to-blue-200 dark:group-hover:from-blue-700 dark:group-hover:to-blue-800'
+              }`}>
+              {item.type === 'folder' ? (
+                <Folder className="w-10 h-10 text-amber-600 dark:text-amber-400 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors" />
+              ) : (
+                <File className="w-10 h-10 text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors" />
+              )}
+            </div>
+
+            {/* Name and Info */}
+            <div className="mt-4 text-center space-y-1">
+              <h3 className="font-medium text-primary text-lg truncate max-w-[200px] mx-auto" title={item.name}>
+                {item.name}
+              </h3>
+              {item.type === 'file' && (
+                <div className="flex items-center justify-center space-x-2 text-sm text-muted">
+                  <span>{formatFileSize(item.size)}</span>
+                  <span>•</span>
+                  <span>{new Date(item.uploadedAt || Date.now()).toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action Icons */}
+            <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+              {item.type === 'folder' ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateToFolder(item);
+                  }}
+                  className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-amber-600 dark:text-amber-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                  title="Open Folder"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(item);
+                  }}
+                  className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                  title="Download File"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Type Label */}
+            <div className="absolute top-3 left-3">
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                item.type === 'folder'
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+              }`}>
+                {item.type === 'folder' ? 'Folder' : 'File'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const MaterialListItem = ({ item }) => {
+    return (
+      <div 
+        onClick={() => item.type === 'folder' ? navigateToFolder(item) : handleDownload(item)}
+        className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
+      >
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              item.type === 'folder' 
+                ? 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800 dark:to-amber-900' 
+                : 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-800 dark:to-blue-900'
+            }`}>
+              {item.type === 'folder' ? (
+                <Folder className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              ) : (
+                <File className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              )}
+            </div>
+            <div>
+              <h3 className="font-medium text-primary mb-1">
+                {item.title || item.name}
+              </h3>
+              <div className="flex items-center space-x-3 text-sm text-secondary">
+                <span className="capitalize">{item.type}</span>
+                {item.type === 'file' && (
+                  <>
+                    <span>•</span>
+                    <span>{formatFileSize(item.size)}</span>
+                    <span>•</span>
+                    <span>{new Date(item.uploadedAt || Date.now()).toLocaleDateString()}</span>
+                  </>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col w-full space-y-4">
+          <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
             {item.type === 'folder' ? (
               <button
-                onClick={() => navigateToFolder(item)}
-                className="px-3 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors flex items-center justify-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateToFolder(item);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                title="Open Folder"
               >
-                <Folder className="w-4 h-4 mr-2" />
-                Open Folder
+                <FolderPlus className="w-4 h-4 text-amber-400" />
               </button>
             ) : (
-              <button 
-                onClick={() => handleDownload(item)}
-                className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center"
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(item);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                title="Download File"
               >
-                <Download className="w-4 h-4 mr-2" />
-                Download
+                <Download className="w-4 h-4 text-blue-400" />
               </button>
             )}
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const handleEnrollSubmit = async (e) => {
     e.preventDefault();
@@ -242,6 +401,17 @@ const MyCourses = () => {
     } finally {
       setIsEnrolling(false);
     }
+  };
+
+  // Add filtered materials function
+  const getFilteredMaterials = () => {
+    const currentMaterials = getCurrentMaterials();
+    if (!materialsSearchQuery) return currentMaterials;
+    
+    return currentMaterials.filter(item => 
+      item.name.toLowerCase().includes(materialsSearchQuery.toLowerCase()) ||
+      (item.type === 'folder' && item.title.toLowerCase().includes(materialsSearchQuery.toLowerCase()))
+    );
   };
 
   return (
@@ -293,16 +463,11 @@ const MyCourses = () => {
         </header>
 
         {/* Controls */}
-        {!selectedCourse && (
-          <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            {!selectedCourse ? (
+              // Course list controls
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-secondary">
-                  {courses.length} course{courses.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-
-              <div className="flex items-center space-x-3">
                 <Button
                   onClick={() => setShowEnrollDialog(true)}
                   className="flex items-center gap-2"
@@ -311,144 +476,186 @@ const MyCourses = () => {
                   <Plus className="w-4 h-4" />
                   Add Course
                 </Button>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
-                  <input
-                    type="text"
-                    placeholder="Search courses..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2 w-64 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  />
-                </div>
+                <span className="text-sm text-secondary">
+                  {courses.length} course{courses.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+            ) : (
+              // Materials controls
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-secondary">
+                  {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
 
-                <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-md transition-colors ${
-                      viewMode === 'grid'
-                        ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
-                        : 'text-muted hover:text-secondary'
-                    }`}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-md transition-colors ${
-                      viewMode === 'list'
-                        ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
-                        : 'text-muted hover:text-secondary'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
+                <input
+                  type="text"
+                  placeholder={selectedCourse ? "Search folders and files..." : "Search courses..."}
+                  value={selectedCourse ? materialsSearchQuery : searchQuery}
+                  onChange={(e) => selectedCourse ? setMaterialsSearchQuery(e.target.value) : setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-64 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
+                <button
+                  onClick={() => selectedCourse ? setMaterialsViewMode('grid') : setViewMode('grid')}
+                  className={`p-2 rounded-md transition-colors ${
+                    (selectedCourse ? materialsViewMode : viewMode) === 'grid'
+                      ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
+                      : 'text-muted hover:text-secondary'
+                  }`}
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => selectedCourse ? setMaterialsViewMode('list') : setViewMode('list')}
+                  className={`p-2 rounded-md transition-colors ${
+                    (selectedCourse ? materialsViewMode : viewMode) === 'list'
+                      ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
+                      : 'text-muted hover:text-secondary'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Main Content */}
         <div className="flex-1 p-4 md:p-6">
-          {selectedCourse ? (
-            <div className="space-y-6">
-              {/* Back Button */}
-              <button
-                onClick={() => {
-                  setSelectedCourse(null);
-                  setCurrentPath([]);
-                }}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : courses.length === 0 ? (
+            <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
+              <BookOpen className="w-12 h-12 text-muted mb-4" />
+              <h3 className="text-lg font-medium text-primary mb-2">
+                {searchQuery ? 'No courses found' : 'No courses enrolled'}
+              </h3>
+              <p className="text-secondary text-center mb-8">
+                {searchQuery 
+                  ? 'Try adjusting your search terms' 
+                  : 'Enroll in a course to get started'
+                }
+              </p>
+              {!searchQuery && (
+                <Button
+                  onClick={() => setShowEnrollDialog(true)}
+                  className="flex items-center gap-2"
+                  variant="default"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Back to Courses
-              </button>
-
-              {/* Breadcrumb */}
-              {currentPath.length > 0 && (
-                <div className="flex items-center space-x-2 text-sm bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
-                  <button
-                    onClick={navigateBack}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                  >
-                    Back
-                  </button>
-                  <span className="text-gray-400">/</span>
-                  {currentPath.map((folder, index) => (
-                    <React.Fragment key={index}>
-                      <span className="text-gray-700 dark:text-gray-300">{folder}</span>
-                      {index < currentPath.length - 1 && (
-                        <span className="text-gray-400">/</span>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
-
-              {/* Materials Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {getCurrentMaterials().map((item) => (
-                  <MaterialItem key={item.id} item={item} />
-                ))}
-              </div>
-
-              {getCurrentMaterials().length === 0 && (
-                <div className="text-center py-12 surface-primary rounded-xl shadow-sm">
-                  <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-primary mb-2">
-                    No materials yet
-                  </h3>
-                  <p className="text-secondary">
-                    Check back later for course materials
-                  </p>
-                </div>
+                  <Plus className="w-5 h-5" />
+                  Enroll in Course
+                </Button>
               )}
             </div>
           ) : (
             <>
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                  <h3 className="text-lg font-medium text-primary mb-2">
-                    Loading your courses...
-                  </h3>
-                </div>
-              ) : courses.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <BookOpen className="w-12 h-12 text-muted mb-4" />
-                  <h3 className="text-lg font-medium text-primary mb-2">
-                    No courses enrolled
-                  </h3>
-                  <p className="text-secondary text-center">
-                    You are not enrolled in any courses yet
-                  </p>
+              {selectedCourse ? (
+                <div className="space-y-6">
+                  {/* Back Button */}
+                  <button
+                    onClick={() => {
+                      setSelectedCourse(null);
+                      setCurrentPath([]);
+                    }}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-2"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Back to Courses
+                  </button>
+
+                  {/* Course Header */}
+                  <div>
+                    <h2 className="text-xl font-semibold text-primary">
+                      {selectedCourse.name}
+                    </h2>
+                    <p className="text-sm text-muted">
+                      Course Code: {selectedCourse.code} • Teacher: {selectedCourse.teacher?.firstName} {selectedCourse.teacher?.lastName}
+                    </p>
+                  </div>
+
+                  {/* Breadcrumb */}
+                  {currentPath.length > 0 && (
+                    <div className="flex items-center space-x-2 text-sm surface-primary p-3 rounded-lg shadow-sm border border-primary">
+                      <button
+                        onClick={navigateBack}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                      >
+                        Back
+                      </button>
+                      <span className="text-muted">/</span>
+                      {currentPath.map((folder, index) => (
+                        <React.Fragment key={index}>
+                          <span className="text-secondary">{folder}</span>
+                          {index < currentPath.length - 1 && (
+                            <span className="text-muted">/</span>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Materials Grid/List */}
+                  <div className={materialsViewMode === 'grid' ? 
+                    "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
+                    "flex flex-col space-y-4"
+                  }>
+                    {getFilteredMaterials().map((item) => (
+                      materialsViewMode === 'grid' ? (
+                        <MaterialItem key={item._id || item.id} item={item} />
+                      ) : (
+                        <MaterialListItem key={item._id || item.id} item={item} />
+                      )
+                    ))}
+                  </div>
+
+                  {getFilteredMaterials().length === 0 && (
+                    <div className="text-center py-12 surface-primary rounded-xl shadow-sm border border-primary">
+                      <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-primary mb-2">
+                        {materialsSearchQuery ? 'No matching items found' : 'No materials yet'}
+                      </h3>
+                      <p className="text-secondary">
+                        {materialsSearchQuery ? 
+                          'Try adjusting your search terms' : 
+                          'Check back later for course materials'
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
-                viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredCourses.map((course) => (
-                      <CourseCard key={course.id} course={course} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {filteredCourses.map((course) => (
-                      <CourseListItem key={course.id} course={course} />
-                    ))}
-                  </div>
-                )
+                <div className={viewMode === 'grid' ? 
+                  "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
+                  "flex flex-col space-y-4"
+                }>
+                  {filteredCourses.map((course) => (
+                    viewMode === 'grid' ? (
+                      <CourseCard key={course._id} course={course} />
+                    ) : (
+                      <CourseListItem key={course._id} course={course} />
+                    )
+                  ))}
+                </div>
               )}
             </>
           )}
