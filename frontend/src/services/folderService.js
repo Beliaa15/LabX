@@ -44,4 +44,35 @@ export const getFolders = async (courseId) => {
         });
         throw error;
     }
+};
+
+/**
+ * Get a specific folder by its ID
+ * @param {string} courseId - The MongoDB _id of the course
+ * @param {string} folderId - The MongoDB _id of the folder
+ * @returns {Promise} - The folder data
+ */
+
+/**
+ * Delete a folder by its ID
+ * @param {string} courseId - The MongoDB _id of the course
+ * @param {string} folderId - The MongoDB _id of the folder to delete
+ * @returns {Promise} - The response data
+ */
+export const deleteFolder = async (courseId, folderId) => {
+    try {
+        console.log('Deleting folder:', { courseId, folderId });
+        const response = await authApi.delete(`/api/courses/${courseId}/folders/${folderId}`);
+        console.log('Folder deleted successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to delete folder:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+            courseId,
+            folderId
+        });
+        throw error;
+    }
 }; 

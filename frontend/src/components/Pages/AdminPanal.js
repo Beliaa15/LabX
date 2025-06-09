@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { downloadFile } from '../../services/fileService';
-import { createFolder, getFolders } from '../../services/folderService';
+import { createFolder, getFolders, deleteFolder } from '../../services/folderService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { 
@@ -569,30 +569,45 @@ const AdminCourseManagement = () => {
     try {
       const result = await showConfirmDialog(
         `Delete ${item.type === 'folder' ? 'Folder' : 'File'}`,
-        `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
+        `Are you sure you want to delete "${item.title || item.name}"? This action cannot be undone.`,
         'Yes, Delete',
         'Cancel'
       );
 
       if (result.isConfirmed) {
-        setMaterials(prev => prev.filter(material => material.id !== item.id));
-
         if (item.type === 'folder') {
-          setMaterials(prev => prev.filter(material => 
-            !material.path.includes(item.name)
-          ));
+          // Delete folder using the API
+          await deleteFolder(selectedCourse._id, item._id);
+          
+          // Refresh folders list
+          const response = await getFolders(selectedCourse._id);
+          setFolders(response.folders || []);
+
+          // If we're inside the deleted folder, navigate back
+          if (currentPath.includes(item.title)) {
+            navigateBack();
+          }
+        } else {
+          // Handle file deletion (existing code)
+          setMaterials(prev => prev.filter(material => material.id !== item.id));
+
+          if (item.type === 'folder') {
+            setMaterials(prev => prev.filter(material => 
+              !material.path.includes(item.name)
+            ));
+          }
         }
 
         showSuccessAlert(
           'Deleted Successfully',
-          `${item.type === 'folder' ? 'Folder' : 'File'} "${item.name}" has been deleted`
+          `${item.type === 'folder' ? 'Folder' : 'File'} "${item.title || item.name}" has been deleted`
         );
       }
     } catch (error) {
       console.error('Delete failed:', error);
       showErrorAlert(
         'Delete Failed',
-        'There was an error deleting the item. Please try again.'
+        error.response?.data?.message || 'There was an error deleting the item. Please try again.'
       );
     }
   };
