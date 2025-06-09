@@ -20,6 +20,7 @@ import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { downloadFile } from '../../services/fileService';
 import { getFolders } from '../../services/folderService';
 import { getUserCourses, enrollStudentByCode } from '../../services/courseService';
+import { getMaterials, downloadMaterial } from '../../services/materialService';
 import { Button } from '../ui/button';
 
 const MyCourses = () => {
@@ -48,6 +49,9 @@ const MyCourses = () => {
   // Add new state for materials search
   const [materialsSearchQuery, setMaterialsSearchQuery] = useState('');
   const [materialsViewMode, setMaterialsViewMode] = useState('grid');
+
+  // Add state for selected folder
+  const [selectedFolder, setSelectedFolder] = useState(null);
 
   // Fetch courses when component mounts
   useEffect(() => {
@@ -94,6 +98,58 @@ const MyCourses = () => {
 
     loadFolders();
   }, [selectedCourse]);
+
+  // Update the useEffect to fetch materials when folder is selected
+  useEffect(() => {
+    const loadMaterials = async () => {
+      if (selectedCourse && selectedFolder) {
+        try {
+          console.log('Fetching materials for folder:', selectedFolder._id);
+          const response = await getMaterials(selectedCourse._id, selectedFolder._id);
+          
+          // Transform the materials to match your existing structure
+          const transformedMaterials = response.materials.map(material => ({
+            _id: material._id,
+            id: material._id,
+            name: material.title,
+            title: material.title,
+            type: 'file',
+            size: material.fileSize || 0,
+            uploadedAt: material.createdAt,
+            courseId: selectedCourse._id,
+            folderId: selectedFolder._id,
+            path: currentPath,
+            filePath: material.filePath
+          }));
+
+          // Update materials state
+          setMaterials(prevMaterials => {
+            // Remove existing materials for this folder
+            const filteredMaterials = prevMaterials.filter(
+              material => !(material.courseId === selectedCourse._id && 
+                          material.folderId === selectedFolder._id)
+            );
+            
+            // Add new materials
+            const updatedMaterials = [...filteredMaterials, ...transformedMaterials];
+            
+            // Update localStorage
+            localStorage.setItem('courseMaterials', JSON.stringify(updatedMaterials));
+            
+            return updatedMaterials;
+          });
+        } catch (error) {
+          console.error('Failed to fetch materials:', error);
+          showErrorAlert(
+            'Error Loading Materials',
+            'Failed to load course materials. Please try again later.'
+          );
+        }
+      }
+    };
+
+    loadMaterials();
+  }, [selectedCourse, selectedFolder]);
 
   const CourseCard = ({ course }) => (
     <div 
@@ -174,45 +230,67 @@ const MyCourses = () => {
 
   const handleDownload = async (file) => {
     try {
-      await downloadFile(file);
-      showSuccessAlert('Download Started', `${file.name} is being downloaded`);
+      if (file.type === 'file' && selectedCourse && selectedFolder) {
+        await downloadMaterial(
+          selectedCourse._id, 
+          selectedFolder._id, 
+          file._id, 
+          file.name
+        );
+        showSuccessAlert(
+          'Download Started', 
+          `${file.name} is being downloaded`
+        );
+      }
     } catch (error) {
       console.error('Download failed:', error);
-      showErrorAlert('Download Failed', 'There was an error downloading the file. Please try again.');
+      showErrorAlert(
+        'Download Failed', 
+        error.response?.data?.message || 'There was an error downloading the file. Please try again.'
+      );
     }
   };
 
   const navigateToFolder = (folder) => {
     setCurrentPath(prev => [...prev, folder.name]);
+    setSelectedFolder(folder);
   };
 
   const navigateBack = () => {
-    setCurrentPath(prev => prev.slice(0, -1));
+    if (currentPath.length > 0) {
+      setCurrentPath(prev => prev.slice(0, -1));
+      // If going back to root, clear selected folder
+      if (currentPath.length === 1) {
+        setSelectedFolder(null);
+      }
+    }
   };
 
   const getCurrentMaterials = () => {
     console.log('Current folders:', folders);
     console.log('Current path:', currentPath);
+    console.log('Selected folder:', selectedFolder);
     
-    // For root level (no current path), show all folders
-    const currentFolders = Array.isArray(folders) ? 
-      folders.map(folder => ({
-        ...folder,
-        id: folder._id,
-        name: folder.title,
-        type: 'folder'
-      })).filter(folder => currentPath.length === 0) : 
-      [];
+    // If no folder is selected, show all folders at root level
+    if (!selectedFolder) {
+      return Array.isArray(folders) ? 
+        folders.map(folder => ({
+          ...folder,
+          id: folder._id,
+          name: folder.title,
+          type: 'folder'
+        })) : [];
+    }
 
+    // If folder is selected, show materials in that folder
     const currentFiles = materials.filter(item => 
       item.courseId === selectedCourse?._id &&
-      item.type === 'file' &&
-      JSON.stringify(item.path) === JSON.stringify(currentPath)
+      item.folderId === selectedFolder._id &&
+      item.type === 'file'
     );
 
-    const result = [...currentFolders, ...currentFiles];
-    console.log('Materials to display:', result);
-    return result;
+    console.log('Materials to display:', currentFiles);
+    return currentFiles;
   };
 
   const filteredCourses = courses.filter(course =>
@@ -230,6 +308,14 @@ const MyCourses = () => {
   };
 
   const MaterialItem = ({ item }) => {
+    const handleItemClick = () => {
+      if (item.type === 'folder') {
+        navigateToFolder(item);
+      } else {
+        handleDownload(item);
+      }
+    };
+
     return (
       <div className="surface-primary rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-primary/10 hover:border-primary/20 overflow-hidden group backdrop-blur-sm">
         <div className="relative">
@@ -244,7 +330,7 @@ const MyCourses = () => {
           <div className="px-6 pb-6 -mt-12">
             {/* Icon Container with hover effect */}
             <div 
-              onClick={() => item.type === 'folder' ? navigateToFolder(item) : handleDownload(item)}
+              onClick={handleItemClick}
               className={`mx-auto w-20 h-20 flex items-center justify-center rounded-2xl cursor-pointer transform group-hover:scale-105 transition-all duration-300 shadow-lg ${
                 item.type === 'folder' 
                   ? 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800 dark:to-amber-900 group-hover:from-amber-100 group-hover:to-amber-200 dark:group-hover:from-amber-700 dark:group-hover:to-amber-800' 
@@ -259,8 +345,8 @@ const MyCourses = () => {
 
             {/* Name and Info */}
             <div className="mt-4 text-center space-y-1">
-              <h3 className="font-medium text-primary text-lg truncate max-w-[200px] mx-auto" title={item.name}>
-                {item.name}
+              <h3 className="font-medium text-primary text-lg truncate max-w-[200px] mx-auto" title={item.name || item.title}>
+                {item.name || item.title}
               </h3>
               {item.type === 'file' && (
                 <div className="flex items-center justify-center space-x-2 text-sm text-muted">
@@ -315,9 +401,17 @@ const MyCourses = () => {
   };
 
   const MaterialListItem = ({ item }) => {
+    const handleItemClick = () => {
+      if (item.type === 'folder') {
+        navigateToFolder(item);
+      } else {
+        handleDownload(item);
+      }
+    };
+
     return (
       <div 
-        onClick={() => item.type === 'folder' ? navigateToFolder(item) : handleDownload(item)}
+        onClick={handleItemClick}
         className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
       >
         <div className="p-4 flex items-center justify-between">
@@ -466,11 +560,11 @@ const MyCourses = () => {
         <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             {!selectedCourse ? (
-              // Course list controls
-              <div className="flex items-center space-x-4">
+                // Course list controls
+                <div className="flex items-center space-x-4">
                 <Button
                   onClick={() => setShowEnrollDialog(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600"
                   variant="default"
                 >
                   <Plus className="w-4 h-4" />
@@ -479,8 +573,8 @@ const MyCourses = () => {
                 <span className="text-sm text-secondary">
                   {courses.length} course{courses.length !== 1 ? 's' : ''}
                 </span>
-              </div>
-            ) : (
+                </div>
+              ) : (
               // Materials controls
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-secondary">
@@ -696,6 +790,7 @@ const MyCourses = () => {
                       type="submit"
                       disabled={isEnrolling}
                       loading={isEnrolling}
+                      className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600"
                     >
                       Enroll
                     </Button>
