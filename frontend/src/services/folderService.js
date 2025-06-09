@@ -75,4 +75,30 @@ export const deleteFolder = async (courseId, folderId) => {
         });
         throw error;
     }
+};
+
+/**
+ * Update a folder's title
+ * @param {string} courseId - The MongoDB _id of the course
+ * @param {string} folderId - The MongoDB _id of the folder
+ * @param {string} title - The new title for the folder
+ * @returns {Promise} - The updated folder data
+ */
+export const updateFolder = async (courseId, folderId, title) => {
+    try {
+        console.log('Updating folder:', { courseId, folderId, title });
+        const response = await authApi.put(`/api/courses/${courseId}/folders/${folderId}`, { title });
+        console.log('Folder updated successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to update folder:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+            courseId,
+            folderId,
+            title
+        });
+        throw error;
+    }
 }; 

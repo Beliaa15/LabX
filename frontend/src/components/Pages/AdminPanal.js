@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { downloadFile } from '../../services/fileService';
-import { createFolder, getFolders, deleteFolder } from '../../services/folderService';
+import { createFolder, getFolders, deleteFolder, updateFolder } from '../../services/folderService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { 
@@ -44,6 +44,9 @@ const AdminCourseManagement = () => {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showEnrolledStudentsModal, setShowEnrolledStudentsModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showUpdateFolderModal, setShowUpdateFolderModal] = useState(false);
+  const [updateFolderTitle, setUpdateFolderTitle] = useState('');
+  const [selectedFolderToUpdate, setSelectedFolderToUpdate] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
   // Form states
@@ -778,6 +781,18 @@ const AdminCourseManagement = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setSelectedFolderToUpdate(item);
+                      setUpdateFolderTitle(item.title);
+                      setShowUpdateFolderModal(true);
+                    }}
+                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                    title="Edit Folder Name"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       handleDelete(item);
                     }}
                     className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
@@ -879,6 +894,18 @@ const AdminCourseManagement = () => {
                 >
                   <FolderPlus className="w-4 h-4 text-amber-400" />
                 </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedFolderToUpdate(item);
+                    setUpdateFolderTitle(item.title);
+                    setShowUpdateFolderModal(true);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                  title="Edit Folder Name"
+                >
+                  <Edit2 className="w-4 h-4 text-blue-400" />
+                </button>
               </>
             ) : (
               <button
@@ -962,6 +989,36 @@ const AdminCourseManagement = () => {
       item.name.toLowerCase().includes(materialsSearchQuery.toLowerCase()) ||
       (item.type === 'folder' && item.title.toLowerCase().includes(materialsSearchQuery.toLowerCase()))
     );
+  };
+
+  const handleUpdateFolder = async (e) => {
+    e.preventDefault();
+    if (!updateFolderTitle.trim() || !selectedFolderToUpdate) return;
+
+    try {
+      // Call the updateFolder API
+      await updateFolder(selectedCourse._id, selectedFolderToUpdate._id, updateFolderTitle.trim());
+      
+      // Refresh folders list
+      const response = await getFolders(selectedCourse._id);
+      setFolders(response.folders || []);
+      
+      // Reset state and close modal
+      setUpdateFolderTitle('');
+      setSelectedFolderToUpdate(null);
+      setShowUpdateFolderModal(false);
+
+      showSuccessAlert(
+        'Folder Updated',
+        'Folder name has been updated successfully'
+      );
+    } catch (error) {
+      console.error('Failed to update folder:', error);
+      showErrorAlert(
+        'Error',
+        error.response?.data?.message || 'Failed to update folder. Please try again.'
+      );
+    }
   };
 
   return (
@@ -1603,6 +1660,59 @@ const AdminCourseManagement = () => {
                       className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                     >
                       Update Course
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Update Folder Modal */}
+        {showUpdateFolderModal && selectedFolderToUpdate && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-primary mb-4">
+                  Update Folder Name
+                </h3>
+                <form onSubmit={handleUpdateFolder}>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="updateFolderTitle"
+                        value={updateFolderTitle}
+                        onChange={(e) => setUpdateFolderTitle(e.target.value)}
+                        placeholder="Folder Name"
+                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
+                        required
+                      />
+                      <label
+                        htmlFor="updateFolderTitle"
+                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
+                      >
+                        Folder Name
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUpdateFolderModal(false);
+                        setUpdateFolderTitle('');
+                        setSelectedFolderToUpdate(null);
+                      }}
+                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                    >
+                      Update Folder
                     </button>
                   </div>
                 </form>
