@@ -170,7 +170,20 @@ const AdminCourseManagement = () => {
         };
         
         const newCourse = await createCourse(courseData);
-        setCourses(prevCourses => [...prevCourses, newCourse]);
+        
+        // Add teacher information to the new course before updating state
+        const courseWithTeacher = {
+          ...newCourse,
+          teacher: {
+            _id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email
+          },
+          students: []
+        };
+
+        setCourses(prevCourses => [...prevCourses, courseWithTeacher]);
         setCourseName('');
         setCourseDescription('');
         setShowCreateModal(false);
