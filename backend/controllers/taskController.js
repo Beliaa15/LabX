@@ -78,7 +78,10 @@ exports.assignTaskToCourse = asyncHandler(async (req, res) => {
     }
 
     // check uf user is teacher of the course
-    if (course.teacher.toString() !== user._id.toString()) {
+    if (
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin'
+    ) {
         res.status(403);
         throw new Error(
             'You are not authorized to assign tasks to this course'
@@ -132,7 +135,10 @@ exports.unassignTaskFromCourse = asyncHandler(async (req, res) => {
     }
 
     // check if user is teacher of the course
-    if (course.teacher.toString() !== req.user._id.toString()) {
+    if (
+        course.teacher.toString() !== req.user._id.toString() &&
+        req.user.role !== 'admin'
+    ) {
         res.status(403);
         throw new Error(
             'You are not authorized to unassign tasks from this course'
@@ -240,7 +246,10 @@ exports.updateTaskDueDate = asyncHandler(async (req, res) => {
     }
 
     // Check if the user is the teacher of the course
-    if (course.teacher.toString() !== user._id.toString()) {
+    if (
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin'
+    ) {
         res.status(403);
         throw new Error(
             'You are not authorized to update assignments for this course'
@@ -283,7 +292,8 @@ exports.getTasksByCourse = asyncHandler(async (req, res) => {
 
     if (
         !course.students.includes(user._id) &&
-        course.teacher.toString() !== user._id.toString()
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin' // Allow admin to view tasks as well
     ) {
         res.status(403);
         throw new Error('You are not authorized to view tasks for this course');
@@ -294,9 +304,9 @@ exports.getTasksByCourse = asyncHandler(async (req, res) => {
     }).populate('submissions', 'student submittedAt grade');
 
     // Map tasks to include course-specific due date
-    const tasksWithDueDate = tasks.map(task => {
+    const tasksWithDueDate = tasks.map((task) => {
         const assignment = task.courseTasks.find(
-            a => a.course.toString() === courseId
+            (a) => a.course.toString() === courseId
         );
         return {
             ...task.toObject(),

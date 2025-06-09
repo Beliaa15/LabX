@@ -26,7 +26,7 @@ exports.addMaterial = asyncHandler(async (req, res) => {
     }
 
     // Check if the user is a teacher of this course
-    if (course.teacher.toString() !== user._id.toString()) {
+    if (course.teacher.toString() !== user._id.toString() && user.role !== 'admin') {
         res.status(403);
         throw new Error(
             'You are not authorized to add materials to this course'
@@ -73,7 +73,8 @@ exports.getMaterials = asyncHandler(async (req, res) => {
     // Check if the user is enrolled in the course or is a teacher
     if (
         !course.students.includes(user._id) &&
-        course.teacher.toString() !== user._id.toString()
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin' // Allow admin to view materials as well
     ) {
         res.status(403);
         throw new Error(
@@ -109,7 +110,8 @@ exports.getMaterialById = asyncHandler(async (req, res) => {
     // Check if the user is enrolled in the course or is a teacher
     if (
         !course.students.includes(user._id) &&
-        course.teacher.toString() !== user._id.toString()
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin' // Allow admin to view materials as well
     ) {
         res.status(403);
         throw new Error(
@@ -151,7 +153,8 @@ exports.downloadMaterial = asyncHandler(async (req, res) => {
     // Check if the user is enrolled in the course or is a teacher
     if (
         !course.students.includes(user._id) &&
-        course.teacher.toString() !== user._id.toString()
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin' // Allow admin to download materials as well
     ) {
         res.status(403);
         throw new Error(
@@ -189,7 +192,7 @@ exports.deleteMaterial = asyncHandler(async (req, res) => {
     }
 
     // Check if the user is a teacher of this course
-    if (course.teacher.toString() !== user._id.toString()) {
+    if (course.teacher.toString() !== user._id.toString() && user.role !== 'admin') {
         res.status(403);
         throw new Error(
             'You are not authorized to delete materials in this course'

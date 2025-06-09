@@ -19,8 +19,11 @@ const createFolder = asyncHandler(async (req, res) => {
         throw new Error('Course not found');
     }
 
-    // Check if the user is a teacher of this course
-    if (course.teacher.toString() !== user._id.toString()) {
+    // Check if the user is a teacher of this course or an admin
+    if (
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin'
+    ) {
         res.status(403);
         throw new Error(
             'You are not authorized to create folders in this course'
@@ -56,7 +59,8 @@ const getFolders = asyncHandler(async (req, res) => {
     // Check if the user is a student or teacher of this course
     if (
         !course.students.includes(user._id) &&
-        course.teacher.toString() !== user._id.toString()
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin' // Allow admin to view folders as well
     ) {
         res.status(403);
         throw new Error(
@@ -86,7 +90,8 @@ const getFolderById = asyncHandler(async (req, res) => {
     // Check if the user is a student or teacher of this course
     if (
         !course.students.includes(user._id) &&
-        course.teacher.toString() !== user._id.toString()
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin' // Allow admin to view folders as well
     ) {
         res.status(403);
         throw new Error('You are not authorized to view this folder');
@@ -120,7 +125,10 @@ const updateFolder = asyncHandler(async (req, res) => {
     }
 
     // Check if the user is a teacher of this course
-    if (course.teacher.toString() !== user._id.toString()) {
+    if (
+        course.teacher.toString() !== user._id.toString() &&
+        user.role !== 'admin'
+    ) {
         res.status(403);
         throw new Error('You are not authorized to update this folder');
     }
@@ -155,7 +163,7 @@ const deleteFolder = asyncHandler(async (req, res) => {
     }
 
     // Check if the user is a teacher of this course
-    if (course.teacher.toString() !== user._id.toString()) {
+    if (course.teacher.toString() !== user._id.toString() && user.role !== 'admin') {
         res.status(403);
         throw new Error('You are not authorized to delete this folder');
     }
@@ -167,7 +175,9 @@ const deleteFolder = asyncHandler(async (req, res) => {
     }
 
     if (folder.materials && folder.materials.length > 0) {
-        const materials = await Material.find({ _id: { $in: folder.materials } });
+        const materials = await Material.find({
+            _id: { $in: folder.materials },
+        });
         for (const material of materials) {
             if (material.filePath && fs.existsSync(material.filePath)) {
                 fs.unlinkSync(material.filePath);

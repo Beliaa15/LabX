@@ -20,14 +20,14 @@ const getAllCourses = asyncHandler(async (req, res) => {
         courses = await Course.find()
             .populate('teacher', 'firstName lastName email')
             .populate('students', 'firstName lastName email')
-            .populate('tasks', 'title description dueDate');
-        //.populate('folders', 'name');
+            .populate('tasks', 'title description dueDate')
+            .populate('folders', 'title');
     } else {
         // Public access to get all courses
         courses = await Course.find()
             .populate('teacher', 'firstName lastName email')
-            .populate('tasks', 'title description dueDate');
-        //.populate('folders', 'name');
+            .populate('tasks', 'title description dueDate')
+            .populate('folders', 'title');
     }
     if (!courses || courses.length === 0) {
         res.status(404);
@@ -43,8 +43,8 @@ const getCourseById = asyncHandler(async (req, res) => {
     const course = await Course.findById(req.params.id)
         .populate('teacher', 'firstName lastName email')
         .populate('students', 'firstName lastName email')
-        .populate('tasks', 'title description dueDate');
-    //.populate('folders', 'name');
+        .populate('tasks', 'title description dueDate')
+        .populate('folders', 'title');
 
     if (!course) {
         res.status(404);
@@ -224,7 +224,7 @@ const enrollStudentByEmail = asyncHandler(async (req, res) => {
         throw new Error('Course not found');
     }
 
-    if (teacher._id.toString() !== course.teacher.toString()) {
+    if (teacher._id.toString() !== course.teacher.toString() && req.user.role !== 'admin') {
         res.status(403);
         throw new Error('Not authorized to enroll students in this course');
     }
@@ -264,7 +264,7 @@ const unenrollStudentByEmail = asyncHandler(async (req, res) => {
         throw new Error('Course not found');
     }
 
-    if (teacher._id.toString() !== course.teacher.toString()) {
+    if (teacher._id.toString() !== course.teacher.toString() && req.user.role !== 'admin') {
         res.status(403);
         throw new Error('Not authorized to unenroll students from this course');
     }
@@ -310,6 +310,12 @@ const getCoursesForUser = asyncHandler(async (req, res) => {
     } else if (user.role === 'teacher') {
         courses = await Course.find({ teacher: user._id })
             .populate('students', 'firstName lastName email')
+            .populate('tasks', 'title description dueDate');
+    } else if (user.role === 'admin') {
+        courses = await Course.find()
+            .populate('teacher', 'firstName lastName email')
+            .populate('students', 'firstName lastName email')
+            .populate('folders', 'title')
             .populate('tasks', 'title description dueDate');
     }
 
