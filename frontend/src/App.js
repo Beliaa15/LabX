@@ -6,6 +6,7 @@ import { UIProvider } from './context/UIContext';
 import Toaster from './components/ui/toaster';
 import './index.css';
 import XorTask from './components/Tasks/XorTask';
+import RoleBasedRoute from './components/Auth/RoleBasedRoute';
 
 // Page imports
 import Home from './components/Pages/Home';
@@ -90,7 +91,9 @@ const App = () => {
               path="/my-courses"
               element={
                 <ProtectedRoute>
-                  <MyCourses />
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
+                    <MyCourses />
+                  </RoleBasedRoute>
                 </ProtectedRoute>
               }
             />
@@ -106,9 +109,10 @@ const App = () => {
             <Route
               path="/courses"
               element={
-                // edit to test admin panal for teacher
                 <ProtectedRoute>
-                  <AdminPanal />
+                  <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
+                    <AdminPanal />
+                  </RoleBasedRoute>
                 </ProtectedRoute>
               }
             />
