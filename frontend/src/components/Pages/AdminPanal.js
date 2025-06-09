@@ -83,6 +83,10 @@ const AdminCourseManagement = () => {
   // Initialize folders as an empty array
   const [folders, setFolders] = useState([]);
 
+  // Add new state for materials search
+  const [materialsSearchQuery, setMaterialsSearchQuery] = useState('');
+  const [materialsViewMode, setMaterialsViewMode] = useState('grid');
+
   // Load courses when component mounts or when user/token changes
   useEffect(() => {
     if (user && token) {
@@ -330,7 +334,14 @@ const AdminCourseManagement = () => {
   };
 
   const CourseListItem = ({ course }) => (
-    <div className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface">
+    <div 
+      onClick={() => {
+        setSelectedCourse(course);
+        setTempCourse(course);
+        setCurrentPath([]);
+      }}
+      className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
+    >
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
@@ -353,8 +364,8 @@ const AdminCourseManagement = () => {
             <div className="flex items-center space-x-4 text-sm text-secondary">
               <span>{Array.isArray(course.students) ? course.students.length : 0} students</span>
               <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
-              {user?.role === 'admin' && (
-                <span className="text-muted">{course.teacher.email}</span>
+              {course.description && (
+                <span className="text-muted line-clamp-1">{course.description}</span>
               )}
             </div>
           </div>
@@ -362,8 +373,47 @@ const AdminCourseManagement = () => {
 
         <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={() => handleDeleteCourse(course.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setTempCourse(course);
+              setShowAddStudentModal(true);
+            }}
             className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+            title="Add Student"
+          >
+            <UserPlus className="w-4 h-4 text-indigo-400" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowEnrolledStudentsModal(true);
+              setTempCourse(course);
+            }}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+            title="View Enrolled Students"
+          >
+            <Eye className="w-4 h-4 text-blue-400" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setTempCourse(course);
+              setUpdateCourseName(course.name);
+              setUpdateCourseDescription(course.description || '');
+              setShowUpdateModal(true);
+            }}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+            title="Update Course"
+          >
+            <Edit2 className="w-4 h-4 text-amber-400" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteCourse(course._id);
+            }}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+            title="Delete Course"
           >
             <Trash2 className="w-4 h-4 text-red-400" />
           </button>
@@ -765,6 +815,86 @@ const AdminCourseManagement = () => {
     );
   };
 
+  // Add MaterialListItem component
+  const MaterialListItem = ({ item }) => {
+    return (
+      <div 
+        onClick={() => item.type === 'folder' ? navigateToFolder(item) : handleDownload(item)}
+        className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
+      >
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              item.type === 'folder' 
+                ? 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800 dark:to-amber-900' 
+                : 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-800 dark:to-blue-900'
+            }`}>
+              {item.type === 'folder' ? (
+                <Folder className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              ) : (
+                <File className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              )}
+            </div>
+            <div>
+              <h3 className="font-medium text-primary mb-1">
+                {item.title || item.name}
+              </h3>
+              <div className="flex items-center space-x-3 text-sm text-secondary">
+                <span className="capitalize">{item.type}</span>
+                {item.type === 'file' && (
+                  <>
+                    <span>•</span>
+                    <span>{formatFileSize(item.size)}</span>
+                    <span>•</span>
+                    <span>{new Date(item.uploadedAt || Date.now()).toLocaleDateString()}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            {item.type === 'folder' ? (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateToFolder(item);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                  title="Open Folder"
+                >
+                  <FolderPlus className="w-4 h-4 text-amber-400" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(item);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                title="Download File"
+              >
+                <Download className="w-4 h-4 text-blue-400" />
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(item);
+              }}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+              title={`Delete ${item.type === 'folder' ? 'Folder' : 'File'}`}
+            >
+              <Trash2 className="w-4 h-4 text-red-400" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Helper function to get role-specific title
   const getRoleTitle = () => {
     if (user?.role === 'admin') {
@@ -808,6 +938,17 @@ const AdminCourseManagement = () => {
         error.response?.data?.message || 'Failed to update course. Please try again.'
       );
     }
+  };
+
+  // Add filtered materials function
+  const getFilteredMaterials = () => {
+    const currentMaterials = getCurrentMaterials();
+    if (!materialsSearchQuery) return currentMaterials;
+    
+    return currentMaterials.filter(item => 
+      item.name.toLowerCase().includes(materialsSearchQuery.toLowerCase()) ||
+      (item.type === 'folder' && item.title.toLowerCase().includes(materialsSearchQuery.toLowerCase()))
+    );
   };
 
   return (
@@ -871,36 +1012,60 @@ const AdminCourseManagement = () => {
         {/* Controls */}
         <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {user?.role === 'admin' ? 'Create Course' : 'Create New Course'}
-              </button>
-              <span className="text-sm text-secondary">
-                {courses.length} course{courses.length !== 1 ? 's' : ''}
-              </span>
-            </div>
+            {!selectedCourse ? (
+              // Course list controls
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {user?.role === 'admin' ? 'Create Course' : 'Create New Course'}
+                </button>
+                <span className="text-sm text-secondary">
+                  {courses.length} course{courses.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+            ) : (
+              // Materials controls
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowCreateFolderModal(true)}
+                  className="flex items-center px-4 py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
+                >
+                  <FolderPlus className="w-4 h-4 mr-2" />
+                  New Folder
+                </button>
+                <button
+                  onClick={() => setShowAddMaterialModal(true)}
+                  className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Files
+                </button>
+                <span className="text-sm text-secondary">
+                  {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
 
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   type="text"
-                  placeholder={`Search ${user?.role === 'admin' ? 'courses' : 'your courses'}...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={selectedCourse ? "Search folders and files..." : `Search ${user?.role === 'admin' ? 'courses' : 'your courses'}...`}
+                  value={selectedCourse ? materialsSearchQuery : searchQuery}
+                  onChange={(e) => selectedCourse ? setMaterialsSearchQuery(e.target.value) : setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-64 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
 
               <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
                 <button
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => selectedCourse ? setMaterialsViewMode('grid') : setViewMode('grid')}
                   className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'grid'
+                    (selectedCourse ? materialsViewMode : viewMode) === 'grid'
                       ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
                       : 'text-muted hover:text-secondary'
                   }`}
@@ -908,9 +1073,9 @@ const AdminCourseManagement = () => {
                   <Grid3X3 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => selectedCourse ? setMaterialsViewMode('list') : setViewMode('list')}
                   className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'list'
+                    (selectedCourse ? materialsViewMode : viewMode) === 'list'
                       ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
                       : 'text-muted hover:text-secondary'
                   }`}
@@ -981,31 +1146,13 @@ const AdminCourseManagement = () => {
                   )}
                   
                   {/* Course Header */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-primary">
-                        {selectedCourse.name}
-                      </h2>
-                      <p className="text-sm text-muted">
-                        {selectedCourse.code} • {(selectedCourse.students || []).length} students
-                      </p>
-                    </div>
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() => setShowCreateFolderModal(true)}
-                        className="flex items-center px-4 py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
-                      >
-                        <FolderPlus className="w-4 h-4 mr-2" />
-                        New Folder
-                      </button>
-                      <button
-                        onClick={() => setShowAddMaterialModal(true)}
-                        className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Files
-                      </button>
-                    </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-primary">
+                      {selectedCourse.name}
+                    </h2>
+                    <p className="text-sm text-muted">
+                      {selectedCourse.code} • {(selectedCourse.students || []).length} students
+                    </p>
                   </div>
 
                   {/* Breadcrumb */}
@@ -1029,29 +1176,46 @@ const AdminCourseManagement = () => {
                     </div>
                   )}
 
-                  {/* Materials Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {getCurrentMaterials().map((item) => (
-                      <MaterialItem key={item.id} item={item} />
+                  {/* Materials Grid/List */}
+                  <div className={materialsViewMode === 'grid' ? 
+                    "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
+                    "flex flex-col space-y-4"
+                  }>
+                    {getFilteredMaterials().map((item) => (
+                      materialsViewMode === 'grid' ? (
+                        <MaterialItem key={item._id || item.id} item={item} />
+                      ) : (
+                        <MaterialListItem key={item._id || item.id} item={item} />
+                      )
                     ))}
                   </div>
 
-                  {getCurrentMaterials().length === 0 && (
+                  {getFilteredMaterials().length === 0 && (
                     <div className="text-center py-12 surface-primary rounded-xl shadow-sm border border-primary">
                       <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-primary mb-2">
-                        No materials yet
+                        {materialsSearchQuery ? 'No matching items found' : 'No materials yet'}
                       </h3>
                       <p className="text-secondary">
-                        Upload files or create folders to get started
+                        {materialsSearchQuery ? 
+                          'Try adjusting your search terms' : 
+                          'Upload files or create folders to get started'
+                        }
                       </p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className={viewMode === 'grid' ? 
+                  "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
+                  "flex flex-col space-y-4"
+                }>
                   {filteredCourses.map((course) => (
-                    <CourseCard key={course.id} course={course} />
+                    viewMode === 'grid' ? (
+                      <CourseCard key={course._id} course={course} />
+                    ) : (
+                      <CourseListItem key={course._id} course={course} />
+                    )
                   ))}
                 </div>
               )}
