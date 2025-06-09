@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
-import { downloadFile } from '../../services/fileService';
-import { createFolder, getFolders, deleteFolder, updateFolder } from '../../services/folderService';
-import Sidebar from '../Common/Sidebar';
-import ToggleButton from '../ui/ToggleButton';
 import { 
   showSuccessAlert, 
   showErrorAlert, 
@@ -32,7 +28,31 @@ import {
   FolderPlus,
   FileText,
 } from 'lucide-react';
-import { createCourse, getUserCourses, getAllCourses, deleteCourse, enrollStudent, unenrollStudent, updateCourse } from '../../services/courseService';
+import { 
+  createCourse, 
+  getUserCourses, 
+  getAllCourses, 
+  deleteCourse, 
+  enrollStudent, 
+  unenrollStudent, 
+  updateCourse 
+} from '../../services/courseService';
+import { 
+  downloadFile, 
+  uploadMaterial, 
+  createMaterialFormData, 
+  getMaterials, 
+  downloadMaterial, 
+  deleteMaterial 
+} from '../../services/materialService';
+import { 
+  createFolder, 
+  getFolders, 
+  deleteFolder, 
+  updateFolder 
+} from '../../services/folderService';
+import Sidebar from '../Common/Sidebar';
+import ToggleButton from '../ui/ToggleButton';
 
 const AdminCourseManagement = () => {
   const { user, token } = useAuth();
@@ -552,76 +572,90 @@ const AdminCourseManagement = () => {
     }
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (file && selectedCourse) {
-      const newFile = {
-        id: Date.now(),
-        name: file.name,
-        type: 'file',
-        path: [...currentPath],
-        courseId: selectedCourse.id,
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
-      };
-      
-      setMaterials(prev => [...prev, newFile]);
-      setSelectedFile(null);
-      setShowAddMaterialModal(false);
-
-      showSuccessAlert(
-        'File Uploaded',
-        `${file.name} has been successfully uploaded to ${selectedCourse.name}`
-      );
-    }
-  };
-
-  const handleCreateFolder = async (e) => {
-    e.preventDefault();
-    if (newFolderName.trim() && selectedCourse?._id) {
+    if (file && selectedCourse && selectedFolder) {
       try {
-        // Create folder using the API with the correct course ID (_id)
-        await createFolder(selectedCourse._id, newFolderName);
-        
-        // Fetch updated folders list
-        const response = await getFolders(selectedCourse._id);
-        setFolders(response.folders || []);
-        
-        // Reset form and close modal
-        setNewFolderName('');
-        setShowCreateFolderModal(false);
+        // Create the form data for upload
+        const formData = createMaterialFormData(file, file.name, "");
+
+        // Upload the material
+        const result = await uploadMaterial(
+          selectedCourse._id,
+          selectedFolder._id,
+          formData
+        );
+
+        // Refresh materials list for the current folder
+        const updatedMaterials = await getMaterials(
+          selectedCourse._id,
+          selectedFolder._id
+        );
+
+        // Update the materials state with the new file
+        const newMaterial = {
+          _id: result.material._id,
+          id: result.material._id,
+          name: file.name,
+          title: result.material.title,
+          type: "file",
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+          courseId: selectedCourse._id,
+          folderId: selectedFolder._id,
+          path: currentPath,
+        };
+
+        // Add the new material to the materials state
+        setMaterials((prevMaterials) => {
+          // Remove any existing material with the same name in the same location
+          const filteredMaterials = prevMaterials.filter(
+            (material) =>
+              !(
+                material.name === file.name &&
+                material.courseId === selectedCourse._id &&
+                JSON.stringify(material.path) === JSON.stringify(currentPath)
+              )
+          );
+
+          // Add the new material
+          const updatedMaterials = [...filteredMaterials, newMaterial];
+
+          // Update localStorage
+          localStorage.setItem(
+            "courseMaterials",
+            JSON.stringify(updatedMaterials)
+          );
+
+          return updatedMaterials;
+        });
+
+        setSelectedFile(null);
+        setShowAddMaterialModal(false);
 
         showSuccessAlert(
-          'Folder Created',
-          `Folder "${newFolderName}" has been created successfully`
+          "File Uploaded",
+          `${file.name} has been successfully uploaded to ${selectedFolder.title}`
         );
       } catch (error) {
-        console.error('Failed to create folder:', error);
+        console.error('Upload failed:', error);
         showErrorAlert(
-          'Error',
-          error.response?.data?.message || 'Failed to create folder. Please try again.'
+          'Upload Failed',
+          error.response?.data?.message || 'Failed to upload file. Please try again.'
         );
       }
-    } else if (!newFolderName.trim()) {
-      showErrorAlert(
-        'Error',
-        'Please enter a folder name'
-      );
-    } else {
-      showErrorAlert(
-        'Error',
-        'No course selected or invalid course ID'
-      );
     }
   };
 
-  const handleDownload = async (file) => {
+  const handleDownload = async (material) => {
     try {
-      await downloadFile(file);
-      showSuccessAlert(
-        'Download Started',
-        `${file.name} is being downloaded`
-      );
+      if (material.type === 'file' && selectedCourse && selectedFolder) {
+        await downloadMaterial(selectedCourse._id, selectedFolder._id, material._id, material.name);
+        showSuccessAlert(
+          'Download Started',
+          `${material.name} is being downloaded`
+        );
+      }
     } catch (error) {
       console.error('Download failed:', error);
       showErrorAlert(
@@ -654,14 +688,12 @@ const AdminCourseManagement = () => {
             navigateBack();
           }
         } else {
-          // Handle file deletion (existing code)
-          setMaterials(prev => prev.filter(material => material.id !== item.id));
-
-          if (item.type === 'folder') {
-            setMaterials(prev => prev.filter(material => 
-              !material.path.includes(item.name)
-            ));
-          }
+          // Delete material using the service
+          await deleteMaterial(selectedCourse._id, selectedFolder._id, item._id);
+          
+          // Refresh materials list
+          const updatedMaterials = await getMaterials(selectedCourse._id, selectedFolder._id);
+          // Update your materials state accordingly
         }
 
         showSuccessAlert(
@@ -1530,7 +1562,7 @@ const AdminCourseManagement = () => {
                 <h3 className="text-xl font-semibold text-primary mb-4">
                   Create New Folder
                 </h3>
-                <form onSubmit={handleCreateFolder}>
+                <form onSubmit={createFolder}>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-secondary mb-2">
