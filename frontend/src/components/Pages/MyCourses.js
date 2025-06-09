@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { downloadFile } from '../../services/fileService';
+import { getFolders } from '../../services/folderService';
 import { getUserCourses, enrollStudentByCode } from '../../services/courseService';
 import { Button } from '../ui/button';
 
@@ -41,6 +42,7 @@ const MyCourses = () => {
   // Data states
   const [courses, setCourses] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [folders, setFolders] = useState([]);
 
   // Fetch courses when component mounts
   useEffect(() => {
@@ -63,6 +65,30 @@ const MyCourses = () => {
 
     fetchCourses();
   }, []);
+
+  // Add useEffect to fetch folders when course is selected
+  useEffect(() => {
+    const loadFolders = async () => {
+      if (selectedCourse && selectedCourse._id) {
+        try {
+          console.log('Fetching folders for course:', selectedCourse._id);
+          const response = await getFolders(selectedCourse._id);
+          setFolders(response.folders || []);
+        } catch (error) {
+          console.error('Failed to fetch folders:', error);
+          showErrorAlert(
+            'Error Loading Folders',
+            'Failed to load course folders. Please try again later.'
+          );
+        }
+      } else {
+        // Reset folders when no course is selected
+        setFolders([]);
+      }
+    };
+
+    loadFolders();
+  }, [selectedCourse]);
 
   const CourseCard = ({ course }) => (
     <div 
@@ -146,10 +172,28 @@ const MyCourses = () => {
   };
 
   const getCurrentMaterials = () => {
-    if (!selectedCourse?.materials) return [];
-    return selectedCourse.materials.filter(item => 
+    console.log('Current folders:', folders);
+    console.log('Current path:', currentPath);
+    
+    // For root level (no current path), show all folders
+    const currentFolders = Array.isArray(folders) ? 
+      folders.map(folder => ({
+        ...folder,
+        id: folder._id,
+        name: folder.title,
+        type: 'folder'
+      })).filter(folder => currentPath.length === 0) : 
+      [];
+
+    const currentFiles = materials.filter(item => 
+      item.courseId === selectedCourse?._id &&
+      item.type === 'file' &&
       JSON.stringify(item.path) === JSON.stringify(currentPath)
     );
+
+    const result = [...currentFolders, ...currentFiles];
+    console.log('Materials to display:', result);
+    return result;
   };
 
   const filteredCourses = courses.filter(course =>
@@ -198,25 +242,23 @@ const MyCourses = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col w-full space-y-4">
-            {item.type === 'folder' ? (
-              <button
-                onClick={() => navigateToFolder(item)}
-                className="px-3 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors flex items-center justify-center"
-              >
-                <Folder className="w-4 h-4 mr-2" />
-                Open Folder
-              </button>
-            ) : (
-              <button 
-                onClick={() => handleDownload(item)}
-                className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </button>
-            )}
-          </div>
+          {item.type === 'folder' ? (
+            <button
+              onClick={() => navigateToFolder(item)}
+              className="px-3 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors flex items-center justify-center"
+            >
+              <Folder className="w-4 h-4 mr-2" />
+              Open Folder
+            </button>
+          ) : (
+            <button 
+              onClick={() => handleDownload(item)}
+              className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </button>
+          )}
         </div>
       </div>
     </div>

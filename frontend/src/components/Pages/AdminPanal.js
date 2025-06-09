@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { downloadFile } from '../../services/fileService';
+import { createFolder, getFolders } from '../../services/folderService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
 import { 
@@ -79,6 +80,9 @@ const AdminCourseManagement = () => {
     document.documentElement.classList.contains('dark')
   );
 
+  // Initialize folders as an empty array
+  const [folders, setFolders] = useState([]);
+
   // Load courses when component mounts or when user/token changes
   useEffect(() => {
     if (user && token) {
@@ -126,6 +130,31 @@ const AdminCourseManagement = () => {
     setSelectedCourse(null);
     setCurrentPath([]);
   }, [courses]);
+
+  // Add useEffect to fetch folders when course is selected
+  useEffect(() => {
+    const loadFolders = async () => {
+      if (selectedCourse && selectedCourse._id) {
+        try {
+          console.log('Fetching folders for course:', selectedCourse._id);
+          const response = await getFolders(selectedCourse._id);
+          // Extract folders array from response
+          setFolders(response.folders || []);
+        } catch (error) {
+          console.error('Failed to fetch folders:', error);
+          showErrorAlert(
+            'Error Loading Folders',
+            'Failed to load course folders. Please try again later.'
+          );
+        }
+      } else {
+        // Reset folders when no course is selected
+        setFolders([]);
+      }
+    };
+
+    loadFolders();
+  }, [selectedCourse]);
 
   const handleCreateCourse = async (e) => {
     e.preventDefault();
@@ -481,31 +510,41 @@ const AdminCourseManagement = () => {
     }
   };
 
-  const handleCreateFolder = (e) => {
+  const handleCreateFolder = async (e) => {
     e.preventDefault();
-    if (newFolderName.trim() && selectedCourse) {
-      const newFolder = {
-        id: Date.now(),
-        name: newFolderName,
-        type: 'folder',
-        path: [...currentPath],
-        courseId: selectedCourse.id,
-        items: [],
-        createdAt: new Date().toISOString(),
-      };
-      
-      setMaterials(prev => [...prev, newFolder]);
-      setNewFolderName('');
-      setShowCreateFolderModal(false);
+    if (newFolderName.trim() && selectedCourse?._id) {
+      try {
+        // Create folder using the API with the correct course ID (_id)
+        await createFolder(selectedCourse._id, newFolderName);
+        
+        // Fetch updated folders list
+        const response = await getFolders(selectedCourse._id);
+        setFolders(response.folders || []);
+        
+        // Reset form and close modal
+        setNewFolderName('');
+        setShowCreateFolderModal(false);
 
-      showSuccessAlert(
-        'Folder Created',
-        `Folder "${newFolderName}" has been created successfully`
-      );
+        showSuccessAlert(
+          'Folder Created',
+          `Folder "${newFolderName}" has been created successfully`
+        );
+      } catch (error) {
+        console.error('Failed to create folder:', error);
+        showErrorAlert(
+          'Error',
+          error.response?.data?.message || 'Failed to create folder. Please try again.'
+        );
+      }
     } else if (!newFolderName.trim()) {
       showErrorAlert(
         'Error',
         'Please enter a folder name'
+      );
+    } else {
+      showErrorAlert(
+        'Error',
+        'No course selected or invalid course ID'
       );
     }
   };
@@ -569,10 +608,28 @@ const AdminCourseManagement = () => {
   };
 
   const getCurrentMaterials = () => {
-    return materials.filter(item => 
-      item.courseId === selectedCourse?.id &&
+    console.log('Current folders:', folders);
+    console.log('Current path:', currentPath);
+    
+    // For root level (no current path), show all folders
+    const currentFolders = Array.isArray(folders) ? 
+      folders.map(folder => ({
+        ...folder,
+        id: folder._id,
+        name: folder.title,
+        type: 'folder'
+      })).filter(folder => currentPath.length === 0) : 
+      [];
+
+    const currentFiles = materials.filter(item => 
+      item.courseId === selectedCourse?._id &&
+      item.type === 'file' &&
       JSON.stringify(item.path) === JSON.stringify(currentPath)
     );
+
+    const result = [...currentFolders, ...currentFiles];
+    console.log('Materials to display:', result);
+    return result;
   };
 
   // Helper function to format file sizes
