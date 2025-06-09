@@ -658,25 +658,35 @@ const AdminCourseManagement = () => {
 
   const MaterialItem = ({ item }) => {
     return (
-      <div className="surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-primary group relative">
-        <div className="p-6">
-          <div className="flex flex-col items-center text-center space-y-4">
-            {/* Icon Container */}
-            <div className={`w-16 h-16 flex items-center justify-center rounded-xl transition-transform group-hover:scale-110 duration-300 ${
-              item.type === 'folder' 
-                ? 'bg-yellow-100 dark:bg-yellow-900/30' 
-                : 'bg-blue-100 dark:bg-blue-900/30'
-            }`}>
+      <div className="surface-primary rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-primary/10 hover:border-primary/20 overflow-hidden group backdrop-blur-sm">
+        <div className="relative">
+          {/* Top Gradient Banner */}
+          <div className={`h-24 w-full ${
+            item.type === 'folder' 
+              ? 'bg-gradient-to-br from-amber-500/10 to-amber-600/10 dark:from-amber-500/20 dark:to-amber-600/20' 
+              : 'bg-gradient-to-br from-blue-500/10 to-blue-600/10 dark:from-blue-500/20 dark:to-blue-600/20'
+          }`} />
+
+          {/* Main Content */}
+          <div className="px-6 pb-6 -mt-12">
+            {/* Icon Container with hover effect */}
+            <div 
+              onClick={() => item.type === 'folder' ? navigateToFolder(item) : handleDownload(item)}
+              className={`mx-auto w-20 h-20 flex items-center justify-center rounded-2xl cursor-pointer transform group-hover:scale-105 transition-all duration-300 shadow-lg ${
+                item.type === 'folder' 
+                  ? 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800 dark:to-amber-900 group-hover:from-amber-100 group-hover:to-amber-200 dark:group-hover:from-amber-700 dark:group-hover:to-amber-800' 
+                  : 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-800 dark:to-blue-900 group-hover:from-blue-100 group-hover:to-blue-200 dark:group-hover:from-blue-700 dark:group-hover:to-blue-800'
+              }`}>
               {item.type === 'folder' ? (
-                <Folder className="w-8 h-8 text-yellow-500" />
+                <Folder className="w-10 h-10 text-amber-600 dark:text-amber-400 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors" />
               ) : (
-                <File className="w-8 h-8 text-blue-500" />
+                <File className="w-10 h-10 text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors" />
               )}
             </div>
 
             {/* Name and Info */}
-            <div className="space-y-1">
-              <h3 className="font-medium text-primary text-lg truncate max-w-[200px]" title={item.name}>
+            <div className="mt-4 text-center space-y-1">
+              <h3 className="font-medium text-primary text-lg truncate max-w-[200px] mx-auto" title={item.name}>
                 {item.name}
               </h3>
               {item.type === 'file' && (
@@ -688,43 +698,66 @@ const AdminCourseManagement = () => {
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col w-full space-y-4">
+            {/* Action Icons */}
+            <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
               {item.type === 'folder' ? (
-                <div className="flex gap-2">
+                <>
                   <button
-                    onClick={() => navigateToFolder(item)}
-                    className="flex-1 px-3 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToFolder(item);
+                    }}
+                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-amber-600 dark:text-amber-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                    title="Open Folder"
                   >
-                    <Folder className="w-4 h-4 mr-2" />
-                    Open Folder
+                    <FolderPlus className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(item)}
-                    className="flex-1 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item);
+                    }}
+                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                    title="Delete Folder"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                </div>
+                </>
               ) : (
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleDownload(item)}
-                    className="flex-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(item);
+                    }}
+                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                    title="Download File"
                   >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
+                    <Download className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(item)}
-                    className="flex-1 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item);
+                    }}
+                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                    title="Delete File"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                </div>
+                </>
               )}
+            </div>
+
+            {/* Type Label */}
+            <div className="absolute top-3 left-3">
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                item.type === 'folder'
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+              }`}>
+                {item.type === 'folder' ? 'Folder' : 'File'}
+              </span>
             </div>
           </div>
         </div>
