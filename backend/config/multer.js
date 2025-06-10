@@ -23,9 +23,54 @@ const storage = multer.diskStorage({
 
 // File filter to allow only specific file types
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|pdf|docx|pptx/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const allowedMimeTypes = [
+        // Images
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif',
+
+        // Documents
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+        'application/msword', // .doc
+        'application/vnd.ms-powerpoint', // .ppt
+
+        // Excel files
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.ms-excel', // .xls
+
+        // Text files
+        'text/plain', // .txt
+        'text/csv', // .csv
+        'application/rtf', // .rtf
+
+        // Audio files
+        'audio/mpeg', // .mp3
+        'audio/wav', // .wav
+        'audio/ogg', // .ogg
+        'audio/mp4', // .m4a
+        'audio/aac', // .aac
+        'audio/flac', // .flac
+        'audio/x-ms-wma', // .wma
+
+        // Videos
+        'video/mp4',
+        'video/mpeg',
+        'video/quicktime', // .mov
+        'video/x-msvideo', // .avi
+        'video/x-ms-wmv', // .wmv
+        'video/webm',
+    ];
+
+    const allowedExtensions =
+        /\.(jpeg|jpg|png|gif|pdf|docx|pptx|doc|ppt|xlsx|xls|txt|csv|rtf|mp3|wav|ogg|m4a|aac|flac|wma|mp4|mpeg|mpg|mov|avi|wmv|webm)$/i;
+
+    const extname = allowedExtensions.test(
+        path.extname(file.originalname).toLowerCase()
+    );
+    const mimetype = allowedMimeTypes.includes(file.mimetype);
 
     if (extname && mimetype) {
         return cb(null, true);
@@ -37,7 +82,7 @@ const fileFilter = (req, file, cb) => {
 // Create the multer upload instance
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+    limits: { fileSize: 500 * 1024 * 1024 }, // Limit file size to 500 MB
     fileFilter: fileFilter,
 });
 
