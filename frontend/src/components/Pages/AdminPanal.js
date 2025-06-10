@@ -574,83 +574,76 @@ const AdminCourseManagement = () => {
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (file && selectedCourse && selectedFolder) {
+    if (file && selectedCourse) {
       try {
         // Create the form data for upload
-        const formData = createMaterialFormData(file, file.name, "");
-
-        // Upload the material
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', file.name);
+        
+        // Upload the material with the correct folder ID
         const result = await uploadMaterial(
           selectedCourse._id,
-          selectedFolder._id,
+          selectedFolder?._id || '', // Pass empty string if no folder selected
           formData
         );
 
-        // Refresh materials list for the current folder
-        const updatedMaterials = await getMaterials(
-          selectedCourse._id,
-          selectedFolder._id
-        );
-
-        // Update the materials state with the new file
+        // Create new material object
         const newMaterial = {
           _id: result.material._id,
           id: result.material._id,
           name: file.name,
           title: result.material.title,
-          type: "file",
+          type: 'file',
           size: file.size,
           uploadedAt: new Date().toISOString(),
           courseId: selectedCourse._id,
-          folderId: selectedFolder._id,
-          path: currentPath,
+          folderId: selectedFolder?._id || '',
+          path: currentPath
         };
 
         // Add the new material to the materials state
-        setMaterials((prevMaterials) => {
+        setMaterials(prevMaterials => {
           // Remove any existing material with the same name in the same location
           const filteredMaterials = prevMaterials.filter(
-            (material) =>
+            material =>
               !(
                 material.name === file.name &&
-                material.courseId === selectedCourse._id &&
-                JSON.stringify(material.path) === JSON.stringify(currentPath)
+                material.folderId === (selectedFolder?._id || '')
               )
           );
 
           // Add the new material
-          const updatedMaterials = [...filteredMaterials, newMaterial];
-
-          // Update localStorage
-          localStorage.setItem(
-            "courseMaterials",
-            JSON.stringify(updatedMaterials)
-          );
-
-          return updatedMaterials;
+          return [...filteredMaterials, newMaterial];
         });
 
+        // Reset form and close modal
         setSelectedFile(null);
         setShowAddMaterialModal(false);
 
         showSuccessAlert(
-          "File Uploaded",
-          `${file.name} has been successfully uploaded to ${selectedFolder.title}`
+          'File Uploaded',
+          `${file.name} has been successfully uploaded${selectedFolder ? ` to ${selectedFolder.title}` : ''}`
         );
       } catch (error) {
         console.error('Upload failed:', error);
-        showErrorAlert(
-          'Upload Failed',
-          error.response?.data?.message || 'Failed to upload file. Please try again.'
-        );
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           'Failed to upload file. Please try again.';
+        showErrorAlert('Upload Failed', errorMessage);
       }
     }
   };
 
   const handleDownload = async (material) => {
     try {
-      if (material.type === 'file' && selectedCourse && selectedFolder) {
-        await downloadMaterial(selectedCourse._id, selectedFolder._id, material._id, material.name);
+      if (material.type === 'file') {
+        await downloadMaterial(
+          selectedCourse._id,
+          material.folderId || '',
+          material._id,
+          material.name
+        );
         showSuccessAlert(
           'Download Started',
           `${material.name} is being downloaded`
@@ -689,11 +682,12 @@ const AdminCourseManagement = () => {
           }
         } else {
           // Delete material using the service
-          await deleteMaterial(selectedCourse._id, selectedFolder._id, item._id);
+          await deleteMaterial(selectedCourse._id, item.folderId || '', item._id);
           
-          // Refresh materials list
-          const updatedMaterials = await getMaterials(selectedCourse._id, selectedFolder._id);
-          // Update your materials state accordingly
+          // Update materials state
+          setMaterials(prevMaterials => 
+            prevMaterials.filter(material => material._id !== item._id)
+          );
         }
 
         showSuccessAlert(
@@ -710,16 +704,6 @@ const AdminCourseManagement = () => {
     }
   };
 
-  const navigateToFolder = (folder) => {
-    setCurrentPath(prev => [...prev, folder.name]);
-    setSelectedFolder(folder);
-  };
-
-  const navigateBack = () => {
-    setCurrentPath(prev => prev.slice(0, -1));
-    setSelectedFolder(null);
-  };
-
   const getCurrentMaterials = () => {
     console.log('Current folders:', folders);
     console.log('Current path:', currentPath);
@@ -731,18 +715,34 @@ const AdminCourseManagement = () => {
         id: folder._id,
         name: folder.title,
         type: 'folder'
-      })).filter(folder => currentPath.length === 0) : 
+      })).filter(folder => !selectedFolder) : 
       [];
 
+    // If a folder is selected, show only materials in that folder
     const currentFiles = materials.filter(item => 
       item.courseId === selectedCourse?._id &&
-      item.type === 'file' &&
-      JSON.stringify(item.path) === JSON.stringify(currentPath)
+      (selectedFolder ? item.folderId === selectedFolder._id : !item.folderId) &&
+      item.type === 'file'
     );
 
     const result = [...currentFolders, ...currentFiles];
     console.log('Materials to display:', result);
     return result;
+  };
+
+  const navigateToFolder = (folder) => {
+    setSelectedFolder(folder);
+    setCurrentPath(prev => [...prev, folder.title]);
+  };
+
+  const navigateBack = () => {
+    if (currentPath.length > 0) {
+      setCurrentPath(prev => prev.slice(0, -1));
+      // If going back to root, clear selected folder
+      if (currentPath.length === 1) {
+        setSelectedFolder(null);
+      }
+    }
   };
 
   // Helper function to format file sizes
@@ -1049,6 +1049,45 @@ const AdminCourseManagement = () => {
       showErrorAlert(
         'Error',
         error.response?.data?.message || 'Failed to update folder. Please try again.'
+      );
+    }
+  };
+
+  const handleCreateFolder = async (e) => {
+    e.preventDefault();
+    if (newFolderName.trim() && selectedCourse?._id) {
+      try {
+        // Create folder using the API with the correct course ID (_id) and title as string
+        const response = await createFolder(selectedCourse._id, newFolderName.trim());
+        
+        // Fetch updated folders list
+        const updatedFolders = await getFolders(selectedCourse._id);
+        setFolders(updatedFolders.folders || []);
+        
+        // Reset form and close modal
+        setNewFolderName('');
+        setShowCreateFolderModal(false);
+
+        showSuccessAlert(
+          'Folder Created',
+          `Folder "${newFolderName}" has been created successfully`
+        );
+      } catch (error) {
+        console.error('Failed to create folder:', error);
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           'Failed to create folder. Please try again.';
+        showErrorAlert('Error', errorMessage);
+      }
+    } else if (!newFolderName.trim()) {
+      showErrorAlert(
+        'Error',
+        'Please enter a folder name'
+      );
+    } else {
+      showErrorAlert(
+        'Error',
+        'No course selected or invalid course ID'
       );
     }
   };
@@ -1562,33 +1601,40 @@ const AdminCourseManagement = () => {
                 <h3 className="text-xl font-semibold text-primary mb-4">
                   Create New Folder
                 </h3>
-                <form onSubmit={createFolder}>
+                <form onSubmit={handleCreateFolder}>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-secondary mb-2">
-                        Folder Name
-                      </label>
+                    <div className="relative">
                       <input
                         type="text"
+                        id="newFolderName"
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
-                        placeholder="Enter folder name..."
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg surface-primary text-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400"
+                        placeholder="Folder Name"
+                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
                         required
                       />
+                      <label
+                        htmlFor="newFolderName"
+                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
+                      >
+                        Folder Name
+                      </label>
                     </div>
                   </div>
                   <div className="flex justify-end space-x-3 mt-6">
                     <button
                       type="button"
-                      onClick={() => setShowCreateFolderModal(false)}
-                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors border border-gray-300 dark:border-slate-600"
+                      onClick={() => {
+                        setShowCreateFolderModal(false);
+                        setNewFolderName('');
+                      }}
+                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors font-medium"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                     >
                       Create Folder
                     </button>
