@@ -179,6 +179,11 @@ const paramValidation = {
         check('teacherId').isMongoId().withMessage('Invalid teacher ID format'),
         validateResult,
     ],
+
+    taskId: [
+        check('courseId').isMongoId().withMessage('Invalid course ID format'),
+        validateResult,
+    ],
 };
 
 module.exports = {

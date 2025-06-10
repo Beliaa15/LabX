@@ -18,6 +18,15 @@ const studentSubmissionSchema = new Schema(
             type: Number,
             default: null,
         },
+        status: {
+            type: String,
+            enum: ['submitted', 'late', 'graded'],
+            default: 'submitted',
+        },
+        submittedAt: {
+            type: Date,
+            default: Date.now,
+        }
     },
     { timestamps: true }
 );
