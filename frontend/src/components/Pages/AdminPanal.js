@@ -86,11 +86,7 @@ const AdminCourseManagement = () => {
   
   // Data states
   const [courses, setCourses] = useState([]);
-  const [materials, setMaterials] = useState(() => {
-    const savedMaterials = localStorage.getItem('courseMaterials');
-    return savedMaterials ? JSON.parse(savedMaterials) : [];
-  });
-
+  const [materials, setMaterials] = useState([]);
   const [students, setStudents] = useState([]);
   const [availableStudents, setAvailableStudents] = useState([]);
   
@@ -110,6 +106,10 @@ const AdminCourseManagement = () => {
   const [materialsSearchQuery, setMaterialsSearchQuery] = useState('');
   const [materialsViewMode, setMaterialsViewMode] = useState('grid');
 
+  // Add new state for upload progress
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [isDragging, setIsDragging] = useState(false);
+
   // Load courses when component mounts or when user/token changes
   useEffect(() => {
     if (user && token) {
@@ -120,6 +120,72 @@ const AdminCourseManagement = () => {
       setIsLoading(false);
     }
   }, [user, token]);
+
+  // Add useEffect to load folders when course is selected
+  useEffect(() => {
+    const loadFolders = async () => {
+      if (selectedCourse) {
+        try {
+          console.log('Loading folders for course:', selectedCourse._id);
+          const response = await getFolders(selectedCourse._id);
+          setFolders(response.folders || []);
+        } catch (error) {
+          console.error('Failed to load folders:', error);
+          showErrorAlert(
+            'Error Loading Folders',
+            'Failed to load folders. Please try again later.'
+          );
+          setFolders([]);
+        }
+      } else {
+        setFolders([]);
+      }
+    };
+
+    loadFolders();
+    // Clear materials when course changes
+    setMaterials([]);
+  }, [selectedCourse]);
+
+  // Add useEffect to load materials only when a folder is selected
+  useEffect(() => {
+    const loadMaterials = async () => {
+      if (selectedCourse && selectedFolder) {
+        try {
+          console.log('Loading materials for folder:', selectedFolder._id);
+          const response = await getMaterials(selectedCourse._id, selectedFolder._id);
+          
+          const transformedMaterials = response.materials.map(material => ({
+            _id: material._id,
+            id: material._id,
+            name: material.title,
+            title: material.title,
+            type: 'file',
+            size: material.fileSize || 0,
+            uploadedAt: material.createdAt,
+            courseId: selectedCourse._id,
+            folderId: selectedFolder._id,
+            path: currentPath,
+            filePath: material.filePath
+          }));
+
+          setMaterials(transformedMaterials);
+        } catch (error) {
+          console.error('Failed to load materials:', error);
+          showErrorAlert(
+            'Error Loading Materials',
+            'Failed to load materials. Please try again later.'
+          );
+          setMaterials([]);
+        }
+      } else {
+        // Clear materials when no folder is selected
+        setMaterials([]);
+      }
+    };
+
+    loadMaterials();
+  }, [selectedFolder]);
 
   const fetchCourses = async () => {
     try {
@@ -157,31 +223,6 @@ const AdminCourseManagement = () => {
     setSelectedCourse(null);
     setCurrentPath([]);
   }, [courses]);
-
-  // Add useEffect to fetch folders when course is selected
-  useEffect(() => {
-    const loadFolders = async () => {
-      if (selectedCourse && selectedCourse._id) {
-        try {
-          console.log('Fetching folders for course:', selectedCourse._id);
-          const response = await getFolders(selectedCourse._id);
-          // Extract folders array from response
-          setFolders(response.folders || []);
-        } catch (error) {
-          console.error('Failed to fetch folders:', error);
-          showErrorAlert(
-            'Error Loading Folders',
-            'Failed to load course folders. Please try again later.'
-          );
-        }
-      } else {
-        // Reset folders when no course is selected
-        setFolders([]);
-      }
-    };
-
-    loadFolders();
-  }, [selectedCourse]);
 
   const handleCreateCourse = async (e) => {
     e.preventDefault();
@@ -572,66 +613,116 @@ const AdminCourseManagement = () => {
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file && selectedCourse) {
+  const handleFileUpload = async (files) => {
+    if (!selectedCourse) return;
+
+    const allowedTypes = ['application/pdf', 'image/*', 'text/*', 'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'video/*', 'audio/*'];
+
+    const uploadFile = async (file) => {
       try {
-        // Create the form data for upload
+        // Validate file type
+        const isValidType = allowedTypes.some(type => {
+          if (type.endsWith('/*')) {
+            const category = type.split('/')[0];
+            return file.type.startsWith(category + '/');
+          }
+          return file.type === type;
+        });
+
+        if (!isValidType) {
+          showErrorAlert('Invalid File Type', `${file.name} is not an allowed file type.`);
+          return null;
+        }
+
+        // Create form data
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', file.name);
         
-        // Upload the material with the correct folder ID
+        // Upload with progress tracking
         const result = await uploadMaterial(
           selectedCourse._id,
-          selectedFolder?._id || '', // Pass empty string if no folder selected
-          formData
+          selectedFolder?._id || '',
+          formData,
+          (progress) => {
+            setUploadProgress(prev => ({
+              ...prev,
+              [file.name]: progress
+            }));
+          }
         );
 
-        // Create new material object
-        const newMaterial = {
-          _id: result.material._id,
-          id: result.material._id,
-          name: file.name,
-          title: result.material.title,
-          type: 'file',
-          size: file.size,
-          uploadedAt: new Date().toISOString(),
-          courseId: selectedCourse._id,
-          folderId: selectedFolder?._id || '',
-          path: currentPath
-        };
-
-        // Add the new material to the materials state
-        setMaterials(prevMaterials => {
-          // Remove any existing material with the same name in the same location
-          const filteredMaterials = prevMaterials.filter(
-            material =>
-              !(
-                material.name === file.name &&
-                material.folderId === (selectedFolder?._id || '')
-              )
-          );
-
-          // Add the new material
-          return [...filteredMaterials, newMaterial];
-        });
-
-        // Reset form and close modal
-        setSelectedFile(null);
-        setShowAddMaterialModal(false);
-
-        showSuccessAlert(
-          'File Uploaded',
-          `${file.name} has been successfully uploaded${selectedFolder ? ` to ${selectedFolder.title}` : ''}`
-        );
+        return result.material;
       } catch (error) {
         console.error('Upload failed:', error);
         const errorMessage = error.response?.data?.message || 
                            error.response?.data?.error || 
                            'Failed to upload file. Please try again.';
-        showErrorAlert('Upload Failed', errorMessage);
+        showErrorAlert('Upload Failed', `${file.name}: ${errorMessage}`);
+        return null;
       }
+    };
+
+    // Handle multiple files
+    const fileArray = Array.from(files);
+    const uploadPromises = fileArray.map(uploadFile);
+    const results = await Promise.all(uploadPromises);
+    const successfulUploads = results.filter(Boolean);
+
+    if (successfulUploads.length > 0) {
+      // Refresh materials from the server after successful uploads
+      const response = await getMaterials(selectedCourse._id, selectedFolder?._id || '');
+      const transformedMaterials = response.materials.map(material => ({
+        _id: material._id,
+        id: material._id,
+        name: material.title,
+        title: material.title,
+        type: 'file',
+        size: material.fileSize || 0,
+        uploadedAt: material.createdAt,
+        courseId: selectedCourse._id,
+        folderId: selectedFolder?._id || '',
+        path: currentPath,
+        filePath: material.filePath
+      }));
+
+      setMaterials(transformedMaterials);
+
+      // Show success message
+      showSuccessAlert(
+        'Files Uploaded',
+        `Successfully uploaded ${successfulUploads.length} file(s)${
+          selectedFolder ? ` to ${selectedFolder.title}` : ''
+        }`
+      );
+    }
+
+    // Reset states
+    setSelectedFile(null);
+    setShowAddMaterialModal(false);
+    setUploadProgress({});
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileUpload(files);
     }
   };
 
@@ -660,41 +751,33 @@ const AdminCourseManagement = () => {
 
   const handleDelete = async (item) => {
     try {
-      const result = await showConfirmDialog(
-        `Delete ${item.type === 'folder' ? 'Folder' : 'File'}`,
-        `Are you sure you want to delete "${item.title || item.name}"? This action cannot be undone.`,
-        'Yes, Delete',
-        'Cancel'
-      );
-
-      if (result.isConfirmed) {
-        if (item.type === 'folder') {
-          // Delete folder using the API
-          await deleteFolder(selectedCourse._id, item._id);
-          
-          // Refresh folders list
-          const response = await getFolders(selectedCourse._id);
-          setFolders(response.folders || []);
-
-          // If we're inside the deleted folder, navigate back
-          if (currentPath.includes(item.title)) {
-            navigateBack();
-          }
-        } else {
-          // Delete material using the service
-          await deleteMaterial(selectedCourse._id, item.folderId || '', item._id);
-          
-          // Update materials state
-          setMaterials(prevMaterials => 
-            prevMaterials.filter(material => material._id !== item._id)
-          );
-        }
-
-        showSuccessAlert(
-          'Deleted Successfully',
-          `${item.type === 'folder' ? 'Folder' : 'File'} "${item.title || item.name}" has been deleted`
-        );
+      if (item.type === 'folder') {
+        await deleteFolder(selectedCourse._id, item._id);
+        setFolders(prevFolders => prevFolders.filter(folder => folder._id !== item._id));
+      } else {
+        await deleteMaterial(selectedCourse._id, item.folderId || '', item._id);
+        // Refresh materials from server after deletion
+        const response = await getMaterials(selectedCourse._id, selectedFolder?._id || '');
+        const transformedMaterials = response.materials.map(material => ({
+          _id: material._id,
+          id: material._id,
+          name: material.title,
+          title: material.title,
+          type: 'file',
+          size: material.fileSize || 0,
+          uploadedAt: material.createdAt,
+          courseId: selectedCourse._id,
+          folderId: selectedFolder?._id || '',
+          path: currentPath,
+          filePath: material.filePath
+        }));
+        setMaterials(transformedMaterials);
       }
+
+      showSuccessAlert(
+        'Item Deleted',
+        `${item.name} has been successfully deleted`
+      );
     } catch (error) {
       console.error('Delete failed:', error);
       showErrorAlert(
@@ -705,10 +788,7 @@ const AdminCourseManagement = () => {
   };
 
   const getCurrentMaterials = () => {
-    console.log('Current folders:', folders);
-    console.log('Current path:', currentPath);
-    
-    // For root level (no current path), show all folders
+    // For root level (no current path), show only folders
     const currentFolders = Array.isArray(folders) ? 
       folders.map(folder => ({
         ...folder,
@@ -718,16 +798,10 @@ const AdminCourseManagement = () => {
       })).filter(folder => !selectedFolder) : 
       [];
 
-    // If a folder is selected, show only materials in that folder
-    const currentFiles = materials.filter(item => 
-      item.courseId === selectedCourse?._id &&
-      (selectedFolder ? item.folderId === selectedFolder._id : !item.folderId) &&
-      item.type === 'file'
-    );
+    // Show materials only if a folder is selected
+    const currentFiles = selectedFolder ? materials : [];
 
-    const result = [...currentFolders, ...currentFiles];
-    console.log('Materials to display:', result);
-    return result;
+    return [...currentFolders, ...currentFiles];
   };
 
   const navigateToFolder = (folder) => {
@@ -1654,10 +1728,19 @@ const AdminCourseManagement = () => {
                   Upload Files
                 </h3>
                 <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-8 text-center hover:border-gray-400 dark:hover:border-slate-500 transition-colors">
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                      isDragging
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     <input
                       type="file"
-                      onChange={handleFileUpload}
+                      onChange={(e) => handleFileUpload(e.target.files)}
                       className="hidden"
                       id="file-upload"
                       multiple
@@ -1668,21 +1751,33 @@ const AdminCourseManagement = () => {
                     >
                       <Upload className="w-8 h-8 text-muted mb-2" />
                       <span className="text-secondary font-medium">
-                        Click to upload files
+                        Click to upload files or drag and drop
                       </span>
-                      <span className="text-sm text-muted">
-                        or drag and drop them here
+                      <span className="text-sm text-muted mt-1">
+                        Supported formats: PDF, Office documents, images, videos, and audio files
                       </span>
                     </label>
                   </div>
-                </div>
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    onClick={() => setShowAddMaterialModal(false)}
-                    className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors border border-gray-300 dark:border-slate-600"
-                  >
-                    Cancel
-                  </button>
+
+                  {/* Upload Progress */}
+                  {Object.keys(uploadProgress).length > 0 && (
+                    <div className="space-y-2">
+                      {Object.entries(uploadProgress).map(([filename, progress]) => (
+                        <div key={filename} className="text-sm">
+                          <div className="flex justify-between text-secondary mb-1">
+                            <span>{filename}</span>
+                            <span>{Math.round(progress)}%</span>
+                          </div>
+                          <div className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-300"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

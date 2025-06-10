@@ -5,9 +5,10 @@ import { default as authApi } from './authService';
  * @param {string} courseId - The MongoDB _id of the course
  * @param {string} folderId - The MongoDB _id of the folder
  * @param {FormData} formData - FormData containing file, title, and description
+ * @param {Function} onProgress - Optional callback for upload progress (0-100)
  * @returns {Promise} - The uploaded material data
  */
-export const uploadMaterial = async (courseId, folderId, formData) => {
+export const uploadMaterial = async (courseId, folderId, formData, onProgress) => {
     try {
         console.log('Uploading material:', { courseId, folderId });
         const response = await authApi.post(
@@ -16,6 +17,12 @@ export const uploadMaterial = async (courseId, folderId, formData) => {
             {
                 headers: {
                     'Content-Type': 'multipart/form-data',
+                },
+                onUploadProgress: (progressEvent) => {
+                    if (onProgress && progressEvent.total) {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        onProgress(percentCompleted);
+                    }
                 },
             }
         );
