@@ -297,6 +297,7 @@ const AdminCourseManagement = () => {
     const handleCardClick = () => {
       setSelectedCourse(course);
       setTempCourse(course);
+      setSelectedFolder(null);
       setCurrentPath([]);
     };
 
@@ -415,6 +416,7 @@ const AdminCourseManagement = () => {
       onClick={() => {
         setSelectedCourse(course);
         setTempCourse(course);
+        setSelectedFolder(null);
         setCurrentPath([]);
       }}
       className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
@@ -816,6 +818,12 @@ const AdminCourseManagement = () => {
       if (currentPath.length === 1) {
         setSelectedFolder(null);
       }
+    } else {
+      // If we're at root level and going back, clear course selection
+      setSelectedCourse(null);
+      setSelectedFolder(null);
+      setCurrentPath([]);
+      setMaterials([]);
     }
   };
 
