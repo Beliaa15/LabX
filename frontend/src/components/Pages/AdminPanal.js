@@ -755,33 +755,42 @@ const AdminCourseManagement = () => {
 
   const handleDelete = async (item) => {
     try {
-      if (item.type === 'folder') {
-        await deleteFolder(selectedCourse._id, item._id);
-        setFolders(prevFolders => prevFolders.filter(folder => folder._id !== item._id));
-      } else {
-        await deleteMaterial(selectedCourse._id, item.folderId || '', item._id);
-        // Refresh materials from server after deletion
-        const response = await getMaterials(selectedCourse._id, selectedFolder?._id || '');
-        const transformedMaterials = response.materials.map(material => ({
-          _id: material._id,
-          id: material._id,
-          name: material.title,
-          title: material.title,
-          type: 'file',
-          size: material.fileSize || 0,
-          uploadedAt: material.createdAt,
-          courseId: selectedCourse._id,
-          folderId: selectedFolder?._id || '',
-          path: currentPath,
-          filePath: material.filePath
-        }));
-        setMaterials(transformedMaterials);
-      }
-
-      showSuccessAlert(
-        'Item Deleted',
-        `${item.name} has been successfully deleted`
+      const result = await showConfirmDialog(
+        `Delete ${item.type === 'folder' ? 'Folder' : 'File'}`,
+        `Are you sure you want to delete "${item.title || item.name}"? This action cannot be undone.`,
+        'Yes, Delete',
+        'Cancel'
       );
+
+      if (result.isConfirmed) {
+        if (item.type === 'folder') {
+          await deleteFolder(selectedCourse._id, item._id);
+          setFolders(prevFolders => prevFolders.filter(folder => folder._id !== item._id));
+        } else {
+          await deleteMaterial(selectedCourse._id, item.folderId || '', item._id);
+          // Refresh materials from server after deletion
+          const response = await getMaterials(selectedCourse._id, selectedFolder?._id || '');
+          const transformedMaterials = response.materials.map(material => ({
+            _id: material._id,
+            id: material._id,
+            name: material.title,
+            title: material.title,
+            type: 'file',
+            size: material.fileSize || 0,
+            uploadedAt: material.createdAt,
+            courseId: selectedCourse._id,
+            folderId: selectedFolder?._id || '',
+            path: currentPath,
+            filePath: material.filePath
+          }));
+          setMaterials(transformedMaterials);
+        }
+
+        showSuccessAlert(
+          'Item Deleted',
+          `${item.name} has been successfully deleted`
+        );
+      }
     } catch (error) {
       console.error('Delete failed:', error);
       showErrorAlert(
@@ -1255,13 +1264,15 @@ const AdminCourseManagement = () => {
                   <FolderPlus className="w-4 h-4 mr-2" />
                   New Folder
                 </button>
-                <button
-                  onClick={() => setShowAddMaterialModal(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Files
-                </button>
+                {selectedFolder && (
+                  <button
+                    onClick={() => setShowAddMaterialModal(true)}
+                    className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Files
+                  </button>
+                )}
                 <span className="text-sm text-secondary">
                   {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
                 </span>
