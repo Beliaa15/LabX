@@ -153,7 +153,12 @@ const MyCourses = () => {
 
   const CourseCard = ({ course }) => (
     <div 
-      onClick={() => setSelectedCourse(course)}
+      onClick={() => {
+        setSelectedCourse(course);
+        setSelectedFolder(null); // Reset folder selection
+        setCurrentPath([]); // Reset path
+        setMaterials([]); // Clear materials
+      }}
       className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer"
     >
       <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
@@ -194,7 +199,12 @@ const MyCourses = () => {
 
   const CourseListItem = ({ course }) => (
     <div 
-      onClick={() => setSelectedCourse(course)}
+      onClick={() => {
+        setSelectedCourse(course);
+        setSelectedFolder(null); // Reset folder selection
+        setCurrentPath([]); // Reset path
+        setMaterials([]); // Clear materials
+      }}
       className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
     >
       <div className="p-4 flex items-center justify-between">
