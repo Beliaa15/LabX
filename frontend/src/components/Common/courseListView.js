@@ -43,7 +43,7 @@ const CourseListView = ({
               <span className="sm:hidden">Create</span>
             </button>
             <span className="text-sm text-secondary whitespace-nowrap">
-              {courses.length} course{courses.length !== 1 ? "s" : ""}
+              {courses.length ? ` ${courses.length} course${courses.length !== 1 ? "s" : ""}` : ""}
             </span>
           </div>
 

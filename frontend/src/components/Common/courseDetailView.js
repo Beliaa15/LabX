@@ -292,7 +292,8 @@ const CourseDetailView = ({
               </button>
             )}
             <span className="text-sm text-secondary whitespace-nowrap">
-              {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? "s" : ""}
+              {getCurrentMaterials().length ? ` ${getCurrentMaterials().length} item${getCurrentMaterials().length > 1 ? "s" : ""}` : ""}
+              
             </span>
           </div>
 
