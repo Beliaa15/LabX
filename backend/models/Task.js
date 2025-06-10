@@ -10,11 +10,6 @@ const taskSchema = new Schema(
             type: String,
             required: true,
         },
-        // type: {
-        //     type: String,
-        //     enum: ['webGl', 'assignment', 'quiz'],
-        //     required: true,
-        // },
         courseTasks: [
             {
                 course: {
@@ -42,9 +37,6 @@ const taskSchema = new Schema(
             type: String,
             default: null,
         },
-        // filePath: {
-        //     type: String,
-        // },
         score: {
             type: Number,
             default: 100,

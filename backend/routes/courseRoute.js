@@ -32,7 +32,13 @@ const {
     deleteMaterial,
 } = require('../controllers/materialController');
 
-const {getTasksByCourse} = require('../controllers/taskController');
+const {
+    submitTask,
+    updateSubmission,
+    getTaskSubmissions,
+} = require('../controllers/submissionController');
+
+const { getTasksByCourse } = require('../controllers/taskController');
 
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const {
@@ -148,7 +154,7 @@ router.delete(
     paramValidation.courseId,
     paramValidation.folderId,
     deleteMaterial
-)
+);
 
 router.get(
     '/:courseId/tasks',
@@ -156,5 +162,35 @@ router.get(
     paramValidation.courseId,
     getTasksByCourse
 ); // Get all tasks assigned to a course
+
+// Route to submit a task
+router.post(
+    '/:courseId/tasks/:taskId/submit',
+    authenticate,
+    isStudent,
+    paramValidation.courseId,
+    paramValidation.taskId,
+    submitTask
+);
+
+// Route to update a submission
+router.put(
+    '/:courseId/tasks/:taskId/submit',
+    authenticate,
+    isStudent,
+    paramValidation.courseId,
+    paramValidation.taskId,
+    updateSubmission
+);
+
+// Route to get all submissions for a task
+router.get(
+    '/:courseId/tasks/:taskId/submissions',
+    authenticate,
+    isTeacher,
+    paramValidation.courseId,
+    paramValidation.taskId,
+    getTaskSubmissions
+);
 
 module.exports = router;
