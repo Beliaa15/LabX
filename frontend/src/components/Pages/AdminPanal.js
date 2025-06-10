@@ -52,6 +52,17 @@ import {
   updateFolder 
 } from '../../services/folderService';
 import Sidebar from '../Common/Sidebar';
+import Header from '../Common/Header';
+import SearchBar from '../ui/SearchBar';
+import ViewModeToggle from '../ui/ViewModeToggle';
+import CourseCard from '../ui/CourseComponents';
+import CreateCourseModal from '../Common/Modals/CreateCourseModal';
+import AddStudentModal from '../Common/Modals/AddStudentModal';
+import ViewStudentsModal from '../Common/Modals/ViewEnrolledStudentsModal';
+import UploadFilesModal from '../Common/Modals/UploadFilesModal';
+import CreateFolderModal from '../Common/Modals/CreateFolderModal';
+import UpdateCourseModal from '../Common/Modals/UpdateCourseModal';
+import UpdateFolderModal from '../Common/Modals/UpdateFolderModal';
 import ToggleButton from '../ui/ToggleButton';
 import { useDarkMode } from '../Common/useDarkMode';
 
@@ -224,6 +235,31 @@ const AdminCourseManagement = () => {
     setCurrentPath([]);
   }, [courses]);
 
+  const handleCourseClick = (course) => {
+    setSelectedCourse(course);
+    setTempCourse(course);
+    setSelectedFolder(null);
+    setCurrentPath([]);
+    setMaterials([]);
+  };
+
+  const handleAddStudentClick = (course) => {
+    setTempCourse(course);
+    setShowAddStudentModal(true);
+  };
+
+  const handleViewStudentsClick = (course) => {
+    setShowEnrolledStudentsModal(true);
+    setTempCourse(course);
+  };
+
+  const handleUpdateCourseClick = (course) => {
+    setTempCourse(course);
+    setUpdateCourseName(course.name);
+    setUpdateCourseDescription(course.description || '');
+    setShowUpdateModal(true);
+  };
+
   const handleCreateCourse = async (e) => {
     e.preventDefault();
     if (courseName.trim()) {
@@ -293,279 +329,6 @@ const AdminCourseManagement = () => {
     course.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const CourseCard = ({ course }) => {
-    const handleCardClick = () => {
-      setSelectedCourse(course);
-      setTempCourse(course);
-      setSelectedFolder(null);
-      setCurrentPath([]);
-      setMaterials([]);
-    };
-
-    const handleAddStudentsClick = (e) => {
-      e.stopPropagation();
-      setTempCourse(course);
-      setShowAddStudentModal(true);
-      setShowMobileMenu(false);
-    };
-
-    const handleUpdateCourse = (course) => {
-      setTempCourse(course);
-      setUpdateCourseName(course.name);
-      setUpdateCourseDescription(course.description || '');
-      setShowUpdateModal(true);
-      setShowMobileMenu(false);
-    };
-
-    return (
-      <div  
-        onClick={handleCardClick}
-        className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer"
-      >
-        <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
-          {/* Desktop Actions */}
-          <div className="absolute top-3 right-3">
-            <div className="hidden md:flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button 
-                onClick={handleAddStudentsClick}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-                title="Add Student"
-              >
-                <UserPlus className="w-3 h-3 text-white" />
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowEnrolledStudentsModal(true);
-                  setTempCourse(course);
-                }}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-                title="View Enrolled Students"
-              >
-                <Eye className="w-3 h-3 text-white" />
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleUpdateCourse(course);
-                }}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-                title="Update Course"
-              >
-                <Edit2 className="w-3 h-3 text-white" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteCourse(course._id);
-                }}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-                title="Delete Course"
-              >
-                <Trash2 className="w-3 h-3 text-white" />
-              </button>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden relative mobile-menu-container">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMobileMenu(showMobileMenu === course._id ? null : course._id);
-                }}
-                className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-              >
-                <MoreVertical className="w-4 h-4 text-white" />
-              </button>
-
-              {/* Mobile Dropdown Menu */}
-              {showMobileMenu === course._id && (
-                <div className="absolute right-0 top-full mt-2 w-48 surface-primary rounded-lg shadow-lg border border-primary z-20">
-                  <div className="py-2">
-                    <button
-                      onClick={handleAddStudentsClick}
-                      className="w-full px-4 py-2 text-left text-primary hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center space-x-2"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      <span>Add Student</span>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowEnrolledStudentsModal(true);
-                        setTempCourse(course);
-                        setShowMobileMenu(null);
-                      }}
-                      className="w-full px-4 py-2 text-left text-primary hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center space-x-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>View Students</span>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUpdateCourse(course);
-                      }}
-                      className="w-full px-4 py-2 text-left text-primary hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center space-x-2"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      <span>Update Course</span>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCourse(course._id);
-                      }}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Delete Course</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
-            <span className="text-xs px-2 py-1 rounded bg-white/20 text-white backdrop-blur-sm">
-              Code: {course.code}
-            </span>
-            {user?.role === 'admin' && (
-              <span className="text-xs px-2 py-1 rounded bg-white/20 text-white backdrop-blur-sm truncate ml-2">
-                By: {course.teacher.firstName} {course.teacher.lastName}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="p-4">
-          <h3 className="font-semibold text-primary text-lg mb-2 line-clamp-1">
-            {course.name}
-          </h3>
-          {course.description && (
-            <p className="text-sm text-muted mb-3 line-clamp-2">
-              {course.description}
-            </p>
-          )}
-          
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Students:</span>
-              <span className="font-medium text-primary">
-                {Array.isArray(course.students) ? course.students.length : 0}
-              </span>
-            </div>
-            {user?.role === 'admin' && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted">Teacher:</span>
-                <span className="font-medium text-primary truncate ml-2">
-                  {course.teacher.email}
-                </span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Created:</span>
-              <span className="font-medium text-primary">
-                {new Date(course.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const CourseListItem = ({ course }) => (
-    <div 
-      onClick={() => {
-        setSelectedCourse(course);
-        setTempCourse(course);
-        setSelectedFolder(null); // Reset folder selection
-        setCurrentPath([]); // Reset path
-        setMaterials([]); // Clear materials
-      }}
-      className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
-    >
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="font-semibold text-primary">
-                {course.name}
-              </h3>
-              <span className="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
-                Code: {course.code}
-              </span>
-              {user?.role === 'admin' && (
-                <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                  Teacher: {course.teacher.firstName} {course.teacher.lastName}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-4 text-sm text-secondary">
-              <span>{Array.isArray(course.students) ? course.students.length : 0} students</span>
-              <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
-              {course.description && (
-                <span className="text-muted line-clamp-1">{course.description}</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setTempCourse(course);
-              setShowAddStudentModal(true);
-            }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-            title="Add Student"
-          >
-            <UserPlus className="w-4 h-4 text-indigo-400" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowEnrolledStudentsModal(true);
-              setTempCourse(course);
-            }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-            title="View Enrolled Students"
-          >
-            <Eye className="w-4 h-4 text-blue-400" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setTempCourse(course);
-              setUpdateCourseName(course.name);
-              setUpdateCourseDescription(course.description || '');
-              setShowUpdateModal(true);
-            }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-            title="Update Course"
-          >
-            <Edit2 className="w-4 h-4 text-amber-400" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteCourse(course._id);
-            }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-            title="Delete Course"
-          >
-            <Trash2 className="w-4 h-4 text-red-400" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (tempCourse && studentEmail.trim()) {
@@ -620,63 +383,6 @@ const AdminCourseManagement = () => {
         'Error Adding Student',
         'Please enter a valid email address.'
       );
-    }
-  };
-
-  const handleRemoveStudent = async (studentId) => {
-    if (tempCourse) {
-      const studentToRemove = tempCourse.students.find(s => s.id === studentId);
-      
-      const result = await showConfirmDialog(
-        'Remove Student',
-        `Are you sure you want to remove ${studentToRemove.name} from ${tempCourse.name}?`,
-        'Yes, Remove',
-        'Cancel'
-      );
-
-      if (result.isConfirmed) {
-        // Update the courses state
-        setCourses(prevCourses => 
-          prevCourses.map(course => {
-            if (course.id === tempCourse.id) {
-              return {
-                ...course,
-                students: (course.students || []).filter(s => s.id !== studentId)
-              };
-            }
-            return course;
-          })
-        );
-
-        // Update tempCourse
-        setTempCourse({
-          ...tempCourse,
-          students: tempCourse.students.filter(s => s.id !== studentId)
-        });
-
-        // Update localStorage
-        const allCourses = JSON.parse(localStorage.getItem('adminCourses') || '[]');
-        const updatedCourses = allCourses.map(course => {
-          if (course.id === tempCourse.id) {
-            return {
-              ...course,
-              students: (course.students || []).filter(s => s.id !== studentId)
-            };
-          }
-          return course;
-        });
-        localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
-
-        // Update available students
-        if (studentToRemove) {
-          setAvailableStudents(prev => [...prev, studentToRemove]);
-        }
-
-        showSuccessAlert(
-          'Student Removed',
-          `${studentToRemove.name} has been removed from ${tempCourse.name}`
-        );
-      }
     }
   };
 
@@ -1117,19 +823,6 @@ const AdminCourseManagement = () => {
     );
   };
 
-  // Helper function to get role-specific title
-  const getRoleTitle = () => {
-    if (user?.role === 'admin') {
-      return 'Course Management';
-    }
-    return 'My Courses';
-  };
-
-  // Helper function to get role display text
-  const getRoleDisplay = () => {
-    return user?.role === 'admin' ? 'Administrator' : 'Teacher';
-  };
-
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
     if (!tempCourse) return;
@@ -1241,7 +934,79 @@ const AdminCourseManagement = () => {
       );
     }
   };
+  const handleRemoveStudent = async (student) => {
+    try {
+      // Show confirmation dialog
+      const result = await showConfirmDialog(
+        'Remove Student',
+        `Are you sure you want to remove ${student.firstName} ${student.lastName} from this course?`,
+        'Yes, Remove',
+        'Cancel'
+      );
 
+      // Exit if user cancelled
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      // Set loading state
+      setIsLoading(true);
+
+      // Call API to unenroll student
+      await unenrollStudent(tempCourse._id, student.email);
+      
+      // Update local state - remove student from tempCourse
+      const updatedStudents = tempCourse.students.filter(s => s._id !== student._id);
+      setTempCourse(prev => ({
+        ...prev,
+        students: updatedStudents
+      }));
+
+      // Update courses list with the updated student list
+      setCourses(prevCourses => 
+        prevCourses.map(course => {
+          if (course._id === tempCourse._id) {
+            return {
+              ...course,
+              students: updatedStudents
+            };
+          }
+          return course;
+        })
+      );
+
+      // Show success message
+      showSuccessAlert(
+        'Student Removed',
+        `${student.firstName} ${student.lastName} has been removed from the course`
+      );
+
+      // Close modal if no students left
+      if (updatedStudents.length === 0) {
+        setShowEnrolledStudentsModal(false);
+      }
+
+    } catch (error) {
+      console.error('Failed to remove student:', error);
+      
+      // Handle different error scenarios
+      let errorMessage = 'Failed to remove student. ';
+      
+      if (error.response?.status === 403) {
+        errorMessage += 'You do not have permission to remove students from this course.';
+      } else if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else {
+        errorMessage += 'Please try again later.';
+      }
+
+      showErrorAlert('Remove Failed', errorMessage);
+    } finally {
+      // Always reset loading state
+      setIsLoading(false);
+    }
+  };
+  
   // Add useEffect for escape key handling
   useEffect(() => {
     const handleEscapeKey = (event) => {
@@ -1287,49 +1052,20 @@ const AdminCourseManagement = () => {
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
-      <div className={`${sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'} flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
-        {/* Header - Updated to match Profile.js */}
-        <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-primary transition-all duration-300">
-          <div className="h-16 px-4 md:px-6 pr-16 md:pr-6 flex items-center justify-between">
-            <div className="flex-1 flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
-                {user?.role === 'admin' ? 'Course Management' : 'My Courses'}
-              </h1>
-            </div>
-            <div className="hidden md:flex items-center space-x-6">
-              {/* User Profile */}
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-slate-700 transform hover:scale-105 transition-all duration-200">
-                    <span className="text-sm font-semibold text-white">
-                      {user?.firstName?.charAt(0)}
-                      {user?.lastName?.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-slate-700"></div>
-                </div>
-                <div className="block">
-                  <p className="text-sm font-medium text-primary">
-                    {user?.firstName} {user?.lastName}
-                  </p>
-                  <p className="text-xs text-muted">
-                    {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="h-6 w-px bg-gray-200 dark:bg-slate-700"></div>
-
-              {/* Dark Mode Toggle */}
-              <ToggleButton
-                isChecked={isDarkMode}
-                onChange={handleToggle}
-                className="transform hover:scale-105 transition-transform duration-200"
-              />
-            </div>
-          </div>
-        </header>
+      <div
+        className={`${
+          sidebarCollapsed ? "md:pl-16" : "md:pl-64"
+        } flex flex-col flex-1 transition-all duration-300 ease-in-out`}
+      >
+        {/* Header */}
+        <Header
+          title={user?.role === "admin" ? "Course Management" : "My Courses"}
+          user={user}
+          isAdmin={isAdmin}
+          isTeacher={isTeacher}
+          isDarkMode={isDarkMode}
+          handleToggle={handleToggle}
+        />
 
         {/* Controls */}
         <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
@@ -1343,12 +1079,14 @@ const AdminCourseManagement = () => {
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   <span className="hidden sm:inline">
-                    {user?.role === 'admin' ? 'Create Course' : 'Create New Course'}
+                    {user?.role === "admin"
+                      ? "Create Course"
+                      : "Create New Course"}
                   </span>
                   <span className="sm:hidden">Create</span>
                 </button>
                 <span className="text-sm text-secondary whitespace-nowrap">
-                  {courses.length} course{courses.length !== 1 ? 's' : ''}
+                  {courses.length} course{courses.length !== 1 ? "s" : ""}
                 </span>
               </div>
             ) : (
@@ -1359,7 +1097,9 @@ const AdminCourseManagement = () => {
                   className="flex items-center px-3 py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
                 >
                   <FolderPlus className="w-4 h-4" />
-                  <span className="hidden md:inline ml-2 text-sm">New Folder</span>
+                  <span className="hidden md:inline ml-2 text-sm">
+                    New Folder
+                  </span>
                 </button>
                 {selectedFolder && (
                   <button
@@ -1367,11 +1107,14 @@ const AdminCourseManagement = () => {
                     className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors"
                   >
                     <Upload className="w-4 h-4" />
-                    <span className="hidden md:inline ml-2 text-sm">Upload Files</span>
+                    <span className="hidden md:inline ml-2 text-sm">
+                      Upload Files
+                    </span>
                   </button>
                 )}
                 <span className="text-sm text-secondary whitespace-nowrap">
-                  {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
+                  {getCurrentMaterials().length} item
+                  {getCurrentMaterials().length !== 1 ? "s" : ""}
                 </span>
               </div>
             )}
@@ -1379,47 +1122,33 @@ const AdminCourseManagement = () => {
             {/* Search and View Controls - Right side */}
             <div className="flex items-center justify-end space-x-3 flex-shrink-0">
               {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
-                <input
-                  type="text"
-                  placeholder={selectedCourse ? "Search folders and files..." : `Search ${user?.role === 'admin' ? 'courses' : 'your courses'}...`}
-                  value={selectedCourse ? materialsSearchQuery : searchQuery}
-                  onChange={(e) => selectedCourse ? setMaterialsSearchQuery(e.target.value) : setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-64 sm:w-72 border border-primary rounded-lg surface-primary text-primary placeholder:text-muted focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
-                />
-              </div>
+              <SearchBar
+                value={selectedCourse ? materialsSearchQuery : searchQuery}
+                onChange={
+                  selectedCourse ? setMaterialsSearchQuery : setSearchQuery
+                }
+                placeholder={
+                  selectedCourse
+                    ? "Search folders and files..."
+                    : `Search ${
+                        user?.role === "admin" ? "courses" : "your courses"
+                      }...`
+                }
+                className="w-64 sm:w-72"
+              />
 
               {/* View Mode Toggle */}
-              <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
-                <button
-                  onClick={() => selectedCourse ? setMaterialsViewMode('grid') : setViewMode('grid')}
-                  className={`p-2 rounded-md transition-colors ${
-                    (selectedCourse ? materialsViewMode : viewMode) === 'grid'
-                      ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
-                      : 'text-muted hover:text-secondary hover:bg-white/50 dark:hover:bg-slate-600/50'
-                  }`}
-                  title="Grid View"
-                >
-                  <Grid3X3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => selectedCourse ? setMaterialsViewMode('list') : setViewMode('list')}
-                  className={`p-2 rounded-md transition-colors ${
-                    (selectedCourse ? materialsViewMode : viewMode) === 'list'
-                      ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
-                      : 'text-muted hover:text-secondary hover:bg-white/50 dark:hover:bg-slate-600/50'
-                  }`}
-                  title="List View"
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
+              <ViewModeToggle
+                viewMode={selectedCourse ? materialsViewMode : viewMode}
+                onViewModeChange={
+                  selectedCourse ? setMaterialsViewMode : setViewMode
+                }
+              />
             </div>
           </div>
         </div>
 
-        {/* Main Content - Updated to match Profile.js structure */}
+        {/* Main Content */}
         <main className="animate-fadeIn flex-1 relative z-0 overflow-y-auto focus:outline-none">
           <div className="py-6">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -1431,15 +1160,18 @@ const AdminCourseManagement = () => {
                 <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
                   <BookOpen className="w-12 h-12 text-muted mb-4" />
                   <h3 className="text-lg font-medium text-primary mb-2">
-                    {searchQuery ? 'No courses found' : user?.role === 'admin' ? 'No courses created yet' : 'You haven\'t created any courses yet'}
+                    {searchQuery
+                      ? "No courses found"
+                      : user?.role === "admin"
+                      ? "No courses created yet"
+                      : "You haven't created any courses yet"}
                   </h3>
                   <p className="text-secondary text-center mb-8">
-                    {searchQuery 
-                      ? 'Try adjusting your search terms' 
-                      : user?.role === 'admin' 
-                        ? 'Create your first course to get started'
-                        : 'Create your first course to start teaching'
-                    }
+                    {searchQuery
+                      ? "Try adjusting your search terms"
+                      : user?.role === "admin"
+                      ? "Create your first course to get started"
+                      : "Create your first course to start teaching"}
                   </p>
                   {!searchQuery && (
                     <button
@@ -1447,7 +1179,9 @@ const AdminCourseManagement = () => {
                       className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                     >
                       <Plus className="w-5 h-5 mr-2" />
-                      {user?.role === 'admin' ? 'Create First Course' : 'Create Your First Course'}
+                      {user?.role === "admin"
+                        ? "Create First Course"
+                        : "Create Your First Course"}
                     </button>
                   )}
                 </div>
@@ -1478,14 +1212,15 @@ const AdminCourseManagement = () => {
                           Back to Courses
                         </button>
                       )}
-                      
+
                       {/* Course Header */}
                       <div>
                         <h2 className="text-xl font-semibold text-primary">
                           {selectedCourse.name}
                         </h2>
                         <p className="text-sm text-muted">
-                          {selectedCourse.code} • {(selectedCourse.students || []).length} students
+                          {selectedCourse.code} •{" "}
+                          {(selectedCourse.students || []).length} students
                         </p>
                       </div>
 
@@ -1511,45 +1246,66 @@ const AdminCourseManagement = () => {
                       )}
 
                       {/* Materials Grid/List */}
-                      <div className={materialsViewMode === 'grid' ? 
-                        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
-                        "flex flex-col space-y-4"
-                      }>
-                        {getFilteredMaterials().map((item) => (
-                          materialsViewMode === 'grid' ? (
-                            <MaterialItem key={item._id || item.id} item={item} />
+                      <div
+                        className={
+                          materialsViewMode === "grid"
+                            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            : "flex flex-col space-y-4"
+                        }
+                      >
+                        {getFilteredMaterials().map((item) =>
+                          materialsViewMode === "grid" ? (
+                            <MaterialItem
+                              key={item._id || item.id}
+                              item={item}
+                            />
                           ) : (
-                            <MaterialListItem key={item._id || item.id} item={item} />
+                            <MaterialListItem
+                              key={item._id || item.id}
+                              item={item}
+                            />
                           )
-                        ))}
+                        )}
                       </div>
 
                       {getFilteredMaterials().length === 0 && (
                         <div className="text-center py-12 surface-primary rounded-xl shadow-sm border border-primary">
                           <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
                           <h3 className="text-lg font-medium text-primary mb-2">
-                            {materialsSearchQuery ? 'No matching items found' : 'No materials yet'}
+                            {materialsSearchQuery
+                              ? "No matching items found"
+                              : "No materials yet"}
                           </h3>
                           <p className="text-secondary">
-                            {materialsSearchQuery ? 
-                              'Try adjusting your search terms' : 
-                              'Upload files or create folders to get started'
-                            }
+                            {materialsSearchQuery
+                              ? "Try adjusting your search terms"
+                              : "Upload files or create folders to get started"}
                           </p>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className={viewMode === 'grid' ? 
-                      "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
-                      "flex flex-col space-y-4"
-                    }>
+                    <div
+                      className={
+                        viewMode === "grid"
+                          ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                          : "flex flex-col space-y-4"
+                      }
+                    >
                       {filteredCourses.map((course) => (
-                        viewMode === 'grid' ? (
-                          <CourseCard key={course._id} course={course} />
-                        ) : (
-                          <CourseListItem key={course._id} course={course} />
-                        )
+                        <CourseCard
+                          key={course._id}
+                          course={course}
+                          user={user}
+                          viewMode={viewMode === "grid" ? "card" : "list"}
+                          onCourseClick={handleCourseClick}
+                          onAddStudent={handleAddStudentClick}
+                          onViewStudents={handleViewStudentsClick}
+                          onUpdateCourse={handleUpdateCourseClick}
+                          onDeleteCourse={handleDeleteCourse}
+                          showMobileMenu={showMobileMenu}
+                          setShowMobileMenu={setShowMobileMenu}
+                        />
                       ))}
                     </div>
                   )}
@@ -1561,608 +1317,96 @@ const AdminCourseManagement = () => {
 
         {/* Create Course Modal */}
         {showCreateModal && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowCreateModal(false);
-                setCourseName('');
-                setCourseDescription('');
-              }
-            }}
-          >
-            <div 
-              className="surface-primary rounded-xl shadow-xl w-full max-w-lg border border-primary"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-primary">
-                    {user?.role === 'admin' ? 'Create New Course' : 'Create Your Course'}
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setCourseName('');
-                      setCourseDescription('');
-                    }}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    title="Close"
-                  >
-                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <form onSubmit={handleCreateCourse}>
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        id="courseName"
-                        value={courseName}
-                        onChange={(e) => setCourseName(e.target.value)}
-                        placeholder="Course Name"
-                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
-                        required
-                      />
-                      <label
-                        htmlFor="courseName"
-                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                      >
-                        Course Name
-                      </label>
-                    </div>
-                    <div className="relative">
-                      <textarea
-                        id="courseDescription"
-                        value={courseDescription}
-                        onChange={(e) => setCourseDescription(e.target.value)}
-                        placeholder="Course Description"
-                        rows="3"
-                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary resize-none"
-                      />
-                      <label
-                        htmlFor="courseDescription"
-                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                      >
-                        Course Description (Optional)
-                      </label>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setShowCreateModal(false)}
-                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-                    >
-                      Create Course
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
+          <CreateCourseModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onSubmit={handleCreateCourse}
+            courseName={courseName}
+            setCourseName={setCourseName}
+            courseDescription={courseDescription}
+            setCourseDescription={setCourseDescription}
+            userRole={user?.role}
+          />
         )}
 
         {/* Add Student Modal */}
         {showAddStudentModal && tempCourse && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-primary">
-                    Add Student to {tempCourse.name}
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowAddStudentModal(false);
-                      setStudentEmail('');
-                    }}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    title="Close"
-                  >
-                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <form onSubmit={handleAddStudent}>
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type="email"
-                        id="studentEmail"
-                        value={studentEmail}
-                        onChange={(e) => setStudentEmail(e.target.value)}
-                        placeholder="Student Email"
-                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
-                        required
-                      />
-                      <label
-                        htmlFor="studentEmail"
-                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                      >
-                        Student Email
-                      </label>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddStudentModal(false);
-                        setStudentEmail('');
-                      }}
-                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-                    >
-                      Add Student
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
+          <AddStudentModal
+            isOpen={showAddStudentModal && tempCourse}
+            onClose={() => setShowAddStudentModal(false)}
+            onSubmit={handleAddStudent}
+            studentEmail={studentEmail}
+            setStudentEmail={setStudentEmail}
+            courseName={tempCourse?.name}
+          />
         )}
 
         {/* View Enrolled Students Modal */}
         {showEnrolledStudentsModal && tempCourse && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-primary mb-4">
-                    Enrolled Students - {tempCourse.name}
-                  </h3>
-                  <button
-                    onClick={() => setShowEnrolledStudentsModal(false)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    title="Close"
-                  >
-                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                {(tempCourse.students || []).length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {(tempCourse.students || []).map((student) => (
-                      <div
-                        key={student._id}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-600"
-                      >
-                        <div>
-                          <div className="font-medium text-primary">
-                            {student.firstName} {student.lastName}
-                          </div>
-                          <div className="text-sm text-muted">
-                            {student.email}
-                          </div>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const result = await showConfirmDialog(
-                                'Remove Student',
-                                `Are you sure you want to remove ${student.firstName} ${student.lastName} from this course?`,
-                                'Yes, Remove',
-                                'Cancel'
-                              );
-
-                              if (result.isConfirmed) {
-                                setIsLoading(true);
-                                await unenrollStudent(tempCourse._id, student.email);
-                                
-                                // First update tempCourse to trigger UI update
-                                const updatedStudents = tempCourse.students.filter(s => s._id !== student._id);
-                                setTempCourse(prev => ({
-                                  ...prev,
-                                  students: updatedStudents
-                                }));
-
-                                // Then update the main courses list
-                                setCourses(prevCourses => 
-                                  prevCourses.map(course => {
-                                    if (course._id === tempCourse._id) {
-                                      return {
-                                        ...course,
-                                        students: updatedStudents
-                                      };
-                                    }
-                                    return course;
-                                  })
-                                );
-
-                                showSuccessAlert(
-                                  'Student Removed',
-                                  `${student.firstName} ${student.lastName} has been removed from the course`
-                                );
-
-                                // If no more students, close the modal
-                                if (updatedStudents.length === 0) {
-                                  setShowEnrolledStudentsModal(false);
-                                }
-                              }
-                            } catch (error) {
-                              console.error('Failed to remove student:', error);
-                              let errorMessage = 'Failed to remove student. ';
-                              
-                              if (error.response?.status === 403) {
-                                errorMessage += 'You do not have permission to remove students from this course.';
-                              } else if (error.response?.data?.message) {
-                                errorMessage += error.response.data.message;
-                              } else {
-                                errorMessage += 'Please try again later.';
-                              }
-
-                              showErrorAlert('Remove Failed', errorMessage);
-                            } finally {
-                              setIsLoading(false);
-                            }
-                          }}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                          title="Remove student from course"
-                        >
-                          <UserMinus className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted py-4">
-                    No students enrolled in this course
-                  </p>
-                )}
-                <div className="flex justify-end mt-6">
-                  <button
-                    onClick={() => {
-                      setShowEnrolledStudentsModal(false);
-                    }}
-                    className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors border border-gray-300 dark:border-slate-600"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ViewStudentsModal
+            isOpen={showEnrolledStudentsModal && tempCourse}
+            onClose={() => setShowEnrolledStudentsModal(false)}
+            courseName={tempCourse?.name}
+            students={tempCourse?.students || []}
+            onRemoveStudent={handleRemoveStudent}
+            isLoading={isLoading}
+          />
         )}
 
         {/* Create Folder Modal */}
         {showCreateFolderModal && selectedCourse && (
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowCreateFolderModal(false);
-                setNewFolderName('');
-              }
-            }}
-          >
-            <div 
-              className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-primary">
-                    Create New Folder
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowCreateFolderModal(false);
-                      setNewFolderName('');
-                    }}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    title="Close"
-                  >
-                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <form onSubmit={handleCreateFolder}>
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        id="newFolderName"
-                        value={newFolderName}
-                        onChange={(e) => setNewFolderName(e.target.value)}
-                        placeholder="Folder Name"
-                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
-                        required
-                      />
-                      <label
-                        htmlFor="newFolderName"
-                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                      >
-                        Folder Name
-                      </label>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateFolderModal(false);
-                        setNewFolderName('');
-                      }}
-                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-                    >
-                      Create Folder
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
+          <CreateFolderModal
+            isOpen={showCreateFolderModal && selectedCourse}
+            onClose={() => setShowCreateFolderModal(false)}
+            onSubmit={handleCreateFolder}
+            folderName={newFolderName}
+            setFolderName={setNewFolderName}
+          />
         )}
 
         {/* Add Material Modal */}
         {showAddMaterialModal && selectedCourse && (
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowAddMaterialModal(false);
-                setUploadProgress({});
-              }
+          <UploadFilesModal
+            isOpen={showAddMaterialModal && selectedCourse}
+            onClose={() => {
+              setShowAddMaterialModal(false);
+              setUploadProgress({});
             }}
-          >
-            <div 
-              className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-primary">
-                    Upload Files
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowAddMaterialModal(false);
-                      setUploadProgress({});
-                    }}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    title="Close"
-                  >
-                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                      isDragging
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500'
-                    }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                  >
-                    <input
-                      type="file"
-                      onChange={(e) => handleFileUpload(e.target.files)}
-                      className="hidden"
-                      id="file-upload"
-                      multiple
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer flex flex-col items-center"
-                    >
-                      <Upload className="w-8 h-8 text-muted mb-2" />
-                      <span className="text-secondary font-medium">
-                        Click to upload files or drag and drop
-                      </span>
-                      <span className="text-sm text-muted mt-1">
-                        Supported formats: PDF, Office documents, images, videos, and audio files
-                      </span>
-                    </label>
-                  </div>
-
-                  {/* Upload Progress */}
-                  {Object.keys(uploadProgress).length > 0 && (
-                    <div className="space-y-2">
-                      {Object.entries(uploadProgress).map(([filename, progress]) => (
-                        <div key={filename} className="text-sm">
-                          <div className="flex justify-between text-secondary mb-1">
-                            <span>{filename}</span>
-                            <span>{Math.round(progress)}%</span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-300"
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+            onFileUpload={handleFileUpload}
+            isDragging={isDragging}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            uploadProgress={uploadProgress}
+          />
         )}
 
         {/* Update Course Modal */}
         {showUpdateModal && tempCourse && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowUpdateModal(false);
-              }
-            }}
-          >
-            <div 
-              className="surface-primary rounded-xl shadow-xl w-full max-w-lg border border-primary"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-primary">
-                    Update Course
-                  </h3>
-                  <button
-                    onClick={() => setShowUpdateModal(false)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    title="Close"
-                  >
-                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <form onSubmit={handleSubmitUpdate}>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="updateCourseName" className="block text-sm font-medium text-primary mb-1">
-                        Course Name
-                      </label>
-                      <input
-                        type="text"
-                        id="updateCourseName"
-                        value={updateCourseName}
-                        onChange={(e) => setUpdateCourseName(e.target.value)}
-                        className="w-full px-4 py-2 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="updateCourseDescription" className="block text-sm font-medium text-primary mb-1">
-                        Course Description
-                      </label>
-                      <textarea
-                        id="updateCourseDescription"
-                        value={updateCourseDescription}
-                        onChange={(e) => setUpdateCourseDescription(e.target.value)}
-                        rows={4}
-                        className="w-full px-4 py-2 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowUpdateModal(false)}
-                      className="px-4 py-2 border border-primary rounded-lg text-primary hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                    >
-                      Update Course
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
+          <UpdateCourseModal
+            isOpen={showUpdateModal && tempCourse}
+            onClose={() => setShowUpdateModal(false)}
+            onSubmit={handleSubmitUpdate}
+            courseName={updateCourseName}
+            setCourseName={setUpdateCourseName}
+            courseDescription={updateCourseDescription}
+            setCourseDescription={setUpdateCourseDescription}
+          />
         )}
 
         {/* Update Folder Modal */}
         {showUpdateFolderModal && selectedFolderToUpdate && (
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowUpdateFolderModal(false);
-                setUpdateFolderTitle('');
-                setSelectedFolderToUpdate(null);
-              }
+          <UpdateFolderModal
+            isOpen={showUpdateFolderModal && selectedFolderToUpdate}
+            onClose={() => {
+              setShowUpdateFolderModal(false);
+              setUpdateFolderTitle("");
+              setSelectedFolderToUpdate(null);
             }}
-          >
-            <div 
-              className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-primary">
-                    Update Folder Name
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowUpdateFolderModal(false);
-                      setUpdateFolderTitle('');
-                      setSelectedFolderToUpdate(null);
-                    }}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    title="Close"
-                  >
-                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <form onSubmit={handleUpdateFolder}>
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        id="updateFolderTitle"
-                        value={updateFolderTitle}
-                        onChange={(e) => setUpdateFolderTitle(e.target.value)}
-                        placeholder="Folder Name"
-                        className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
-                        required
-                      />
-                      <label
-                        htmlFor="updateFolderTitle"
-                        className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                      >
-                        Folder Name
-                      </label>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowUpdateFolderModal(false);
-                        setUpdateFolderTitle('');
-                        setSelectedFolderToUpdate(null);
-                      }}
-                      className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-                    >
-                      Update Folder
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
+            onSubmit={handleUpdateFolder}
+            folderTitle={updateFolderTitle}
+            setFolderTitle={setUpdateFolderTitle}
+          />
         )}
       </div>
     </div>
