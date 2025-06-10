@@ -53,9 +53,10 @@ import {
 } from '../../services/folderService';
 import Sidebar from '../Common/Sidebar';
 import ToggleButton from '../ui/ToggleButton';
+import { useDarkMode } from '../Common/useDarkMode';
 
 const AdminCourseManagement = () => {
-  const { user, token } = useAuth();
+  const { user, token, isAdmin, isTeacher } = useAuth();
   const { sidebarCollapsed } = useUI();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -67,6 +68,7 @@ const AdminCourseManagement = () => {
   const [showUpdateFolderModal, setShowUpdateFolderModal] = useState(false);
   const [updateFolderTitle, setUpdateFolderTitle] = useState('');
   const [selectedFolderToUpdate, setSelectedFolderToUpdate] = useState(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(null); // Add this line
   const [isLoading, setIsLoading] = useState(true);
   
   // Form states
@@ -95,9 +97,7 @@ const AdminCourseManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Add state to track dark mode
-  const [isDarkMode, setIsDarkMode] = useState(() => 
-    document.documentElement.classList.contains('dark')
-  );
+  const { isDarkMode, handleToggle } = useDarkMode();
 
   // Initialize folders as an empty array
   const [folders, setFolders] = useState([]);
@@ -297,15 +297,16 @@ const AdminCourseManagement = () => {
     const handleCardClick = () => {
       setSelectedCourse(course);
       setTempCourse(course);
-      setSelectedFolder(null); // Reset folder selection
-      setCurrentPath([]); // Reset path
-      setMaterials([]); // Clear materials
+      setSelectedFolder(null);
+      setCurrentPath([]);
+      setMaterials([]);
     };
 
     const handleAddStudentsClick = (e) => {
       e.stopPropagation();
       setTempCourse(course);
       setShowAddStudentModal(true);
+      setShowMobileMenu(false);
     };
 
     const handleUpdateCourse = (course) => {
@@ -313,6 +314,7 @@ const AdminCourseManagement = () => {
       setUpdateCourseName(course.name);
       setUpdateCourseDescription(course.description || '');
       setShowUpdateModal(true);
+      setShowMobileMenu(false);
     };
 
     return (
@@ -321,8 +323,9 @@ const AdminCourseManagement = () => {
         className="group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer"
       >
         <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
+          {/* Desktop Actions */}
           <div className="absolute top-3 right-3">
-            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="hidden md:flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
                 onClick={handleAddStudentsClick}
                 className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
@@ -361,6 +364,66 @@ const AdminCourseManagement = () => {
               >
                 <Trash2 className="w-3 h-3 text-white" />
               </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden relative mobile-menu-container">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMobileMenu(showMobileMenu === course._id ? null : course._id);
+                }}
+                className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+              >
+                <MoreVertical className="w-4 h-4 text-white" />
+              </button>
+
+              {/* Mobile Dropdown Menu */}
+              {showMobileMenu === course._id && (
+                <div className="absolute right-0 top-full mt-2 w-48 surface-primary rounded-lg shadow-lg border border-primary z-20">
+                  <div className="py-2">
+                    <button
+                      onClick={handleAddStudentsClick}
+                      className="w-full px-4 py-2 text-left text-primary hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center space-x-2"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>Add Student</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowEnrolledStudentsModal(true);
+                        setTempCourse(course);
+                        setShowMobileMenu(null);
+                      }}
+                      className="w-full px-4 py-2 text-left text-primary hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center space-x-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>View Students</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUpdateCourse(course);
+                      }}
+                      className="w-full px-4 py-2 text-left text-primary hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center space-x-2"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>Update Course</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCourse(course._id);
+                      }}
+                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete Course</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
@@ -1184,15 +1247,15 @@ const AdminCourseManagement = () => {
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
       <div className={`${sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'} flex flex-col flex-1 transition-all duration-300 ease-in-out`}>
-        {/* Header */}
+        {/* Header - Updated to match Profile.js */}
         <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-primary transition-all duration-300">
-          <div className="h-16 px-4 md:px-6 flex items-center justify-between">
+          <div className="h-16 px-4 md:px-6 pr-16 md:pr-6 flex items-center justify-between">
             <div className="flex-1 flex items-center">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
-                {getRoleTitle()}
+                {user?.role === 'admin' ? 'Course Management' : 'My Courses'}
               </h1>
             </div>
-            <div className="flex items-center space-x-6">
+            <div className="hidden md:flex items-center space-x-6">
               {/* User Profile */}
               <div className="flex items-center space-x-4">
                 <div className="relative">
@@ -1204,12 +1267,12 @@ const AdminCourseManagement = () => {
                   </div>
                   <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-slate-700"></div>
                 </div>
-                <div className="hidden md:block">
+                <div className="block">
                   <p className="text-sm font-medium text-primary">
                     {user?.firstName} {user?.lastName}
                   </p>
-                  <p className="text-xs text-muted capitalize">
-                    {getRoleDisplay()}
+                  <p className="text-xs text-muted">
+                    {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
                   </p>
                 </div>
               </div>
@@ -1220,17 +1283,7 @@ const AdminCourseManagement = () => {
               {/* Dark Mode Toggle */}
               <ToggleButton
                 isChecked={isDarkMode}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setIsDarkMode(checked);
-                  if (checked) {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('darkMode', 'true');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('darkMode', 'false');
-                  }
-                }}
+                onChange={handleToggle}
                 className="transform hover:scale-105 transition-transform duration-200"
               />
             </div>
@@ -1317,141 +1370,145 @@ const AdminCourseManagement = () => {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-4 md:p-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            </div>
-          ) : courses.length === 0 ? (
-            <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
-              <BookOpen className="w-12 h-12 text-muted mb-4" />
-              <h3 className="text-lg font-medium text-primary mb-2">
-                {searchQuery ? 'No courses found' : user?.role === 'admin' ? 'No courses created yet' : 'You haven\'t created any courses yet'}
-              </h3>
-              <p className="text-secondary text-center mb-8">
-                {searchQuery 
-                  ? 'Try adjusting your search terms' 
-                  : user?.role === 'admin' 
-                    ? 'Create your first course to get started'
-                    : 'Create your first course to start teaching'
-                }
-              </p>
-              {!searchQuery && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  {user?.role === 'admin' ? 'Create First Course' : 'Create Your First Course'}
-                </button>
-              )}
-            </div>
-          ) : (
-            <>
-              {selectedCourse ? (
-                <div className="space-y-6">
-                  {selectedCourse && (
+        {/* Main Content - Updated to match Profile.js structure */}
+        <main className="animate-fadeIn flex-1 relative z-0 overflow-y-auto focus:outline-none">
+          <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : courses.length === 0 ? (
+                <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
+                  <BookOpen className="w-12 h-12 text-muted mb-4" />
+                  <h3 className="text-lg font-medium text-primary mb-2">
+                    {searchQuery ? 'No courses found' : user?.role === 'admin' ? 'No courses created yet' : 'You haven\'t created any courses yet'}
+                  </h3>
+                  <p className="text-secondary text-center mb-8">
+                    {searchQuery 
+                      ? 'Try adjusting your search terms' 
+                      : user?.role === 'admin' 
+                        ? 'Create your first course to get started'
+                        : 'Create your first course to start teaching'
+                    }
+                  </p>
+                  {!searchQuery && (
                     <button
-                      onClick={() => {
-                        setSelectedCourse(null);
-                        setCurrentPath([]);
-                      }}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      onClick={() => setShowCreateModal(true)}
+                      className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 mr-2"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Back to Courses
+                      <Plus className="w-5 h-5 mr-2" />
+                      {user?.role === 'admin' ? 'Create First Course' : 'Create Your First Course'}
                     </button>
-                  )}
-                  
-                  {/* Course Header */}
-                  <div>
-                    <h2 className="text-xl font-semibold text-primary">
-                      {selectedCourse.name}
-                    </h2>
-                    <p className="text-sm text-muted">
-                      {selectedCourse.code} • {(selectedCourse.students || []).length} students
-                    </p>
-                  </div>
-
-                  {/* Breadcrumb */}
-                  {currentPath.length > 0 && (
-                    <div className="flex items-center space-x-2 text-sm surface-primary p-3 rounded-lg shadow-sm border border-primary">
-                      <button
-                        onClick={navigateBack}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                      >
-                        Back
-                      </button>
-                      <span className="text-muted">/</span>
-                      {currentPath.map((folder, index) => (
-                        <React.Fragment key={index}>
-                          <span className="text-secondary">{folder}</span>
-                          {index < currentPath.length - 1 && (
-                            <span className="text-muted">/</span>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Materials Grid/List */}
-                  <div className={materialsViewMode === 'grid' ? 
-                    "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
-                    "flex flex-col space-y-4"
-                  }>
-                    {getFilteredMaterials().map((item) => (
-                      materialsViewMode === 'grid' ? (
-                        <MaterialItem key={item._id || item.id} item={item} />
-                      ) : (
-                        <MaterialListItem key={item._id || item.id} item={item} />
-                      )
-                    ))}
-                  </div>
-
-                  {getFilteredMaterials().length === 0 && (
-                    <div className="text-center py-12 surface-primary rounded-xl shadow-sm border border-primary">
-                      <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-primary mb-2">
-                        {materialsSearchQuery ? 'No matching items found' : 'No materials yet'}
-                      </h3>
-                      <p className="text-secondary">
-                        {materialsSearchQuery ? 
-                          'Try adjusting your search terms' : 
-                          'Upload files or create folders to get started'
-                        }
-                      </p>
-                    </div>
                   )}
                 </div>
               ) : (
-                <div className={viewMode === 'grid' ? 
-                  "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
-                  "flex flex-col space-y-4"
-                }>
-                  {filteredCourses.map((course) => (
-                    viewMode === 'grid' ? (
-                      <CourseCard key={course._id} course={course} />
-                    ) : (
-                      <CourseListItem key={course._id} course={course} />
-                    )
-                  ))}
-                </div>
+                <>
+                  {selectedCourse ? (
+                    <div className="space-y-6">
+                      {selectedCourse && (
+                        <button
+                          onClick={() => {
+                            setSelectedCourse(null);
+                            setCurrentPath([]);
+                          }}
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 mr-2"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Back to Courses
+                        </button>
+                      )}
+                      
+                      {/* Course Header */}
+                      <div>
+                        <h2 className="text-xl font-semibold text-primary">
+                          {selectedCourse.name}
+                        </h2>
+                        <p className="text-sm text-muted">
+                          {selectedCourse.code} • {(selectedCourse.students || []).length} students
+                        </p>
+                      </div>
+
+                      {/* Breadcrumb */}
+                      {currentPath.length > 0 && (
+                        <div className="flex items-center space-x-2 text-sm surface-primary p-3 rounded-lg shadow-sm border border-primary">
+                          <button
+                            onClick={navigateBack}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                          >
+                            Back
+                          </button>
+                          <span className="text-muted">/</span>
+                          {currentPath.map((folder, index) => (
+                            <React.Fragment key={index}>
+                              <span className="text-secondary">{folder}</span>
+                              {index < currentPath.length - 1 && (
+                                <span className="text-muted">/</span>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Materials Grid/List */}
+                      <div className={materialsViewMode === 'grid' ? 
+                        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
+                        "flex flex-col space-y-4"
+                      }>
+                        {getFilteredMaterials().map((item) => (
+                          materialsViewMode === 'grid' ? (
+                            <MaterialItem key={item._id || item.id} item={item} />
+                          ) : (
+                            <MaterialListItem key={item._id || item.id} item={item} />
+                          )
+                        ))}
+                      </div>
+
+                      {getFilteredMaterials().length === 0 && (
+                        <div className="text-center py-12 surface-primary rounded-xl shadow-sm border border-primary">
+                          <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-primary mb-2">
+                            {materialsSearchQuery ? 'No matching items found' : 'No materials yet'}
+                          </h3>
+                          <p className="text-secondary">
+                            {materialsSearchQuery ? 
+                              'Try adjusting your search terms' : 
+                              'Upload files or create folders to get started'
+                            }
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={viewMode === 'grid' ? 
+                      "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : 
+                      "flex flex-col space-y-4"
+                    }>
+                      {filteredCourses.map((course) => (
+                        viewMode === 'grid' ? (
+                          <CourseCard key={course._id} course={course} />
+                        ) : (
+                          <CourseListItem key={course._id} course={course} />
+                        )
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        </main>
 
         {/* Create Course Modal */}
         {showCreateModal && (
