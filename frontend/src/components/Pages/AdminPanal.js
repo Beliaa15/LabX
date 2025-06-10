@@ -1264,13 +1264,15 @@ const AdminCourseManagement = () => {
                   <FolderPlus className="w-4 h-4 mr-2" />
                   New Folder
                 </button>
-                <button
-                  onClick={() => setShowAddMaterialModal(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Files
-                </button>
+                {selectedFolder && (
+                  <button
+                    onClick={() => setShowAddMaterialModal(true)}
+                    className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Files
+                  </button>
+                )}
                 <span className="text-sm text-secondary">
                   {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
                 </span>
