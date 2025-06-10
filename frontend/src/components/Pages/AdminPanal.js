@@ -1242,6 +1242,47 @@ const AdminCourseManagement = () => {
     }
   };
 
+  // Add useEffect for escape key handling
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        if (showAddMaterialModal) {
+          setShowAddMaterialModal(false);
+          setUploadProgress({});
+        }
+        if (showCreateFolderModal) {
+          setShowCreateFolderModal(false);
+          setNewFolderName('');
+        }
+        if (showCreateModal) {
+          setShowCreateModal(false);
+          setCourseName('');
+          setCourseDescription('');
+        }
+        if (showAddStudentModal) {
+          setShowAddStudentModal(false);
+          setStudentEmail('');
+        }
+        if (showEnrolledStudentsModal) {
+          setShowEnrolledStudentsModal(false);
+        }
+        if (showUpdateModal) {
+          setShowUpdateModal(false);
+        }
+        if (showUpdateFolderModal) {
+          setShowUpdateFolderModal(false);
+          setUpdateFolderTitle('');
+          setSelectedFolderToUpdate(null);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [showAddMaterialModal, showCreateFolderModal, showCreateModal, showAddStudentModal, showEnrolledStudentsModal, showUpdateModal, showUpdateFolderModal]);
+
   return (
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
@@ -1292,47 +1333,52 @@ const AdminCourseManagement = () => {
 
         {/* Controls */}
         <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 gap-4">
             {!selectedCourse ? (
               // Course list controls
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+                  className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm font-medium"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  {user?.role === 'admin' ? 'Create Course' : 'Create New Course'}
+                  <span className="hidden sm:inline">
+                    {user?.role === 'admin' ? 'Create Course' : 'Create New Course'}
+                  </span>
+                  <span className="sm:hidden">Create</span>
                 </button>
-                <span className="text-sm text-secondary">
+                <span className="text-sm text-secondary whitespace-nowrap">
                   {courses.length} course{courses.length !== 1 ? 's' : ''}
                 </span>
               </div>
             ) : (
               // Materials controls
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowCreateFolderModal(true)}
-                  className="flex items-center px-4 py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
+                  className="flex items-center px-3 py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
                 >
-                  <FolderPlus className="w-4 h-4 mr-2" />
-                  New Folder
+                  <FolderPlus className="w-4 h-4" />
+                  <span className="hidden md:inline ml-2 text-sm">New Folder</span>
                 </button>
                 {selectedFolder && (
                   <button
                     onClick={() => setShowAddMaterialModal(true)}
-                    className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
+                    className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors"
                   >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Files
+                    <Upload className="w-4 h-4" />
+                    <span className="hidden md:inline ml-2 text-sm">Upload Files</span>
                   </button>
                 )}
-                <span className="text-sm text-secondary">
+                <span className="text-sm text-secondary whitespace-nowrap">
                   {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
                 </span>
               </div>
             )}
 
-            <div className="flex items-center space-x-3">
+            {/* Search and View Controls - Right side */}
+            <div className="flex items-center justify-end space-x-3 flex-shrink-0">
+              {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
@@ -1340,18 +1386,20 @@ const AdminCourseManagement = () => {
                   placeholder={selectedCourse ? "Search folders and files..." : `Search ${user?.role === 'admin' ? 'courses' : 'your courses'}...`}
                   value={selectedCourse ? materialsSearchQuery : searchQuery}
                   onChange={(e) => selectedCourse ? setMaterialsSearchQuery(e.target.value) : setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-64 border border-primary rounded-lg surface-primary text-primary focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="pl-10 pr-4 py-2 w-64 sm:w-72 border border-primary rounded-lg surface-primary text-primary placeholder:text-muted focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
                 />
               </div>
 
+              {/* View Mode Toggle */}
               <div className="flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
                 <button
                   onClick={() => selectedCourse ? setMaterialsViewMode('grid') : setViewMode('grid')}
                   className={`p-2 rounded-md transition-colors ${
                     (selectedCourse ? materialsViewMode : viewMode) === 'grid'
                       ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
-                      : 'text-muted hover:text-secondary'
+                      : 'text-muted hover:text-secondary hover:bg-white/50 dark:hover:bg-slate-600/50'
                   }`}
+                  title="Grid View"
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </button>
@@ -1360,8 +1408,9 @@ const AdminCourseManagement = () => {
                   className={`p-2 rounded-md transition-colors ${
                     (selectedCourse ? materialsViewMode : viewMode) === 'list'
                       ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400'
-                      : 'text-muted hover:text-secondary'
+                      : 'text-muted hover:text-secondary hover:bg-white/50 dark:hover:bg-slate-600/50'
                   }`}
+                  title="List View"
                 >
                   <List className="w-4 h-4" />
                 </button>
@@ -1512,12 +1561,39 @@ const AdminCourseManagement = () => {
 
         {/* Create Course Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="surface-primary rounded-xl shadow-xl w-full max-w-lg border border-primary">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowCreateModal(false);
+                setCourseName('');
+                setCourseDescription('');
+              }
+            }}
+          >
+            <div 
+              className="surface-primary rounded-xl shadow-xl w-full max-w-lg border border-primary"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-primary mb-4">
-                  {user?.role === 'admin' ? 'Create New Course' : 'Create Your Course'}
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-primary">
+                    {user?.role === 'admin' ? 'Create New Course' : 'Create Your Course'}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setCourseName('');
+                      setCourseDescription('');
+                    }}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Close"
+                  >
+                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 <form onSubmit={handleCreateCourse}>
                   <div className="space-y-4">
                     <div className="relative">
@@ -1580,9 +1656,23 @@ const AdminCourseManagement = () => {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-primary mb-4">
-                  Add Student to {tempCourse.name}
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-primary">
+                    Add Student to {tempCourse.name}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowAddStudentModal(false);
+                      setStudentEmail('');
+                    }}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Close"
+                  >
+                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 <form onSubmit={handleAddStudent}>
                   <div className="space-y-4">
                     <div className="relative">
@@ -1632,9 +1722,20 @@ const AdminCourseManagement = () => {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-primary mb-4">
-                  Enrolled Students - {tempCourse.name}
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-primary mb-4">
+                    Enrolled Students - {tempCourse.name}
+                  </h3>
+                  <button
+                    onClick={() => setShowEnrolledStudentsModal(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Close"
+                  >
+                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 {(tempCourse.students || []).length > 0 ? (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {(tempCourse.students || []).map((student) => (
@@ -1741,12 +1842,37 @@ const AdminCourseManagement = () => {
 
         {/* Create Folder Modal */}
         {showCreateFolderModal && selectedCourse && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowCreateFolderModal(false);
+                setNewFolderName('');
+              }
+            }}
+          >
+            <div 
+              className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-primary mb-4">
-                  Create New Folder
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-primary">
+                    Create New Folder
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowCreateFolderModal(false);
+                      setNewFolderName('');
+                    }}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Close"
+                  >
+                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 <form onSubmit={handleCreateFolder}>
                   <div className="space-y-4">
                     <div className="relative">
@@ -1793,12 +1919,37 @@ const AdminCourseManagement = () => {
 
         {/* Add Material Modal */}
         {showAddMaterialModal && selectedCourse && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowAddMaterialModal(false);
+                setUploadProgress({});
+              }
+            }}
+          >
+            <div 
+              className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-primary mb-4">
-                  Upload Files
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-primary">
+                    Upload Files
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowAddMaterialModal(false);
+                      setUploadProgress({});
+                    }}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Close"
+                  >
+                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 <div className="space-y-4">
                   <div
                     className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -1858,12 +2009,33 @@ const AdminCourseManagement = () => {
 
         {/* Update Course Modal */}
         {showUpdateModal && tempCourse && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="surface-primary rounded-xl shadow-xl w-full max-w-lg border border-primary">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowUpdateModal(false);
+              }
+            }}
+          >
+            <div 
+              className="surface-primary rounded-xl shadow-xl w-full max-w-lg border border-primary"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-primary mb-4">
-                  Update Course
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-primary">
+                    Update Course
+                  </h3>
+                  <button
+                    onClick={() => setShowUpdateModal(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Close"
+                  >
+                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 <form onSubmit={handleSubmitUpdate}>
                   <div className="space-y-4">
                     <div>
@@ -1915,12 +2087,39 @@ const AdminCourseManagement = () => {
 
         {/* Update Folder Modal */}
         {showUpdateFolderModal && selectedFolderToUpdate && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary">
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowUpdateFolderModal(false);
+                setUpdateFolderTitle('');
+                setSelectedFolderToUpdate(null);
+              }
+            }}
+          >
+            <div 
+              className="surface-primary rounded-xl shadow-xl w-full max-w-md border border-primary"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-primary mb-4">
-                  Update Folder Name
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-primary">
+                    Update Folder Name
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowUpdateFolderModal(false);
+                      setUpdateFolderTitle('');
+                      setSelectedFolderToUpdate(null);
+                    }}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Close"
+                  >
+                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 <form onSubmit={handleUpdateFolder}>
                   <div className="space-y-4">
                     <div className="relative">
