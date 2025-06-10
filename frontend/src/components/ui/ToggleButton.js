@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
 
 const ToggleButton = ({ isChecked, onChange, className = '' }) => {
   const [checked, setChecked] = useState(isChecked);
@@ -21,7 +22,7 @@ const ToggleButton = ({ isChecked, onChange, className = '' }) => {
 
   return (
     <label
-      className={`relative inline-flex items-center cursor-pointer ${className}`}
+      className={`relative inline-flex items-center cursor-pointer group ${className}`}
     >
       <input
         type="checkbox"
@@ -29,10 +30,15 @@ const ToggleButton = ({ isChecked, onChange, className = '' }) => {
         checked={checked}
         onChange={handleChange}
       />
-      {/* button background */}
-      <div className="w-12 h-6 bg-gray-300 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-600 dark:bg-gray-700 peer-checked:bg-indigo-600 transition-colors duration-300"></div>
-      {/* white point */}
-      <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out peer-checked:translate-x-6"></span>
+      
+      {/* Simple icon button */}
+      <div className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200">
+        {!checked ? (
+          <Moon className="w-5 h-5 text-gray-700" />
+        ) : (
+          <Sun className="w-5 h-5 dark:text-yellow-300" />
+        )}
+      </div>
     </label>
   );
 };
