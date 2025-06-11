@@ -19,7 +19,9 @@ const CourseListView = ({
   onAddStudent,
   onViewStudents,
   onUpdateCourse,
-  onDeleteCourse
+  onDeleteCourse,
+  isStudent = false,
+  hideControls = false
 }) => {
   const filteredCourses = courses.filter(course =>
     course.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -27,41 +29,41 @@ const CourseListView = ({
 
   return (
     <>
-      {/* Controls */}
-      <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 gap-4">
-          {/* Course list controls */}
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onShowCreateModal}
-              className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm font-medium"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">
-                {user?.role === "admin" ? "Create Course" : "Create New Course"}
-              </span>
-              <span className="sm:hidden">Create</span>
-            </button>
-            <span className="text-sm text-secondary whitespace-nowrap">
-              {courses.length ? ` ${courses.length} course${courses.length !== 1 ? "s" : ""}` : ""}
-            </span>
-          </div>
+      {/* Controls - Hide for students when hideControls is true */}
+      {!hideControls && (
+        <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
+          <div className="flex items-center justify-between gap-2 md:gap-4">
+            {/* Course list controls - Only show for teachers/admins */}
+            {!isStudent && (
+              <div className="flex items-center gap-2 md:gap-3">
+                <button
+                  onClick={onShowCreateModal}
+                  className="flex items-center px-3 py-2 md:px-4 md:py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm font-medium"
+                >
+                  <Plus className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">
+                    {user?.role === "admin" ? "Create Course" : "Create New Course"}
+                  </span>
+                </button>
+              </div>
+            )}
 
-          {/* Search and View Controls */}
-          <div className="flex items-center justify-end space-x-3 flex-shrink-0">
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder={`Search ${user?.role === "admin" ? "courses" : "your courses"}...`}
-              className="w-64 sm:w-72"
-            />
-            <ViewModeToggle
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-            />
+            {/* Search and View Controls */}
+            <div className="flex items-center gap-2 md:gap-3 flex-1 justify-end max-w-xs md:max-w-none">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder={`Search ${user?.role === "admin" ? "courses" : "your courses"}...`}
+                className="flex-1 min-w-0 max-w-[180px] sm:max-w-[220px] md:max-w-none md:w-56 lg:w-64 xl:w-72"
+              />
+              <ViewModeToggle
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <main className="animate-fadeIn flex-1 relative z-0 overflow-y-auto focus:outline-none">
@@ -77,6 +79,8 @@ const CourseListView = ({
                 <h3 className="text-lg font-medium text-primary mb-2">
                   {searchQuery
                     ? "No courses found"
+                    : isStudent
+                    ? "No courses enrolled"
                     : user?.role === "admin"
                     ? "No courses created yet"
                     : "You haven't created any courses yet"}
@@ -84,11 +88,13 @@ const CourseListView = ({
                 <p className="text-secondary text-center mb-8">
                   {searchQuery
                     ? "Try adjusting your search terms"
+                    : isStudent
+                    ? "Enroll in a course to get started"
                     : user?.role === "admin"
                     ? "Create your first course to get started"
                     : "Create your first course to start teaching"}
                 </p>
-                {!searchQuery && (
+                {!searchQuery && !isStudent && (
                   <button
                     onClick={onShowCreateModal}
                     className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
@@ -121,6 +127,7 @@ const CourseListView = ({
                     onDeleteCourse={onDeleteCourse}
                     showMobileMenu={showMobileMenu}
                     setShowMobileMenu={setShowMobileMenu}
+                    isStudent={isStudent} // Pass this to CourseCard
                   />
                 ))}
               </div>

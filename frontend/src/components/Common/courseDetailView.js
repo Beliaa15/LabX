@@ -30,7 +30,8 @@ const CourseDetailView = ({
   onDownload,
   onDelete,
   onUpdateFolder,
-  formatFileSize
+  formatFileSize,
+  isStudent = false
 }) => {
   // Get current materials (folders + files)
   const getCurrentMaterials = () => {
@@ -101,66 +102,84 @@ const CourseDetailView = ({
               )}
             </div>
 
-            {/* Action Icons */}
-            <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
-              {item.type === 'folder' ? (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNavigateToFolder(item);
-                    }}
-                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-amber-600 dark:text-amber-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                    title="Open Folder"
-                  >
-                    <FolderPlus className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onUpdateFolder(item);
-                    }}
-                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                    title="Edit Folder Name"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(item);
-                    }}
-                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                    title="Delete Folder"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDownload(item);
-                    }}
-                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                    title="Download File"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(item);
-                    }}
-                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                    title="Delete File"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </>
-              )}
-            </div>
+            {/* Action Icons - Hide edit/delete actions for students */}
+            {!isStudent && (
+              <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                {item.type === 'folder' ? (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigateToFolder(item);
+                      }}
+                      className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-amber-600 dark:text-amber-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Open Folder"
+                    >
+                      <FolderPlus className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateFolder(item);
+                      }}
+                      className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Edit Folder Name"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(item);
+                      }}
+                      className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Delete Folder"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDownload(item);
+                      }}
+                      className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Download File"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(item);
+                      }}
+                      className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Delete File"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Download button for students - only show for files */}
+            {isStudent && item.type === 'file' && (
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownload(item);
+                  }}
+                  className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                  title="Download File"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* Type Label */}
             <div className="absolute top-3 left-3">
@@ -216,52 +235,72 @@ const CourseDetailView = ({
             </div>
           </div>
 
+          {/* Action buttons - Hide edit/delete for students */}
           <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            {item.type === 'folder' ? (
+            {!isStudent ? (
+              // Teacher/Admin view - show all actions
               <>
+                {item.type === 'folder' ? (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigateToFolder(item);
+                      }}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                      title="Open Folder"
+                    >
+                      <FolderPlus className="w-4 h-4 text-amber-400" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateFolder(item);
+                      }}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                      title="Edit Folder Name"
+                    >
+                      <Edit2 className="w-4 h-4 text-blue-400" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownload(item);
+                    }}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                    title="Download File"
+                  >
+                    <Download className="w-4 h-4 text-blue-400" />
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onNavigateToFolder(item);
+                    onDelete(item);
                   }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-                  title="Open Folder"
+                  title={`Delete ${item.type === 'folder' ? 'Folder' : 'File'}`}
                 >
-                  <FolderPlus className="w-4 h-4 text-amber-400" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUpdateFolder(item);
-                  }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-                  title="Edit Folder Name"
-                >
-                  <Edit2 className="w-4 h-4 text-blue-400" />
+                  <Trash2 className="w-4 h-4 text-red-400" />
                 </button>
               </>
             ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDownload(item);
-                }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-                title="Download File"
-              >
-                <Download className="w-4 h-4 text-blue-400" />
-              </button>
+              // Student view - only show download for files
+              item.type === 'file' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownload(item);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                  title="Download File"
+                >
+                  <Download className="w-4 h-4 text-blue-400" />
+                </button>
+              )
             )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(item);
-              }}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-              title={`Delete ${item.type === 'folder' ? 'Folder' : 'File'}`}
-            >
-              <Trash2 className="w-4 h-4 text-red-400" />
-            </button>
           </div>
         </div>
       </div>
@@ -270,40 +309,38 @@ const CourseDetailView = ({
 
   return (
     <>
-      {/* Controls */}
+      {/* Controls - Hide create/upload buttons for students */}
       <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 gap-4">
-          {/* Materials controls */}
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={onShowCreateFolderModal}
-              className="flex items-center px-3 py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
-            >
-              <FolderPlus className="w-4 h-4" />
-              <span className="hidden md:inline ml-2 text-sm">New Folder</span>
-            </button>
-            {selectedFolder && (
+        <div className="flex items-center justify-between gap-2 md:gap-4">
+          {/* Materials controls - Only show for teachers/admins */}
+          {!isStudent && (
+            <div className="flex items-center gap-2 md:gap-3">
               <button
-                onClick={onShowAddMaterialModal}
-                className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                onClick={onShowCreateFolderModal}
+                className="flex items-center px-2 py-2 md:px-3 md:py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
               >
-                <Upload className="w-4 h-4" />
-                <span className="hidden md:inline ml-2 text-sm">Upload Files</span>
+                <FolderPlus className="w-4 h-4" />
+                <span className="hidden lg:inline ml-2 text-sm">New Folder</span>
               </button>
-            )}
-            <span className="text-sm text-secondary whitespace-nowrap">
-              {getCurrentMaterials().length ? ` ${getCurrentMaterials().length} item${getCurrentMaterials().length > 1 ? "s" : ""}` : ""}
-              
-            </span>
-          </div>
+              {selectedFolder && (
+                <button
+                  onClick={onShowAddMaterialModal}
+                  className="flex items-center px-2 py-2 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span className="hidden lg:inline ml-2 text-sm">Upload Files</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Search and View Controls */}
-          <div className="flex items-center justify-end space-x-3 flex-shrink-0">
+          <div className="flex items-center gap-2 md:gap-3 flex-1 justify-end max-w-xs md:max-w-none">
             <SearchBar
               value={materialsSearchQuery}
               onChange={setMaterialsSearchQuery}
               placeholder="Search folders and files..."
-              className="w-64 sm:w-72"
+              className="flex-1 min-w-0 max-w-[180px] sm:max-w-[220px] md:max-w-none md:w-56 lg:w-64 xl:w-72"
             />
             <ViewModeToggle
               viewMode={materialsViewMode}
@@ -312,6 +349,7 @@ const CourseDetailView = ({
           </div>
         </div>
       </div>
+
 
       {/* Main Content */}
       <main className="animate-fadeIn flex-1 relative z-0 overflow-y-auto focus:outline-none">
@@ -339,13 +377,20 @@ const CourseDetailView = ({
               </button>
 
               {/* Course Header */}
-              <div>
-                <h2 className="text-xl font-semibold text-primary">
-                  {selectedCourse.name}
-                </h2>
-                <p className="text-sm text-muted">
-                  {selectedCourse.code} • {(selectedCourse.students || []).length} students
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-primary">
+                    {selectedCourse.name}
+                  </h2>
+                  <p className="text-sm text-muted">
+                    {selectedCourse.code}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm text-secondary">
+                    {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
+                  </span>
+                </div>
               </div>
 
               {/* Breadcrumb */}
@@ -396,6 +441,8 @@ const CourseDetailView = ({
                   <p className="text-secondary">
                     {materialsSearchQuery
                       ? "Try adjusting your search terms"
+                      : isStudent
+                      ? "No materials have been uploaded to this course yet"
                       : "Upload files or create folders to get started"}
                   </p>
                 </div>

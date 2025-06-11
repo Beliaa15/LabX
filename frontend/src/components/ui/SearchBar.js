@@ -6,7 +6,7 @@ const SearchBar = ({
   value, 
   onChange, 
   placeholder = "Search...", 
-  className = "w-64 sm:w-72" 
+  className = "w-full sm:w-64 md:w-72" 
 }) => {
   return (
     <div className="relative">

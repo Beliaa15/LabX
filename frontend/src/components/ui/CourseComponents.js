@@ -19,7 +19,8 @@ const CourseCard = ({
   onDeleteCourse,
   showMobileMenu,
   setShowMobileMenu,
-  className = ""
+  className = "",
+  isStudent = false // Add this prop to hide teacher-only features
 }) => {
   if (!course) return null;
 
@@ -73,6 +74,9 @@ const CourseCard = ({
     }
   };
 
+  // Check if any teacher actions are available (and user is not a student)
+  const hasTeacherActions = !isStudent && (onAddStudent || onViewStudents || onUpdateCourse || onDeleteCourse);
+
   if (viewMode === 'list') {
     return (
       <div 
@@ -108,44 +112,47 @@ const CourseCard = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            {onAddStudent && (
-              <button
-                onClick={handleAddStudentsClick}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-                title="Add Student"
-              >
-                <UserPlus className="w-4 h-4 text-indigo-400" />
-              </button>
-            )}
-            {onViewStudents && (
-              <button
-                onClick={handleViewStudentsClick}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-                title="View Enrolled Students"
-              >
-                <Eye className="w-4 h-4 text-blue-400" />
-              </button>
-            )}
-            {onUpdateCourse && (
-              <button
-                onClick={handleUpdateCourseClick}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-                title="Update Course"
-              >
-                <Edit2 className="w-4 h-4 text-amber-400" />
-              </button>
-            )}
-            {onDeleteCourse && (
-              <button
-                onClick={handleDeleteCourseClick}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
-                title="Delete Course"
-              >
-                <Trash2 className="w-4 h-4 text-red-400" />
-              </button>
-            )}
-          </div>
+          {/* Only show action buttons for teachers/admins */}
+          {hasTeacherActions && (
+            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onAddStudent && (
+                <button
+                  onClick={handleAddStudentsClick}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                  title="Add Student"
+                >
+                  <UserPlus className="w-4 h-4 text-indigo-400" />
+                </button>
+              )}
+              {onViewStudents && (
+                <button
+                  onClick={handleViewStudentsClick}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                  title="View Enrolled Students"
+                >
+                  <Eye className="w-4 h-4 text-blue-400" />
+                </button>
+              )}
+              {onUpdateCourse && (
+                <button
+                  onClick={handleUpdateCourseClick}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                  title="Update Course"
+                >
+                  <Edit2 className="w-4 h-4 text-amber-400" />
+                </button>
+              )}
+              {onDeleteCourse && (
+                <button
+                  onClick={handleDeleteCourseClick}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                  title="Delete Course"
+                >
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -158,49 +165,50 @@ const CourseCard = ({
       className={`group relative surface-primary rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-primary cursor-pointer ${className}`}
     >
       <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
-        {/* Desktop Actions */}
-        <div className="absolute top-3 right-3">
-          <div className="hidden md:flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {onAddStudent && (
-              <button 
-                onClick={handleAddStudentsClick}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-                title="Add Student"
-              >
-                <UserPlus className="w-3 h-3 text-white" />
-              </button>
-            )}
-            {onViewStudents && (
-              <button 
-                onClick={handleViewStudentsClick}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-                title="View Enrolled Students"
-              >
-                <Eye className="w-3 h-3 text-white" />
-              </button>
-            )}
-            {onUpdateCourse && (
-              <button 
-                onClick={handleUpdateCourseClick}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-                title="Update Course"
-              >
-                <Edit2 className="w-3 h-3 text-white" />
-              </button>
-            )}
-            {onDeleteCourse && (
-              <button
-                onClick={handleDeleteCourseClick}
-                className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
-                title="Delete Course"
-              >
-                <Trash2 className="w-3 h-3 text-white" />
-              </button>
-            )}
-          </div>
+        {/* Only show actions for teachers/admins */}
+        {hasTeacherActions && (
+          <div className="absolute top-3 right-3">
+            {/* Desktop Actions */}
+            <div className="hidden md:flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onAddStudent && (
+                <button 
+                  onClick={handleAddStudentsClick}
+                  className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                  title="Add Student"
+                >
+                  <UserPlus className="w-3 h-3 text-white" />
+                </button>
+              )}
+              {onViewStudents && (
+                <button 
+                  onClick={handleViewStudentsClick}
+                  className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                  title="View Enrolled Students"
+                >
+                  <Eye className="w-3 h-3 text-white" />
+                </button>
+              )}
+              {onUpdateCourse && (
+                <button 
+                  onClick={handleUpdateCourseClick}
+                  className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                  title="Update Course"
+                >
+                  <Edit2 className="w-3 h-3 text-white" />
+                </button>
+              )}
+              {onDeleteCourse && (
+                <button
+                  onClick={handleDeleteCourseClick}
+                  className="p-1.5 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                  title="Delete Course"
+                >
+                  <Trash2 className="w-3 h-3 text-white" />
+                </button>
+              )}
+            </div>
 
-          {/* Mobile Menu Button */}
-          {(onAddStudent || onViewStudents || onUpdateCourse || onDeleteCourse) && (
+            {/* Mobile Menu Button */}
             <div className="md:hidden relative mobile-menu-container">
               <button
                 onClick={toggleMobileMenu}
@@ -253,8 +261,8 @@ const CourseCard = ({
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
           <span className="text-xs px-2 py-1 rounded bg-white/20 text-white backdrop-blur-sm">
