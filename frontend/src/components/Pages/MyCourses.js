@@ -15,6 +15,8 @@ import { getMaterials, downloadMaterial } from '../../services/materialService';
 import { Button } from '../ui/button';
 import CourseListView from '../Common/courseListView';
 import CourseDetailView from '../Common/courseDetailView';
+import SearchBar from '../ui/SearchBar';
+import ViewModeToggle from '../ui/ViewModeToggle';
 
 const MyCourses = () => {
   const { user } = useAuth();
@@ -256,18 +258,32 @@ const MyCourses = () => {
           />
         ) : (
           <>
-            {/* Course List Controls */}
+            {/* Student-specific controls with Enroll button */}
             <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-                <div className="flex items-center space-x-4">
+              <div className="flex items-center justify-between gap-2 md:gap-4">
+                {/* Enroll Button */}
+                <div className="flex items-center">
                   <Button
                     onClick={() => setShowEnrollDialog(true)}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                    variant="default"
+                    className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-lg transition-colors shadow-sm font-medium"
                   >
-                    <Plus className="w-4 h-4" />
-                    Enroll
+                    <Plus className="w-4 h-4 md:mr-0" />
+                    <span className="hidden md:inline">Enroll in Course</span>
                   </Button>
+                </div>
+
+                {/* Search and View Controls */}
+                <div className="flex items-center gap-2 md:gap-3 flex-1 justify-end max-w-xs md:max-w-none">
+                  <SearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search your courses..."
+                    className="flex-1 min-w-0 max-w-[200px] sm:max-w-[240px] md:max-w-none md:w-64 lg:w-72"
+                  />
+                  <ViewModeToggle
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                  />
                 </div>
               </div>
             </div>
@@ -319,7 +335,7 @@ const MyCourses = () => {
                   onUpdateCourse={handleUpdateCourse}
                   onDeleteCourse={handleDeleteCourse}
                   isStudent={true} // Add this prop to hide teacher-only features
-                  hideControls={true} // Hide the create course button and controls
+                  hideControls={true} // Hide the CourseListView's built-in controls since we're providing our own
                 />
               )}
             </div>

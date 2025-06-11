@@ -333,7 +333,7 @@ const CourseDetailView = ({
               )}
             </div>
           )}
-
+          {isStudent && <div></div>}
           {/* Search and View Controls */}
           <div className="flex items-center gap-2 md:gap-3 flex-1 justify-end max-w-xs md:max-w-none">
             <SearchBar
