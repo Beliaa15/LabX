@@ -25,6 +25,8 @@ const MyCourses = () => {
   const { isDarkMode, handleToggle } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   
   // View states
   const [viewMode, setViewMode] = useState('grid');
@@ -77,6 +79,7 @@ const MyCourses = () => {
     const loadFolders = async () => {
       if (selectedCourse && selectedCourse._id) {
         try {
+          setIsLoadingFolders(true);
           console.log('Fetching folders for course:', selectedCourse._id);
           const response = await getFolders(selectedCourse._id);
           setFolders(response.folders || []);
@@ -86,6 +89,8 @@ const MyCourses = () => {
             'Error Loading Folders',
             'Failed to load course folders. Please try again later.'
           );
+        } finally {
+          setIsLoadingFolders(false);
         }
       } else {
         // Reset folders when no course is selected
@@ -101,6 +106,7 @@ const MyCourses = () => {
     const loadMaterials = async () => {
       if (selectedCourse && selectedFolder) {
         try {
+          setIsLoadingFiles(true);
           console.log('Fetching materials for folder:', selectedFolder._id);
           const response = await getMaterials(selectedCourse._id, selectedFolder._id);
           
@@ -126,6 +132,8 @@ const MyCourses = () => {
             'Error Loading Materials',
             'Failed to load course materials. Please try again later.'
           );
+        } finally {
+          setIsLoadingFiles(false);
         }
       } else {
         setMaterials([]);
@@ -334,6 +342,8 @@ const MyCourses = () => {
             onUpdateFolder={() => {}} // Students can't update folders
             formatFileSize={formatFileSize}
             isStudent={true} // Add this prop to hide teacher-only features
+            isLoadingFolders={isLoadingFolders}
+            isLoadingFiles={isLoadingFiles}
           />
         ) : (
           <>

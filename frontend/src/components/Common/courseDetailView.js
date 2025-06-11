@@ -34,7 +34,9 @@ const CourseDetailView = ({
   onDelete,
   onUpdateFolder,
   formatFileSize,
-  isStudent = false
+  isStudent = false,
+  isLoadingFolders = false,
+  isLoadingFiles = false
 }) => {
   const [viewingFile, setViewingFile] = useState(null);
 
@@ -431,24 +433,12 @@ const CourseDetailView = ({
               )}
 
               {/* Materials Grid/List */}
-              <div
-                className={
-                  materialsViewMode === "grid"
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                    : "flex flex-col space-y-4"
-                }
-              >
-                {getFilteredMaterials().map((item) =>
-                  materialsViewMode === "grid" ? (
-                    <MaterialItem key={item._id || item.id} item={item} />
-                  ) : (
-                    <MaterialListItem key={item._id || item.id} item={item} />
-                  )
-                )}
-              </div>
-
-              {/* Empty State */}
-              {getFilteredMaterials().length === 0 && (
+              {(isLoadingFolders && !selectedFolder) || (isLoadingFiles && selectedFolder) ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
+                  <p className="text-secondary">Loading {selectedFolder ? 'files' : 'folders'}...</p>
+                </div>
+              ) : getFilteredMaterials().length === 0 ? (
                 <div className="text-center py-12 surface-primary rounded-xl shadow-sm border border-primary">
                   <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-primary mb-2">
@@ -461,6 +451,22 @@ const CourseDetailView = ({
                       ? "No materials have been uploaded to this course yet"
                       : "Upload files or create folders to get started"}
                   </p>
+                </div>
+              ) : (
+                <div
+                  className={
+                    materialsViewMode === "grid"
+                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                      : "flex flex-col space-y-4"
+                  }
+                >
+                  {getFilteredMaterials().map((item) =>
+                    materialsViewMode === "grid" ? (
+                      <MaterialItem key={item._id || item.id} item={item} />
+                    ) : (
+                      <MaterialListItem key={item._id || item.id} item={item} />
+                    )
+                  )}
                 </div>
               )}
             </div>
