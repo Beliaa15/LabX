@@ -4,7 +4,8 @@ import { useUI } from '../../context/UIContext';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import TaskCreationModal from '../Common/Modals/TaskCreationModal';
-import { getAllTasks, deleteTask } from '../../services/taskService';
+import TaskUploadModal from '../Common/Modals/TaskUploadModal';
+import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 
 const TaskManagement = () => {
@@ -14,6 +15,10 @@ const TaskManagement = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -23,6 +28,8 @@ const TaskManagement = () => {
     try {
       setLoading(true);
       const response = await getAllTasks();
+      console.log('Tasks response:', response);
+      console.log('First task data:', response.tasks[0]);
       setTasks(response.tasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -53,8 +60,86 @@ const TaskManagement = () => {
   };
 
   const handleUpload = (taskId) => {
-    // Handle file upload for the specific task
-    console.log('Upload for task:', taskId);
+    console.log('Attempting upload for task with ID:', taskId);
+    setSelectedTaskId(taskId);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleCloseUploadModal = () => {
+    setIsUploadModalOpen(false);
+    setSelectedTaskId(null);
+    setUploadProgress({});
+  };
+
+  const handleFileUpload = async (files) => {
+    if (!selectedTaskId || !files.length) return;
+
+    try {
+      console.log('Starting file upload for task:', selectedTaskId);
+      console.log('Files to upload:', files);
+
+      if (files.length > 4) {
+        showErrorAlert('Upload Error', 'Maximum 4 files allowed');
+        return;
+      }
+
+      // Initialize progress state for all files
+      const initialProgress = {};
+      Array.from(files).forEach(file => {
+        initialProgress[file.name] = 0;
+      });
+      setUploadProgress(initialProgress);
+
+      await uploadTaskFiles(
+        selectedTaskId,
+        files,
+        (progressData) => {
+          if (progressData.files) {
+            // Update both individual file progress and total progress
+            setUploadProgress(prev => ({
+              ...prev,
+              ...progressData.files,
+              total: progressData.total
+            }));
+          }
+        }
+      );
+
+      showSuccessAlert('Success', 'Files uploaded successfully');
+      handleCloseUploadModal();
+      fetchTasks(); // Refresh tasks to update submissions count
+    } catch (error) {
+      console.error('Failed to upload files:', error);
+      console.error('Full error details:', {
+        taskId: selectedTaskId,
+        endpoint: `/api/tasks/${selectedTaskId}/upload`,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      showErrorAlert(
+        'Upload Failed',
+        error.message || 'Failed to upload files. Please try again.'
+      );
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileUpload(files);
+    }
   };
 
   const handleDelete = async (taskId) => {
@@ -318,6 +403,17 @@ const TaskManagement = () => {
       <TaskCreationModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+      />
+
+      <TaskUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={handleCloseUploadModal}
+        onFileUpload={handleFileUpload}
+        isDragging={isDragging}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        uploadProgress={uploadProgress}
       />
     </div>
   );
