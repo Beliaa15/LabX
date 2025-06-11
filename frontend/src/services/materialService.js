@@ -96,9 +96,10 @@ export const getMaterialById = async (courseId, folderId, materialId) => {
  * @param {string} folderId - The MongoDB _id of the folder
  * @param {string} materialId - The MongoDB _id of the material
  * @param {string} filename - Optional filename for the download
+ * @param {boolean} shouldDownload - Whether to trigger the download or just return the blob
  * @returns {Promise} - The file blob
  */
-export const downloadMaterial = async (courseId, folderId, materialId, filename) => {
+export const downloadMaterial = async (courseId, folderId, materialId, filename, shouldDownload = true) => {
     try {
         console.log('Downloading material:', { courseId, folderId, materialId });
         const response = await authApi.get(
@@ -108,22 +109,25 @@ export const downloadMaterial = async (courseId, folderId, materialId, filename)
             }
         );
 
-        // Create blob URL and trigger download
+        // Create blob URL and trigger download if shouldDownload is true
         const blob = new Blob([response.data]);
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
         
-        // Use provided filename or extract from response headers
-        const downloadFilename = filename || 
-            response.headers['content-disposition']?.split('filename=')[1]?.replace(/"/g, '') ||
-            'downloaded-file';
-        
-        link.setAttribute('download', downloadFilename);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
+        if (shouldDownload) {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // Use provided filename or extract from response headers
+            const downloadFilename = filename || 
+                response.headers['content-disposition']?.split('filename=')[1]?.replace(/"/g, '') ||
+                'downloaded-file';
+            
+            link.setAttribute('download', downloadFilename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        }
 
         console.log('Material downloaded successfully');
         return response.data;
@@ -238,6 +242,69 @@ export const getMaterialsWithOptions = async (courseId, folderId, options = {}) 
             courseId,
             folderId,
             options
+        });
+        throw error;
+    }
+};
+
+/**
+ * Get a public URL for viewing a material file
+ * @param {string} courseId - The MongoDB _id of the course
+ * @param {string} folderId - The MongoDB _id of the folder
+ * @param {string} materialId - The MongoDB _id of the material
+ * @returns {Promise<string>} - The public URL for viewing the file
+ */
+export const getMaterialViewUrl = async (courseId, folderId, materialId) => {
+    try {
+        const response = await authApi.get(
+            `/api/courses/${courseId}/folders/${folderId}/materials/${materialId}/public-url`
+        );
+        return response.data.url;
+    } catch (error) {
+        console.error('Failed to get material view URL:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+            courseId,
+            folderId,
+            materialId
+        });
+        throw error;
+    }
+};
+
+/**
+ * View a material file in the browser
+ * @param {string} courseId - The MongoDB _id of the course
+ * @param {string} folderId - The MongoDB _id of the folder
+ * @param {string} materialId - The MongoDB _id of the material
+ * @returns {Promise<{ blob: Blob, publicUrl: string }>} - The file blob and public URL
+ */
+export const viewMaterial = async (courseId, folderId, materialId) => {
+    try {
+        console.log('Viewing material:', { courseId, folderId, materialId });
+        
+        // Get both the file blob and public URL in parallel
+        const [response, publicUrl] = await Promise.all([
+            authApi.get(
+                `/api/courses/${courseId}/folders/${folderId}/materials/${materialId}/view`,
+                { responseType: 'blob' }
+            ),
+            getMaterialViewUrl(courseId, folderId, materialId)
+        ]);
+
+        return {
+            blob: response.data,
+            publicUrl
+        };
+    } catch (error) {
+        console.error('Failed to view material:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+            courseId,
+            folderId,
+            materialId
         });
         throw error;
     }
