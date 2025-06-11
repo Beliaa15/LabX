@@ -17,6 +17,7 @@ import CourseListView from '../Common/courseListView';
 import CourseDetailView from '../Common/courseDetailView';
 import SearchBar from '../ui/SearchBar';
 import ViewModeToggle from '../ui/ViewModeToggle';
+import FileViewer from '../Common/FileViewer';
 
 const MyCourses = () => {
   const { user } = useAuth();
@@ -30,6 +31,7 @@ const MyCourses = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [currentPath, setCurrentPath] = useState([]);
+  const [viewingFile, setViewingFile] = useState(null);
 
   // Enrollment states
   const [showEnrollDialog, setShowEnrollDialog] = useState(false);
@@ -190,6 +192,82 @@ const MyCourses = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const getFileType = (filename) => {
+    const extension = filename.split('.').pop().toLowerCase();
+    const mimeTypes = {
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'ppt': 'application/vnd.ms-powerpoint',
+      'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'txt': 'text/plain',
+      'csv': 'text/csv',
+      'json': 'application/json',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'bmp': 'image/bmp',
+      'webp': 'image/webp'
+    };
+    return mimeTypes[extension] || 'application/octet-stream';
+  };
+
+  const handleView = async (material, setViewingFile) => {
+    try {
+      if (material.type === 'file') {
+        // Show loading state
+        setViewingFile({ 
+          ...material,
+          name: material.name,
+          type: getFileType(material.name)
+        });
+
+        const response = await downloadMaterial(
+          selectedCourse._id,
+          material.folderId || '',
+          material._id,
+          material.name,
+          false // Don't trigger download when viewing
+        );
+        
+        // Create a blob with the correct type and content
+        const blob = new Blob([response], { type: getFileType(material.name) });
+        
+        // For text files, read the content
+        if (getFileType(material.name).includes('text/') || 
+            getFileType(material.name).includes('application/json')) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            setViewingFile({
+              ...material,
+              name: material.name,
+              type: getFileType(material.name),
+              blob,
+              textContent: reader.result
+            });
+          };
+          reader.readAsText(blob);
+        } else {
+          setViewingFile({
+            ...material,
+            name: material.name,
+            type: getFileType(material.name),
+            blob
+          });
+        }
+      }
+    } catch (error) {
+      console.error('View failed:', error);
+      showErrorAlert(
+        'View Failed',
+        'There was an error viewing the file. Please try again.'
+      );
+    }
+  };
+
   const handleEnrollSubmit = async (e) => {
     e.preventDefault();
     setIsEnrolling(true);
@@ -251,6 +329,7 @@ const MyCourses = () => {
             onShowAddMaterialModal={() => {}} // Students can't upload materials
             onNavigateToFolder={navigateToFolder}
             onDownload={handleDownload}
+            onView={handleView}
             onDelete={() => {}} // Students can't delete
             onUpdateFolder={() => {}} // Students can't update folders
             formatFileSize={formatFileSize}
@@ -386,6 +465,14 @@ const MyCourses = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* File Viewer */}
+        {viewingFile && (
+          <FileViewer
+            file={viewingFile}
+            onClose={() => setViewingFile(null)}
+          />
         )}
       </div>
     </div>
