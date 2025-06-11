@@ -1,16 +1,41 @@
-import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2 } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import TaskCreationModal from '../Common/Modals/TaskCreationModal';
+import { getAllTasks, deleteTask } from '../../services/taskService';
+import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 
 const TaskManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { sidebarCollapsed } = useUI();
-  const { isDarkMode, handleToggle } = useDarkMode();
+  const { isDarkMode } = useDarkMode();
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllTasks();
+      setTasks(response.tasks);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      showErrorAlert(
+        'Error Loading Tasks',
+        error.response?.data?.message || 'Failed to load tasks. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -18,7 +43,107 @@ const TaskManagement = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    fetchTasks(); // Refresh tasks after modal closes
   };
+
+  const handleSort = (key) => {
+    setSortConfig((prevConfig) => ({
+      key,
+      direction:
+        prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const handleUpload = (taskId) => {
+    // Handle file upload for the specific task
+    console.log('Upload for task:', taskId);
+  };
+
+  const handleDelete = async (taskId) => {
+    const taskToDelete = tasks.find(t => t._id === taskId);
+    
+    const result = await showConfirmDialog(
+      'Delete Task',
+      `Are you sure you want to delete "${taskToDelete.title}"? This action cannot be undone.`,
+      'Yes, Delete',
+      'Cancel'
+    );
+
+    if (result.isConfirmed) {
+      try {
+        await deleteTask(taskId);
+        setTasks(tasks.filter(task => task._id !== taskId));
+        showSuccessAlert('Task Deleted', `Task "${taskToDelete.title}" has been deleted successfully`);
+      } catch (error) {
+        console.error('Failed to delete task:', error);
+        showErrorAlert(
+          'Error Deleting Task',
+          error.response?.data?.message || 'Failed to delete task. Please try again.'
+        );
+      }
+    }
+  };
+
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (sortConfig.key === 'submissions') {
+      return sortConfig.direction === 'asc'
+        ? a.submissions.length - b.submissions.length
+        : b.submissions.length - a.submissions.length;
+    }
+    
+    const aValue = a[sortConfig.key];
+    const bValue = b[sortConfig.key];
+    
+    if (sortConfig.direction === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    }
+    return aValue < bValue ? 1 : -1;
+  });
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Mobile card view for tasks
+  const TaskCard = ({ task }) => (
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-primary mb-4">
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="font-medium text-primary">{task.title}</h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleUpload(task._id)}
+            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 p-1"
+          >
+            <ArrowUpToLine className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleDelete(task._id)}
+            className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 p-1"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <p className="text-secondary text-sm mb-3 line-clamp-2">{task.description}</p>
+      <div className="flex flex-wrap gap-3 text-xs text-secondary">
+        <div className="flex items-center gap-1">
+          <Users className="w-4 h-4" />
+          {task.submissions.length} submissions
+        </div>
+        <div className="flex items-center gap-1">
+          <Calendar className="w-4 h-4" />
+          {formatDate(task.createdAt)}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen surface-secondary">
@@ -46,7 +171,7 @@ const TaskManagement = () => {
                       Task Management
                     </h2>
                     <p className="mt-2 text-secondary">
-                      Create and manage tasks for students.
+                      {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} available for students
                     </p>
                   </div>
                   <button
@@ -60,18 +185,125 @@ const TaskManagement = () => {
               </div>
 
               {/* Task List Section */}
-              <div className="surface-primary shadow-sm rounded-xl border border-primary">
-                <div className="px-4 py-5 sm:px-6">
+              <div className="surface-primary shadow-sm rounded-xl border border-primary overflow-hidden">
+                <div className="px-4 py-5 sm:px-6 border-b border-primary">
                   <h3 className="text-lg leading-6 font-medium text-primary">
                     Available Tasks
                   </h3>
                 </div>
-                <div className="border-t border-primary">
-                  {/* Task list will be implemented here */}
+                
+                {loading ? (
+                  <div className="p-8 text-center">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent"></div>
+                  </div>
+                ) : tasks.length === 0 ? (
                   <div className="p-4 text-center text-secondary">
                     No tasks available. Create your first task!
                   </div>
-                </div>
+                ) : (
+                  <>
+                    {/* Mobile View */}
+                    <div className="md:hidden p-4 space-y-4">
+                      {sortedTasks.map((task) => (
+                        <TaskCard key={task._id} task={task} />
+                      ))}
+                    </div>
+
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="min-w-full divide-y divide-primary">
+                        <thead className="bg-gray-50 dark:bg-gray-800">
+                          <tr>
+                            <th 
+                              scope="col" 
+                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
+                              onClick={() => handleSort('title')}
+                            >
+                              <div className="flex items-center gap-2">
+                                Title
+                                <ArrowUpDown className="w-4 h-4" />
+                              </div>
+                            </th>
+                            <th 
+                              scope="col" 
+                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
+                              onClick={() => handleSort('description')}
+                            >
+                              <div className="flex items-center gap-2">
+                                Description
+                                <ArrowUpDown className="w-4 h-4" />
+                              </div>
+                            </th>
+                            <th 
+                              scope="col" 
+                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
+                              onClick={() => handleSort('submissions')}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Users className="w-4 h-4" />
+                                Submissions
+                                <ArrowUpDown className="w-4 h-4" />
+                              </div>
+                            </th>
+                            <th 
+                              scope="col" 
+                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
+                              onClick={() => handleSort('createdAt')}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                Created
+                                <ArrowUpDown className="w-4 h-4" />
+                              </div>
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-primary">
+                          {sortedTasks.map((task) => (
+                            <tr 
+                              key={task._id}
+                              className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
+                                {task.title}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-secondary max-w-xs truncate">
+                                {task.description}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
+                                {task.submissions.length} submissions
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
+                                {formatDate(task.createdAt)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleUpload(task._id)}
+                                    className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                    title="Upload Files"
+                                  >
+                                    <ArrowUpToLine className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(task._id)}
+                                    className="p-2 text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                    title="Delete Task"
+                                  >
+                                    <Trash2 className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
