@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2 } from 'lucide-react';
+import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2, FileText } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
-import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import TaskCreationModal from '../Common/Modals/TaskCreationModal';
@@ -12,7 +11,6 @@ const TaskManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { sidebarCollapsed } = useUI();
-  const { isDarkMode } = useDarkMode();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
@@ -193,12 +191,18 @@ const TaskManagement = () => {
                 </div>
                 
                 {loading ? (
-                  <div className="p-8 text-center">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent"></div>
+                  <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
                   </div>
                 ) : tasks.length === 0 ? (
-                  <div className="p-4 text-center text-secondary">
-                    No tasks available. Create your first task!
+                  <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
+                    <FileText className="w-12 h-12 text-muted mb-4" />
+                    <h3 className="text-lg font-medium text-primary mb-2">
+                      No tasks available
+                    </h3>
+                    <p className="text-secondary text-center mb-8">
+                      Create your first task to get started
+                    </p>
                   </div>
                 ) : (
                   <>
