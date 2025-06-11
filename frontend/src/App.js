@@ -17,7 +17,7 @@ import Profile from './components/Auth/Profile';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import PublicRoute from './components/Auth/PublicRoute';
 import MyCourses from './components/Pages/MyCourses';
-import AdminPanal from './components/Pages/AdminPanal';
+import CourseDashboard from './components/Pages/CourseDashboard';
 import About from './components/Pages/About';
 import Features from './components/Pages/Features';
 
@@ -111,7 +111,7 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
-                    <AdminPanal />
+                    <CourseDashboard />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               }
@@ -120,7 +120,7 @@ const App = () => {
               path="/admin"
               element={
                 <ProtectedRoute>
-                  <AdminPanal />
+                  <CourseDashboard />
                 </ProtectedRoute>
               }
             />
