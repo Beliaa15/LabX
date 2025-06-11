@@ -329,13 +329,15 @@ const CourseDetailView = ({
           {/* Materials controls - Only show for teachers/admins */}
           {!isStudent && (
             <div className="flex items-center gap-2 md:gap-3">
-              <button
-                onClick={onShowCreateFolderModal}
-                className="flex items-center px-2 py-2 md:px-3 md:py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
-              >
-                <FolderPlus className="w-4 h-4" />
-                <span className="hidden lg:inline ml-2 text-sm">New Folder</span>
-              </button>
+              {!selectedFolder && (
+                <button
+                  onClick={onShowCreateFolderModal}
+                  className="flex items-center px-2 py-2 md:px-3 md:py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                  <span className="hidden lg:inline ml-2 text-sm">New Folder</span>
+                </button>
+              )}
               {selectedFolder && (
                 <button
                   onClick={onShowAddMaterialModal}
