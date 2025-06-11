@@ -20,6 +20,7 @@ import MyCourses from './components/Pages/MyCourses';
 import CourseDashboard from './components/Pages/CourseDashboard';
 import About from './components/Pages/About';
 import Features from './components/Pages/Features';
+import TaskManagement from './components/Pages/TaskManagement';
 
 const App = () => {
   return (
@@ -121,6 +122,17 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <CourseDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/tasks"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
+                    <TaskManagement />
+                  </RoleBasedRoute>
                 </ProtectedRoute>
               }
             />

@@ -16,6 +16,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ListTodo,
 } from "lucide-react";
 
 /**
@@ -48,6 +49,12 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       name: "Admin Panel",
       href: "/admin",
       icon: Settings,
+      show: isAdmin(),
+    },
+    {
+      name: "Task Management",
+      href: "/admin/tasks",
+      icon: ListTodo,
       show: isAdmin(),
     },
     {
