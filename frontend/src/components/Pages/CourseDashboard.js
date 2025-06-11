@@ -84,6 +84,8 @@ const CourseDashboard = () => {
   const [selectedFolderToUpdate, setSelectedFolderToUpdate] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   
   // Form states
   const [courseName, setCourseName] = useState('');
@@ -135,6 +137,7 @@ const CourseDashboard = () => {
     const loadFolders = async () => {
       if (selectedCourse) {
         try {
+          setIsLoadingFolders(true);
           console.log('Loading folders for course:', selectedCourse._id);
           const response = await getFolders(selectedCourse._id);
           setFolders(response.folders || []);
@@ -145,6 +148,8 @@ const CourseDashboard = () => {
             'Failed to load folders. Please try again later.'
           );
           setFolders([]);
+        } finally {
+          setIsLoadingFolders(false);
         }
       } else {
         setFolders([]);
@@ -160,6 +165,7 @@ const CourseDashboard = () => {
     const loadMaterials = async () => {
       if (selectedCourse && selectedFolder) {
         try {
+          setIsLoadingFiles(true);
           console.log('Loading materials for folder:', selectedFolder._id);
           const response = await getMaterials(selectedCourse._id, selectedFolder._id);
           
@@ -185,6 +191,8 @@ const CourseDashboard = () => {
             'Failed to load materials. Please try again later.'
           );
           setMaterials([]);
+        } finally {
+          setIsLoadingFiles(false);
         }
       } else {
         setMaterials([]);
@@ -842,6 +850,8 @@ const CourseDashboard = () => {
             onDelete={handleDelete}
             onUpdateFolder={handleUpdateFolderClick}
             formatFileSize={formatFileSize}
+            isLoadingFolders={isLoadingFolders}
+            isLoadingFiles={isLoadingFiles}
           />
         ) : (
           <CourseListView
