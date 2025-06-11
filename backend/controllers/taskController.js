@@ -2,18 +2,27 @@ const Task = require('../models/Task');
 const Course = require('../models/Course');
 const User = require('../models/User');
 const asyncHandler = require('express-async-handler');
+const createWebGLStorage = require('../config/webglMulter');
+const fs = require('fs');
+const path = require('path');
 
 // @desc    Create a new task
 // @route   POST /api/tasks
 // @access  Private/Admin
 exports.createTask = asyncHandler(async (req, res) => {
-    const { title, description, webglUrl, score } = req.body;
+    const { title, description, score } = req.body;
 
     const task = new Task({
         title,
         description,
-        webglUrl,
         courseTasks: [], // Initialize with an empty array
+        webglData: {
+            buildFolderPath: null,
+            loader: null,
+            data: null,
+            framework: null,
+            wasm: null,
+        },
         score: score || 100, // Default score to 100 if not provided
     });
 
@@ -22,6 +31,105 @@ exports.createTask = asyncHandler(async (req, res) => {
     res.status(201).json({
         message: 'Task created successfully',
         task,
+    });
+});
+
+// @desc    Upload WebGL files for a task
+// @route   POST /api/tasks/:id/upload-webgl
+// @access  Private/Admin
+exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
+    const taskId = req.params.id;
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+        res.status(404);
+        throw new Error('Task not found');
+    }
+
+    const upload = createWebGLStorage(taskId)
+
+    upload.array('webglFiles', 4)(req, res, async (err) => {
+        if (err) {
+            res.status(400);
+            throw new Error('Error uploading WebGL files: ' + err.message);
+        }
+
+        try {
+            if (!req.files || req.files.length === 0) {
+                res.status(400);
+                throw new Error('No files uploaded');
+            }
+
+            if (task.webglData.buildFolderPath) {
+                // Clean up previous files if they exist
+                if (fs.existsSync(task.webglData.buildFolderPath)) {
+                    fs.rmSync(task.webglData.buildFolderPath, { recursive: true, force: true });
+                }
+            }
+
+            const buildFolderPath = path.join(__dirname, '../uploads/webgl', taskId);
+
+            const webglData = {
+                buildFolderPath,
+                loader: null,
+                data: null,
+                framework: null,
+                wasm: null,
+            }
+
+            req.files.forEach(file => {
+                const filename = file.filename.toLowerCase();
+                const filePath = file.path;
+
+                if (filename.includes('loader')) {
+                    webglData.loader = filePath;
+                } else if (filename.includes('framework')) {
+                    webglData.framework = filePath;
+                } else if (filename.includes('.data')) {
+                    webglData.data = filePath;
+                } else if (filename.includes('.wasm')) {
+                    webglData.wasm = filePath;
+                }
+            });
+
+            // Check if required files are present
+            if (!webglData.loader || !webglData.data) {
+                // Clean up uploaded files
+                req.files.forEach(file => {
+                    if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path);
+                    }
+                });
+                return res.status(400).json({
+                    success: false,
+                    message: 'Loader and Data files are required for WebGL build'
+                });
+            }
+
+            task.webglData = webglData;
+            await task.save();
+
+            res.status(200).json({
+                success: true,
+                message: 'WebGL files uploaded successfully',
+                task: {
+                    id: task._id,
+                    title: task.title,
+                    webglData: task.webglData,
+                },
+            });
+
+        } catch (error) {
+            // Clean up uploaded files in case of error
+            if (req.files) {
+                req.files.forEach(file => {
+                    if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path);
+                    }
+                });
+            }
+            throw new Error('Error processing WebGL files: ' + error.message);
+        }
     });
 });
 

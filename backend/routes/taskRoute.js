@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
     createTask,
+    uploadWebGLFiles,
     getAllTasks,
     getTaskById,
     updateTask,
@@ -35,6 +36,8 @@ router
     .put(authenticate, isAdmin, updateTask)
     .delete(authenticate, isAdmin, deleteTask);
 
+
+router.post('/:id/upload', authenticate, isAdmin, uploadWebGLFiles);
 
 // Route to assign a task to a course
 router.post('/:id/assign', authenticate, isTeacher, assignTaskToCourse);
