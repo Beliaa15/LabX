@@ -36,7 +36,7 @@ const ToggleButton = ({ isChecked, onChange, className = '' }) => {
         {!checked ? (
           <Moon className="w-5 h-5 text-gray-700" />
         ) : (
-          <Sun className="w-5 h-5 dark:text-yellow-300" />
+          <Sun className="w-5 h-5 dark:text-yellow-200" />
         )}
       </div>
     </label>
