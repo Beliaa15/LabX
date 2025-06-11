@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   FolderPlus, 
   Upload, 
@@ -7,10 +7,12 @@ import {
   Folder, 
   Download, 
   Edit2, 
-  Trash2 
+  Trash2,
+  Eye 
 } from 'lucide-react';
 import SearchBar from '../ui/SearchBar';
 import ViewModeToggle from '../ui/ViewModeToggle';
+import FileViewer from './FileViewer';
 
 const CourseDetailView = ({
   selectedCourse,
@@ -28,11 +30,14 @@ const CourseDetailView = ({
   onShowAddMaterialModal,
   onNavigateToFolder,
   onDownload,
+  onView,
   onDelete,
   onUpdateFolder,
   formatFileSize,
   isStudent = false
 }) => {
+  const [viewingFile, setViewingFile] = useState(null);
+
   // Get current materials (folders + files)
   const getCurrentMaterials = () => {
     const currentFolders = Array.isArray(folders) ? 
@@ -61,8 +66,21 @@ const CourseDetailView = ({
 
   // Material Item Component for Grid View
   const MaterialItem = ({ item }) => {
+    const handleFileClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (item.type === 'folder') {
+        onNavigateToFolder(item);
+      } else {
+        onView(item, setViewingFile);
+      }
+    };
+
     return (
-      <div className="surface-primary rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-primary/10 hover:border-primary/20 overflow-hidden group backdrop-blur-sm">
+      <div 
+        className="surface-primary rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-primary/10 hover:border-primary/20 overflow-hidden group backdrop-blur-sm"
+        onClick={handleFileClick}
+      >
         <div className="relative">
           {/* Top Gradient Banner */}
           <div className={`h-24 w-full ${
@@ -75,12 +93,12 @@ const CourseDetailView = ({
           <div className="px-6 pb-6 -mt-12">
             {/* Icon Container with hover effect */}
             <div 
-              onClick={() => item.type === 'folder' ? onNavigateToFolder(item) : onDownload(item)}
               className={`mx-auto w-20 h-20 flex items-center justify-center rounded-2xl cursor-pointer transform group-hover:scale-105 transition-all duration-300 shadow-lg ${
                 item.type === 'folder' 
                   ? 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800 dark:to-amber-900 group-hover:from-amber-100 group-hover:to-amber-200 dark:group-hover:from-amber-700 dark:group-hover:to-amber-800' 
                   : 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-800 dark:to-blue-900 group-hover:from-blue-100 group-hover:to-blue-200 dark:group-hover:from-blue-700 dark:group-hover:to-blue-800'
-              }`}>
+              }`}
+            >
               {item.type === 'folder' ? (
                 <Folder className="w-10 h-10 text-amber-600 dark:text-amber-400 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors" />
               ) : (
@@ -127,41 +145,29 @@ const CourseDetailView = ({
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(item);
-                      }}
-                      className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                      title="Delete Folder"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </>
                 ) : (
-                  <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDownload(item);
-                      }}
-                      className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                      title="Download File"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(item);
-                      }}
-                      className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
-                      title="Delete File"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownload(item);
+                    }}
+                    className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                    title="Download File"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
                 )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(item);
+                  }}
+                  className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                  title={`Delete ${item.type === 'folder' ? 'Folder' : 'File'}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             )}
 
@@ -199,10 +205,20 @@ const CourseDetailView = ({
 
   // Material List Item Component for List View
   const MaterialListItem = ({ item }) => {
+    const handleFileClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (item.type === 'folder') {
+        onNavigateToFolder(item);
+      } else {
+        onView(item, setViewingFile);
+      }
+    };
+
     return (
       <div 
-        onClick={() => item.type === 'folder' ? onNavigateToFolder(item) : onDownload(item)}
         className="group surface-primary rounded-lg border border-primary hover:shadow-md transition-all duration-200 hover-surface cursor-pointer"
+        onClick={handleFileClick}
       >
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -238,7 +254,6 @@ const CourseDetailView = ({
           {/* Action buttons - Hide edit/delete for students */}
           <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
             {!isStudent ? (
-              // Teacher/Admin view - show all actions
               <>
                 {item.type === 'folder' ? (
                   <>
@@ -287,7 +302,6 @@ const CourseDetailView = ({
                 </button>
               </>
             ) : (
-              // Student view - only show download for files
               item.type === 'file' && (
                 <button
                   onClick={(e) => {
@@ -308,7 +322,7 @@ const CourseDetailView = ({
   };
 
   return (
-    <>
+    <div className="h-full flex flex-col">
       {/* Controls - Hide create/upload buttons for students */}
       <div className="surface-primary border-b border-primary px-4 md:px-6 py-4">
         <div className="flex items-center justify-between gap-2 md:gap-4">
@@ -451,7 +465,14 @@ const CourseDetailView = ({
           </div>
         </div>
       </main>
-    </>
+
+      {viewingFile && (
+        <FileViewer
+          file={viewingFile}
+          onClose={() => setViewingFile(null)}
+        />
+      )}
+    </div>
   );
 };
 
