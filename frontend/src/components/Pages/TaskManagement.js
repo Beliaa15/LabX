@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2, FileText, CheckCircle2, XCircle, PlayCircle } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
@@ -7,6 +7,7 @@ import TaskCreationModal from '../Common/Modals/TaskCreationModal';
 import TaskUploadModal from '../Common/Modals/TaskUploadModal';
 import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
+import { useNavigate } from 'react-router-dom';
 
 const TaskManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +20,8 @@ const TaskManagement = () => {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedTaskToOpen, setSelectedTaskToOpen] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchTasks();
@@ -167,6 +170,11 @@ const TaskManagement = () => {
     }
   };
 
+  const handleOpenTask = (task) => {
+    console.log('Opening task:', task);
+    navigate(`/admin/tasks/${task._id}/view`, { state: { task } });
+  };
+
   const sortedTasks = [...tasks].sort((a, b) => {
     if (sortConfig.key === 'submissions') {
       return sortConfig.direction === 'asc'
@@ -216,14 +224,24 @@ const TaskManagement = () => {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => handleOpenTask(task)}
+            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 p-1"
+            title="Open Task"
+            disabled={!task.webglData || !task.webglData.buildFolderPath}
+          >
+            <PlayCircle className="w-4 h-4" />
+          </button>
+          <button
             onClick={() => handleUpload(task._id)}
             className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 p-1"
+            title="Upload Files"
           >
             <ArrowUpToLine className="w-4 h-4" />
           </button>
           <button
             onClick={() => handleDelete(task._id)}
             className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 p-1"
+            title="Delete Task"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -407,6 +425,18 @@ const TaskManagement = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
                                 <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleOpenTask(task)}
+                                    className={`p-2 rounded-lg transition-colors ${
+                                      task.webglData && task.webglData.buildFolderPath
+                                        ? 'text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
+                                        : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                                    }`}
+                                    title="Open Task"
+                                    disabled={!task.webglData || !task.webglData.buildFolderPath}
+                                  >
+                                    <PlayCircle className="w-5 h-5" />
+                                  </button>
                                   <button
                                     onClick={() => handleUpload(task._id)}
                                     className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
