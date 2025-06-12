@@ -46,7 +46,7 @@ exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
         throw new Error('Task not found');
     }
 
-    const upload = createWebGLStorage(taskId)
+    const upload = createWebGLStorage(taskId);
 
     upload.array('webglFiles', 4)(req, res, async (err) => {
         if (err) {
@@ -63,11 +63,18 @@ exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
             if (task.webglData.buildFolderPath) {
                 // Clean up previous files if they exist
                 if (fs.existsSync(task.webglData.buildFolderPath)) {
-                    fs.rmSync(task.webglData.buildFolderPath, { recursive: true, force: true });
+                    fs.rmSync(task.webglData.buildFolderPath, {
+                        recursive: true,
+                        force: true,
+                    });
                 }
             }
 
-            const buildFolderPath = path.join(__dirname, '../uploads/webgl', taskId);
+            const buildFolderPath = path.join(
+                __dirname,
+                '../uploads/webgl',
+                taskId
+            );
 
             const webglData = {
                 buildFolderPath,
@@ -75,9 +82,9 @@ exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
                 data: null,
                 framework: null,
                 wasm: null,
-            }
+            };
 
-            req.files.forEach(file => {
+            req.files.forEach((file) => {
                 const filename = file.filename.toLowerCase();
                 const filePath = file.path;
 
@@ -95,14 +102,15 @@ exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
             // Check if required files are present
             if (!webglData.loader || !webglData.data) {
                 // Clean up uploaded files
-                req.files.forEach(file => {
+                req.files.forEach((file) => {
                     if (fs.existsSync(file.path)) {
                         fs.unlinkSync(file.path);
                     }
                 });
                 return res.status(400).json({
                     success: false,
-                    message: 'Loader and Data files are required for WebGL build'
+                    message:
+                        'Loader and Data files are required for WebGL build',
                 });
             }
 
@@ -118,11 +126,10 @@ exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
                     webglData: task.webglData,
                 },
             });
-
         } catch (error) {
             // Clean up uploaded files in case of error
             if (req.files) {
-                req.files.forEach(file => {
+                req.files.forEach((file) => {
                     if (fs.existsSync(file.path)) {
                         fs.unlinkSync(file.path);
                     }
@@ -428,4 +435,81 @@ exports.getTasksByCourse = asyncHandler(async (req, res) => {
         count: tasksWithDueDate.length,
         tasks: tasksWithDueDate,
     });
+});
+
+// @desc    Get webgl info for a task
+// @route   GET /api/tasks/:id/webgl-info
+// @access  Private
+exports.getWebGLInfo = asyncHandler(async (req, res) => {
+    const { id: taskId } = req.params;
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+        res.status(404);
+        throw new Error('Task not found');
+    }
+
+    if (!task.webglData.loader || !task.webglData.data) {
+        res.status(404);
+        throw new Error('No WebGL build found for this task');
+    }
+
+    res.status(200).json({
+        success: true,
+        webglData: {
+            files: {
+                loader: task.webglData.loader
+                    ? path.basename(task.webglData.loader)
+                    : null,
+                data: task.webglData.data
+                    ? path.basename(task.webglData.data)
+                    : null,
+                framework: task.webglData.framework
+                    ? path.basename(task.webglData.framework)
+                    : null,
+                wasm: task.webglData.wasm
+                    ? path.basename(task.webglData.wasm)
+                    : null,
+            },
+        },
+    });
+});
+
+// @desc    Get WebGL files for a task
+// @route   GET /api/tasks/:id/webgl-files/:fileType
+// @access  Private
+exports.getWebGLFiles = asyncHandler(async (req, res) => {
+    const { id: taskId, fileType } = req.params;
+    const task = await Task.findById(taskId);
+    if (!task) {
+        res.status(404);
+        throw new Error('Task not found');
+    }
+    const validFileTypes = ['loader', 'data', 'framework', 'wasm'];
+    if (!validFileTypes.includes(fileType)) {
+        res.status(400);
+        throw new Error('Invalid file type');
+    }
+    const filePath = task.webglData[fileType];
+    if (!filePath) {
+        res.status(404);
+        throw new Error(`No ${fileType} file found for this task`);
+    }
+
+    // Set appropriate headers
+    const filename = path.basename(filePath);
+    const ext = path.extname(filename).toLowerCase();
+
+    if (ext === '.js') {
+        res.setHeader('Content-Type', 'application/javascript');
+    } else if (ext === '.wasm') {
+        res.setHeader('Content-Type', 'application/wasm');
+        console.log('Serving WebAssembly file:', filename);
+    } else if (ext === '.data') {
+        res.setHeader('Content-Type', 'application/octet-stream');
+        console.log('Serving data file:', filename);
+    }
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.sendFile(path.resolve(filePath));
 });
