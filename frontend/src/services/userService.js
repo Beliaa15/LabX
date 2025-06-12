@@ -43,3 +43,75 @@ export const getAllTeachers = async () => {
         throw error;
     }
 }; 
+
+// Admin user management services
+export const getAllUsers = async () => {
+    try {
+        const response = await api.get('/api/users');
+        return response.data;
+    } catch (error) {
+        console.error('Get all users failed:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};
+
+export const updateUserRole = async (userId, role) => {
+    try {
+        const response = await api.put(`/api/users/${userId}/role`, { role });
+        return response.data;
+    } catch (error) {
+        console.error('Update user role failed:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};
+
+export const deleteUser = async (userId) => {
+    try {
+        const response = await api.delete(`/api/users/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Delete user failed:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};
+
+// Get users by role (optional utility functions)
+export const getStudents = async () => {
+    try {
+        const response = await api.get('/api/users/students');
+        return response.data;
+    } catch (error) {
+        console.error('Get students failed:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};
+
+export const getTeachers = async () => {
+    try {
+        const response = await api.get('/api/users/teachers');
+        return response.data;
+    } catch (error) {
+        console.error('Get teachers failed:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};

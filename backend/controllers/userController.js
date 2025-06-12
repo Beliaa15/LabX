@@ -26,6 +26,18 @@ const getTeachers = asyncHandler(async (req, res) => {
     res.json(users);
 });
 
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+const getAllUsers = asyncHandler(async (req, res) => {
+    const users = await User.find()
+        .select('-password')
+        .populate('courses', 'name description')
+        .sort({ createdAt: -1 });
+    
+    res.json(users);
+});
+
 // @desc    Get user by ID
 // @route   GET /api/users/:id
 // @access  Private
@@ -84,6 +96,47 @@ const updateUser = asyncHandler(async (req, res) => {
     res.status(202).json({ message: 'User updated successfully' });
 });
 
+// @desc    Update user role
+// @route   PUT /api/users/:id/role
+// @access  Private/Admin
+const updateUserRole = asyncHandler(async (req, res) => {
+    const { role } = req.body;
+    const userId = req.params.id;
+
+    // Validate role
+    const validRoles = ['student', 'teacher', 'admin'];
+    if (!validRoles.includes(role)) {
+        res.status(400);
+        throw new Error('Invalid role. Must be student, teacher, or admin');
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    // Prevent admins from changing their own role to non-admin
+    if (req.user._id.toString() === userId && role !== 'admin') {
+        res.status(400);
+        throw new Error('Cannot change your own admin role');
+    }
+
+    user.role = role;
+    await user.save();
+
+    res.json({
+        message: 'User role updated successfully',
+        user: {
+            id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role
+        }
+    });
+});
+
 // @desc    Delete user
 // @route   DELETE /api/users/:id
 // @access  Private/Admin
@@ -103,7 +156,9 @@ const deleteUser = asyncHandler(async (req, res) => {
 module.exports = {
     getStudents,
     getTeachers,
+    getAllUsers,
     getUserById,
     updateUser,
+    updateUserRole,
     deleteUser,
 };
