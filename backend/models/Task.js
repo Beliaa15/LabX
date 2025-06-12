@@ -1,4 +1,5 @@
 const { Schema, model } = require('mongoose');
+const { framework } = require('passport');
 
 const taskSchema = new Schema(
     {
@@ -33,9 +34,12 @@ const taskSchema = new Schema(
                 ref: 'StudentSubmission',
             },
         ],
-        webglUrl: {
-            type: String,
-            default: null,
+        webglData: {
+            buildFolderPath: String,
+            loader: String,
+            data: String,
+            framework: String,
+            wasm: String,
         },
         score: {
             type: Number,
