@@ -153,4 +153,36 @@ export const uploadTaskFiles = async (taskId, files, onProgress) => {
         });
         throw error;
     }
+};
+
+/**
+ * Get WebGL file for a task
+ * @param {string} taskId - The ID of the task
+ * @param {string} fileType - The type of file (loader, framework, data, wasm)
+ * @returns {Promise<Blob>} - The WebGL file as a Blob
+ */
+export const getTaskWebGLFile = async (taskId, fileType) => {
+    try {
+        console.log(`Fetching ${fileType} file for task:`, taskId);
+        const response = await authApi.get(`/api/tasks/${taskId}/webgl-files/${fileType}`, {
+            responseType: 'arraybuffer'
+        });
+        
+        // Log response details
+        console.log(`${fileType} file response:`, {
+            size: response.data.byteLength,
+            status: response.status,
+            headers: response.headers
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to fetch ${fileType} file:`, {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+            url: `/api/tasks/${taskId}/webgl-files/${fileType}`
+        });
+        throw error;
+    }
 }; 
