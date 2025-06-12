@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
 
 const {
     createTask,
@@ -11,6 +13,8 @@ const {
     unassignTaskFromCourse,
     updateTaskDueDate,
     deleteTask,
+    getWebGLInfo,
+    getWebGLFiles
 } = require('../controllers/taskController');
 
 const { authenticate } = require('../middleware/authMiddleware');
@@ -48,5 +52,11 @@ router.delete('/:id/unassign', authenticate, isTeacher, unassignTaskFromCourse);
 // Route to update the due date of a task for a course
 router.put('/:id/assign/:courseId', authenticate, isTeacher, updateTaskDueDate);
 
-    // Export the router
+// Route to get WebGL info and files for a specific task
+router.get('/:id/webgl-info', authenticate, getWebGLInfo);
+
+// Route to get WebGL files for a specific task and file type
+router.get('/:id/webgl-files/:fileType', authenticate, getWebGLFiles);
+
+// Export the router
 module.exports = router;
