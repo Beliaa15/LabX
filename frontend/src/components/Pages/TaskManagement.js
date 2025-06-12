@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2, FileText } from 'lucide-react';
+import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2, FileText, CheckCircle2, XCircle } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
@@ -198,7 +198,22 @@ const TaskManagement = () => {
   const TaskCard = ({ task }) => (
     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-primary mb-4">
       <div className="flex justify-between items-start mb-2">
-        <h3 className="font-medium text-primary">{task.title}</h3>
+        <div>
+          <h3 className="font-medium text-primary">{task.title}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            {task.webglData && task.webglData.buildFolderPath ? (
+              <span className="flex items-center gap-1 text-green-600 dark:text-green-500 text-xs">
+                <CheckCircle2 className="w-3 h-3" />
+                Files Uploaded
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs">
+                <XCircle className="w-3 h-3" />
+                No Files
+              </span>
+            )}
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleUpload(task._id)}
@@ -325,6 +340,15 @@ const TaskManagement = () => {
                             </th>
                             <th 
                               scope="col" 
+                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4" />
+                                Files Status
+                              </div>
+                            </th>
+                            <th 
+                              scope="col" 
                               className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
                               onClick={() => handleSort('submissions')}
                             >
@@ -350,7 +374,7 @@ const TaskManagement = () => {
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-primary">
+                        <tbody className="bg-white dark:bg-gray-900 divide-y divide-primary">
                           {sortedTasks.map((task) => (
                             <tr 
                               key={task._id}
@@ -361,6 +385,19 @@ const TaskManagement = () => {
                               </td>
                               <td className="px-6 py-4 text-sm text-secondary max-w-xs truncate">
                                 {task.description}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {task.webglData && task.webglData.buildFolderPath ? (
+                                  <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Files Uploaded
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                                    <XCircle className="w-4 h-4" />
+                                    No Files
+                                  </span>
+                                )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
                                 {task.submissions.length} submissions
