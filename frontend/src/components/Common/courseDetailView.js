@@ -8,11 +8,13 @@ import {
   Download, 
   Edit2, 
   Trash2,
-  Eye 
+  Eye,
+  Plus
 } from 'lucide-react';
 import SearchBar from '../ui/SearchBar';
 import ViewModeToggle from '../ui/ViewModeToggle';
 import FileViewer from './FileViewer';
+import SelectTaskModal from './Modals/SelectTaskModal';
 
 const CourseDetailView = ({
   selectedCourse,
@@ -39,6 +41,7 @@ const CourseDetailView = ({
   isLoadingFiles = false
 }) => {
   const [viewingFile, setViewingFile] = useState(null);
+  const [showSelectTaskModal, setShowSelectTaskModal] = useState(false);
 
   // Get current materials (folders + files)
   const getCurrentMaterials = () => {
@@ -323,6 +326,14 @@ const CourseDetailView = ({
     );
   };
 
+  // Handler for adding a task
+  const handleAddTaskClick = () => setShowSelectTaskModal(true);
+  const handleSelectTask = (task) => {
+    // TODO: Add logic to associate the selected task with the course
+    setShowSelectTaskModal(false);
+    // Optionally show a success message
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Controls - Hide create/upload buttons for students */}
@@ -331,14 +342,24 @@ const CourseDetailView = ({
           {/* Materials controls - Only show for teachers/admins */}
           {!isStudent && (
             <div className="flex items-center gap-2 md:gap-3">
+              {/* Add Task button only at course root (no folder selected) */}
               {!selectedFolder && (
-                <button
-                  onClick={onShowCreateFolderModal}
-                  className="flex items-center px-2 py-2 md:px-3 md:py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
-                >
-                  <FolderPlus className="w-4 h-4" />
-                  <span className="hidden lg:inline ml-2 text-sm">New Folder</span>
-                </button>
+                <>
+                  <button
+                    onClick={handleAddTaskClick}
+                    className="flex items-center px-2 py-2 md:px-3 md:py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden lg:inline ml-2 text-sm">Add Task</span>
+                  </button>
+                  <button
+                    onClick={onShowCreateFolderModal}
+                    className="flex items-center px-2 py-2 md:px-3 md:py-2 surface-primary border border-primary rounded-lg text-primary hover-surface transition-colors"
+                  >
+                    <FolderPlus className="w-4 h-4" />
+                    <span className="hidden lg:inline ml-2 text-sm">New Folder</span>
+                  </button>
+                </>
               )}
               {selectedFolder && (
                 <button
@@ -480,6 +501,12 @@ const CourseDetailView = ({
           onClose={() => setViewingFile(null)}
         />
       )}
+
+      <SelectTaskModal
+        isOpen={showSelectTaskModal}
+        onClose={() => setShowSelectTaskModal(false)}
+        onSelectTask={handleSelectTask}
+      />
     </div>
   );
 };

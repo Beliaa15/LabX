@@ -5,7 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { UIProvider } from './context/UIContext';
 import Toaster from './components/ui/toaster';
 import './index.css';
-import XorTask from './components/Tasks/XorTask';
+// import XorTask from './components/Tasks/XorTask';
 import RoleBasedRoute from './components/Auth/RoleBasedRoute';
 
 // Page imports
@@ -20,6 +20,8 @@ import MyCourses from './components/Pages/MyCourses';
 import CourseDashboard from './components/Pages/CourseDashboard';
 import About from './components/Pages/About';
 import Features from './components/Pages/Features';
+import TaskManagement from './components/Pages/TaskManagement';
+import TaskViewer from './components/Tasks/TaskViewer';
 
 const App = () => {
   return (
@@ -98,14 +100,14 @@ const App = () => {
               }
             />
 
-            <Route
+            {/* <Route
               path="/task/xor"
               element={
                 <ProtectedRoute>
                   <XorTask />
                 </ProtectedRoute>
               }
-            />
+            /> */}
             <Route
               path="/courses"
               element={
@@ -121,6 +123,28 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <CourseDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/tasks"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
+                    <TaskManagement />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/tasks/:taskId/view"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
+                    <TaskViewer />
+                  </RoleBasedRoute>
                 </ProtectedRoute>
               }
             />
