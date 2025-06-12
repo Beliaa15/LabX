@@ -1,12 +1,14 @@
 openapi: 3.0.0
 info:
-    title: Online Learning Platform API
-    version: 1.0.0
-    description: API for managing courses, folders, and user enrollments in an online learning platform.
+    title: Educational Platform API
+    version: 2.0.0
+    description: Comprehensive API for managing courses, tasks, materials, submissions, and WebGL content in an educational platform.
 
 servers:
     - url: http://localhost:3000/api
       description: Local development server
+    - url: https://your-production-domain.com/api
+      description: Production server
 
 components:
     securitySchemes:
@@ -14,63 +16,141 @@ components:
             type: http
             scheme: bearer
             bearerFormat: JWT
+
     schemas:
         User:
             type: object
             properties:
                 _id:
                     type: string
+                    example: '507f1f77bcf86cd799439011'
                 email:
                     type: string
+                    format: email
+                    example: 'john.doe@example.com'
                 firstName:
                     type: string
+                    example: 'John'
                 lastName:
                     type: string
+                    example: 'Doe'
                 role:
                     type: string
                     enum: [student, teacher, admin]
+                    example: 'student'
                 phone:
                     type: string
+                    example: '+1234567890'
                     description: Optional phone number
+                googleId:
+                    type: string
+                    description: Google OAuth ID (optional)
                 courses:
                     type: array
                     items:
                         type: string
+                    description: Array of course IDs the user is enrolled in
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+
+        UserCreate:
+            type: object
+            required:
+                - firstName
+                - lastName
+                - email
+                - password
+            properties:
+                firstName:
+                    type: string
+                    minLength: 2
+                    maxLength: 50
+                    example: 'John'
+                lastName:
+                    type: string
+                    minLength: 2
+                    maxLength: 50
+                    example: 'Doe'
+                email:
+                    type: string
+                    format: email
+                    example: 'john.doe@example.com'
+                password:
+                    type: string
+                    minLength: 6
+                    example: 'securePassword123'
+                phone:
+                    type: string
+                    pattern: '^\+?[1-9]\d{1,14}$'
+                    example: '+1234567890'
+
         UserUpdate:
             type: object
             properties:
-                email:
-                    type: string
                 firstName:
                     type: string
+                    minLength: 2
+                    maxLength: 50
                 lastName:
                     type: string
+                    minLength: 2
+                    maxLength: 50
+                email:
+                    type: string
+                    format: email
                 password:
                     type: string
+                    minLength: 6
                 phone:
                     type: string
-                    description: Optional phone number
+                    pattern: '^\+?[1-9]\d{1,14}$'
+
         Course:
             type: object
             properties:
                 _id:
                     type: string
+                    example: '507f1f77bcf86cd799439011'
                 name:
                     type: string
+                    example: 'Introduction to Computer Graphics'
                 description:
                     type: string
+                    example: 'Learn the fundamentals of computer graphics and WebGL'
                 teacher:
                     type: string
+                    example: '507f1f77bcf86cd799439012'
+                    description: Teacher user ID
                 code:
                     type: string
+                    example: 'CS101-2024'
+                    description: Unique course enrollment code
                 students:
                     type: array
                     items:
                         type: string
+                    description: Array of student user IDs
                 tasks:
                     type: array
                     items:
                         type: string
+                    description: Array of task IDs assigned to this course
+                folders:
+                    type: array
+                    items:
+                        type: string
+                    description: Array of folder IDs containing course materials
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+
         CourseCreate:
             type: object
             required:
@@ -79,64 +159,70 @@ components:
             properties:
                 name:
                     type: string
+                    minLength: 3
+                    maxLength: 100
+                    example: 'Advanced WebGL Programming'
                 description:
                     type: string
-        CourseEnrollByCode:
-            type: object
-            required:
-                - code
-            properties:
-                code:
-                    type: string
-        CourseEnrollByEmail:
-            type: object
-            required:
-                - courseId
-                - email
-            properties:
-                courseId:
-                    type: string
-                email:
-                    type: string
+                    minLength: 10
+                    maxLength: 500
+                    example: 'Deep dive into advanced WebGL techniques and 3D graphics programming'
+
         Folder:
             type: object
             properties:
                 _id:
                     type: string
+                    example: '507f1f77bcf86cd799439013'
                 title:
                     type: string
+                    example: 'Week 1 - Introduction'
                 materials:
                     type: array
                     items:
                         type: string
+                    description: Array of material IDs in this folder
                 createdAt:
                     type: string
+                    format: date-time
                 updatedAt:
                     type: string
+                    format: date-time
+
         Material:
             type: object
             properties:
                 _id:
                     type: string
+                    example: '507f1f77bcf86cd799439014'
                 title:
                     type: string
+                    example: 'Lecture 1 Notes'
                 description:
                     type: string
+                    example: 'Introduction to computer graphics concepts'
                 filePath:
                     type: string
+                    example: '/uploads/materials/507f1f77bcf86cd799439014/lecture1.pdf'
                 createdAt:
                     type: string
+                    format: date-time
                 updatedAt:
                     type: string
+                    format: date-time
+
         Task:
             type: object
             properties:
                 _id:
                     type: string
+                    example: '507f1f77bcf86cd799439015'
                 title:
                     type: string
+                    example: '3D Scene Creation'
                 description:
                     type: string
+                    example: 'Create an interactive 3D scene using WebGL'
                 courseTasks:
                     type: array
                     items:
@@ -144,22 +230,40 @@ components:
                         properties:
                             course:
                                 type: string
+                                description: Course ID
                             dueDate:
                                 type: string
                                 format: date-time
-                            assingedAt:
+                            assignedAt:
                                 type: string
                                 format: date-time
                 submissions:
                     type: array
                     items:
                         type: string
-                webglUrl:
-                    type: string
-                    nullable: true
+                    description: Array of submission IDs for this task
+                webglData:
+                    type: object
+                    properties:
+                        buildFolderPath:
+                            type: string
+                            example: '/uploads/webgl/507f1f77bcf86cd799439015'
+                        loader:
+                            type: string
+                            example: '/uploads/webgl/507f1f77bcf86cd799439015/Build.loader.js'
+                        data:
+                            type: string
+                            example: '/uploads/webgl/507f1f77bcf86cd799439015/Build.data'
+                        framework:
+                            type: string
+                            example: '/uploads/webgl/507f1f77bcf86cd799439015/Build.framework.js'
+                        wasm:
+                            type: string
+                            example: '/uploads/webgl/507f1f77bcf86cd799439015/Build.wasm'
                 score:
                     type: number
                     default: 100
+                    example: 100
                 createdAt:
                     type: string
                     format: date-time
@@ -175,49 +279,143 @@ components:
             properties:
                 title:
                     type: string
-                    example: 'WebGL 3D Scene Assignment'
+                    example: 'WebGL Lighting Assignment'
                 description:
                     type: string
-                    example: 'Create a 3D scene using WebGL with lighting and textures'
-                webglUrl:
-                    type: string
-                    example: 'https://example.com/webgl-app'
-                    description: Optional WebGL application URL
+                    example: 'Implement Phong lighting model in WebGL'
                 score:
                     type: number
+                    default: 100
                     example: 100
-                    description: Maximum score for the task (default 100)
 
         TaskUpdate:
             type: object
             properties:
                 title:
                     type: string
-                    example: 'Updated WebGL Assignment'
                 description:
                     type: string
-                    example: 'Updated description for the 3D scene assignment'
                 webglUrl:
                     type: string
-                    example: 'https://example.com/updated-webgl-app'
                 score:
                     type: number
-                    example: 150
+
+        StudentSubmission:
+            type: object
+            properties:
+                _id:
+                    type: string
+                    example: '507f1f77bcf86cd799439016'
+                student:
+                    type: string
+                    description: Student user ID
+                task:
+                    type: string
+                    description: Task ID
+                grade:
+                    type: number
+                    nullable: true
+                    example: 85
+                status:
+                    type: string
+                    enum: [submitted, late, graded]
+                    example: 'submitted'
+                submittedAt:
+                    type: string
+                    format: date-time
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+
+        WebGLUploadResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                message:
+                    type: string
+                    example: 'Files uploaded successfully'
+                task:
+                    $ref: '#/components/schemas/Task'
+                filesUploaded:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            originalName:
+                                type: string
+                                example: 'Build.loader.js'
+                            size:
+                                type: number
+                                example: 1024000
+                            path:
+                                type: string
+                                example: '/uploads/webgl/507f1f77bcf86cd799439015/Build.loader.js'
+
+        WebGLInfo:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                webglData:
+                    type: object
+                    properties:
+                        hasFiles:
+                            type: boolean
+                            example: true
+                        buildFolderPath:
+                            type: string
+                            example: '/uploads/webgl/507f1f77bcf86cd799439015'
+                        files:
+                            type: object
+                            properties:
+                                loader:
+                                    type: string
+                                    example: 'Build.loader.js'
+                                data:
+                                    type: string
+                                    example: 'Build.data'
+                                framework:
+                                    type: string
+                                    example: 'Build.framework.js'
+                                wasm:
+                                    type: string
+                                    example: 'Build.wasm'
+
+        Error:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: 'Invalid credentials'
+                message:
+                    type: string
+                    example: 'The provided credentials are invalid'
 
 security:
     - bearerAuth: []
 
 tags:
     - name: Auth
-      description: Authentication and authorization
+      description: Authentication and authorization operations
     - name: Users
-      description: User management and Retrieval
+      description: User management and profile operations
     - name: Courses
-      description: Course management and enrollment
+      description: Course management, enrollment, and materials
     - name: Tasks
-      description: Task management and assignment
+      description: Task management, assignment, and WebGL content
+    - name: Submissions
+      description: Student submission management and grading
+    - name: Materials
+      description: Course material management and file operations
 
 paths:
+    # Authentication Routes
     /auth/register:
         post:
             summary: Register a new user
@@ -227,29 +425,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            type: object
-                            required:
-                                - firstName
-                                - lastName
-                                - email
-                                - password
-                            properties:
-                                firstName:
-                                    type: string
-                                    example: John
-                                lastName:
-                                    type: string
-                                    example: Doe
-                                email:
-                                    type: string
-                                    example: john@example.com
-                                password:
-                                    type: string
-                                    example: strongpassword
-                                phone:
-                                    type: String,
-                                    example: '+1234567890'
-                                    description: Optional phone number
+                            $ref: '#/components/schemas/UserCreate'
             responses:
                 201:
                     description: User created successfully
@@ -260,21 +436,17 @@ paths:
                                 properties:
                                     message:
                                         type: string
-                                        example: User created successfully
+                                        example: 'User created successfully'
                 400:
-                    description: User already exists or invalid input
+                    description: User already exists or validation error
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: User already exists
+                                $ref: '#/components/schemas/Error'
 
     /auth/login:
         post:
-            summary: Log in an existing user
+            summary: Login user
             tags: [Auth]
             requestBody:
                 required: true
@@ -288,13 +460,12 @@ paths:
                             properties:
                                 email:
                                     type: string
-                                    example: john@example.com
+                                    format: email
                                 password:
                                     type: string
-                                    example: strongpassword
             responses:
                 200:
-                    description: Logged in successfully
+                    description: Login successful
                     content:
                         application/json:
                             schema:
@@ -302,41 +473,24 @@ paths:
                                 properties:
                                     token:
                                         type: string
-                                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                                     user:
-                                        type: object
-                                        properties:
-                                            id:
-                                                type: string
-                                            email:
-                                                type: string
-                                            firstName:
-                                                type: string
-                                            lastName:
-                                                type: string
-                                            role:
-                                                type: string
-                                                enum: [student, teacher, admin]
+                                        $ref: '#/components/schemas/User'
                 400:
-                    description: Invalid credentials or Google login required
+                    description: Invalid credentials
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: Invalid credentials
+                                $ref: '#/components/schemas/Error'
 
     /auth/logout:
         post:
-            summary: Log out the current user
+            summary: Logout user
             tags: [Auth]
             security:
                 - bearerAuth: []
             responses:
                 200:
-                    description: Logged out successfully
+                    description: Logout successful
                     content:
                         application/json:
                             schema:
@@ -344,31 +498,32 @@ paths:
                                 properties:
                                     message:
                                         type: string
-                                        example: Logged out successfully
+                                        example: 'Logged out successfully'
+
+    # User Routes
+    /users:
+        get:
+            summary: Get all users (Admin only)
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: List of users
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/User'
                 401:
-                    description: No token provided or token invalidated
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                        example: No token provided
-                500:
-                    description: Error logging out
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                        example: Error logging out
+                    description: Unauthorized
+                403:
+                    description: Forbidden - Admin access required
 
     /users/students:
         get:
-            summary: Get all students
+            summary: Get all students (Admin only)
             tags: [Users]
             security:
                 - bearerAuth: []
@@ -381,14 +536,10 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/User'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
 
     /users/teachers:
         get:
-            summary: Get all teachers
+            summary: Get all teachers (Admin only)
             tags: [Users]
             security:
                 - bearerAuth: []
@@ -401,10 +552,6 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/User'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
 
     /users/me:
         get:
@@ -419,8 +566,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/User'
-                401:
-                    description: Unauthorized
         put:
             summary: Update current user profile
             tags: [Users]
@@ -435,24 +580,19 @@ paths:
             responses:
                 202:
                     description: User updated successfully
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
 
     /users/{id}:
         get:
-            summary: Get user by ID
+            summary: Get user by ID (Admin only)
             tags: [Users]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: id
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: User ID
             responses:
                 200:
                     description: User data
@@ -460,24 +600,17 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/User'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: User not found
         put:
-            summary: Update user by ID
+            summary: Update user by ID (Admin only)
             tags: [Users]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: id
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: User ID
             requestBody:
                 required: true
                 content:
@@ -487,39 +620,53 @@ paths:
             responses:
                 202:
                     description: User updated successfully
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: User not found
         delete:
-            summary: Delete user by ID
+            summary: Delete user and associated data (Admin only)
             tags: [Users]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: id
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: User ID
             responses:
                 204:
                     description: User deleted successfully
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: User not found
 
+    /users/{id}/role:
+        put:
+            summary: Update user role (Admin only)
+            tags: [Users]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - role
+                            properties:
+                                role:
+                                    type: string
+                                    enum: [student, teacher, admin]
+            responses:
+                200:
+                    description: User role updated successfully
+
+    # Course Routes
     /courses:
         get:
-            summary: Get all courses
+            summary: Get all courses (Teachers/Admin only)
             tags: [Courses]
             security:
                 - bearerAuth: []
@@ -532,10 +679,8 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/Course'
-                401:
-                    description: Unauthorized
         post:
-            summary: Create a new course
+            summary: Create a new course (Teachers/Admin only)
             tags: [Courses]
             security:
                 - bearerAuth: []
@@ -552,14 +697,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Course'
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
 
     /courses/me:
         get:
-            summary: Get courses for the authenticated user
+            summary: Get user's courses
             tags: [Courses]
             security:
                 - bearerAuth: []
@@ -572,8 +713,49 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/Course'
-                401:
-                    description: Unauthorized
+
+    /courses/enroll:
+        post:
+            summary: Enroll in course by code (Students only)
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - code
+                            properties:
+                                code:
+                                    type: string
+                                    example: 'CS101-2024'
+            responses:
+                200:
+                    description: Successfully enrolled in course
+
+    /courses/unenroll:
+        post:
+            summary: Unenroll from course by code (Students only)
+            tags: [Courses]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - code
+                            properties:
+                                code:
+                                    type: string
+            responses:
+                200:
+                    description: Successfully unenrolled from course
 
     /courses/{id}:
         get:
@@ -584,10 +766,9 @@ paths:
             parameters:
                 - in: path
                   name: id
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: Course ID
             responses:
                 200:
                     description: Course data
@@ -595,22 +776,17 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Course'
-                401:
-                    description: Unauthorized
-                404:
-                    description: Course not found
         put:
-            summary: Update a course
+            summary: Update course (Teacher/Admin only)
             tags: [Courses]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: id
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: Course ID
             requestBody:
                 required: true
                 content:
@@ -624,141 +800,415 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Course'
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course not found
         delete:
-            summary: Delete a course
+            summary: Delete course and associated data (Teacher/Admin only)
             tags: [Courses]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: id
+                  required: true
                   schema:
                       type: string
+            responses:
+                200:
+                    description: Course deleted successfully
+
+    # Task Routes
+    /tasks:
+        get:
+            summary: Get all tasks (Teachers/Admin only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            responses:
+                200:
+                    description: List of tasks
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                    count:
+                                        type: number
+                                    tasks:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Task'
+        post:
+            summary: Create a new task (Admin only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TaskCreate'
+            responses:
+                201:
+                    description: Task created successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                    task:
+                                        $ref: '#/components/schemas/Task'
+
+    /tasks/{id}:
+        get:
+            summary: Get task by ID (Teachers/Admin only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
                   required: true
-                  description: Course ID
+                  schema:
+                      type: string
             responses:
                 200:
-                    description: Course removed
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course not found
-
-    /courses/enroll:
-        post:
-            summary: Enroll in a course by code (student only)
-            tags: [Courses]
+                    description: Task data
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                    task:
+                                        $ref: '#/components/schemas/Task'
+        put:
+            summary: Update task (Admin only)
+            tags: [Tasks]
             security:
                 - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
             requestBody:
                 required: true
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CourseEnrollByCode'
+                            $ref: '#/components/schemas/TaskUpdate'
             responses:
                 200:
-                    description: User enrolled in course successfully
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                404:
-                    description: Course not found
-
-    /courses/unenroll:
-        post:
-            summary: Unenroll from a course by code (student only)
-            tags: [Courses]
+                    description: Task updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                    task:
+                                        $ref: '#/components/schemas/Task'
+        delete:
+            summary: Delete task (Admin only)
+            tags: [Tasks]
             security:
                 - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                200:
+                    description: Task deleted successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                    taskId:
+                                        type: string
+
+    /tasks/{id}/upload:
+        post:
+            summary: Upload WebGL files for a task (Admin only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                  description: Task ID
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required:
+                                - webglFiles
+                            properties:
+                                webglFiles:
+                                    type: array
+                                    items:
+                                        type: string
+                                        format: binary
+                                    description: WebGL build files (.js, .data, .wasm files)
+                                    maxItems: 4
+            responses:
+                200:
+                    description: Files uploaded successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/WebGLUploadResponse'
+                400:
+                    description: Missing required files or invalid file types
+                404:
+                    description: Task not found
+
+    /tasks/{id}/webgl-info:
+        get:
+            summary: Get WebGL build information for a task
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                  description: Task ID
+            responses:
+                200:
+                    description: WebGL build information
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/WebGLInfo'
+                404:
+                    description: Task not found or no WebGL build available
+
+    /tasks/{id}/webgl-files/{fileType}:
+        get:
+            summary: Download WebGL build files (public access for Unity)
+            tags: [Tasks]
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                  description: Task ID
+                - in: path
+                  name: fileType
+                  required: true
+                  schema:
+                      type: string
+                      enum: [loader, data, framework, wasm]
+                  description: Type of WebGL file to download
+            responses:
+                200:
+                    description: WebGL file content
+                    content:
+                        application/javascript:
+                            schema:
+                                type: string
+                                format: binary
+                        application/wasm:
+                            schema:
+                                type: string
+                                format: binary
+                        application/octet-stream:
+                            schema:
+                                type: string
+                                format: binary
+                404:
+                    description: File not found
+
+    /tasks/{id}/assign:
+        post:
+            summary: Assign task to course (Teachers only)
+            tags: [Tasks]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
             requestBody:
                 required: true
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CourseEnrollByCode'
+                            type: object
+                            required:
+                                - courseId
+                                - dueDate
+                            properties:
+                                courseId:
+                                    type: string
+                                dueDate:
+                                    type: string
+                                    format: date-time
             responses:
                 200:
-                    description: User unenrolled from course successfully
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                404:
-                    description: Course not found
+                    description: Task assigned successfully
 
-    /courses/enroll-email:
-        post:
-            summary: Enroll a student by email (teacher only)
-            tags: [Courses]
+    /tasks/{id}/unassign:
+        delete:
+            summary: Unassign task from course (Teachers only)
+            tags: [Tasks]
             security:
                 - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
             requestBody:
                 required: true
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CourseEnrollByEmail'
+                            type: object
+                            required:
+                                - courseId
+                            properties:
+                                courseId:
+                                    type: string
             responses:
                 200:
-                    description: Student enrolled in course successfully
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course or student not found
+                    description: Task unassigned successfully
 
-    /courses/unenroll-email:
-        post:
-            summary: Unenroll a student by email (teacher only)
-            tags: [Courses]
+    /tasks/{id}/assign/{courseId}:
+        put:
+            summary: Update task due date for course (Teachers only)
+            tags: [Tasks]
             security:
                 - bearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                - in: path
+                  name: courseId
+                  required: true
+                  schema:
+                      type: string
             requestBody:
                 required: true
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CourseEnrollByEmail'
+                            type: object
+                            required:
+                                - dueDate
+                            properties:
+                                dueDate:
+                                    type: string
+                                    format: date-time
             responses:
                 200:
-                    description: Student unenrolled from course successfully
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course or student not found
+                    description: Due date updated successfully
 
-    /courses/{courseId}/folders:
+    # Submission Routes
+    /courses/{courseId}/tasks/{taskId}/submit:
         post:
-            summary: Create a new folder in a course
-            tags: [Courses]
+            summary: Submit a task (Students only)
+            tags: [Submissions]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
+                - in: path
+                  name: taskId
                   required: true
-                  description: The ID of the course
+                  schema:
+                      type: string
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                grade:
+                                    type: number
+                                    description: Optional initial grade
+            responses:
+                201:
+                    description: Task submitted successfully
+                400:
+                    description: Already submitted or not enrolled
+                404:
+                    description: Course or task not found
+
+        put:
+            summary: Update a submission (Students only)
+            tags: [Submissions]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  required: true
+                  schema:
+                      type: string
+                - in: path
+                  name: taskId
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                grade:
+                                    type: number
+            responses:
+                200:
+                    description: Submission updated successfully
+
+    # Folder and Material Routes (keeping existing structure)
+    /courses/{courseId}/folders:
+        post:
+            summary: Create a folder in a course (Teachers only)
+            tags: [Materials]
+            security:
+                - bearerAuth: []
+            parameters:
+                - in: path
+                  name: courseId
+                  required: true
+                  schema:
+                      type: string
             requestBody:
                 required: true
                 content:
@@ -770,32 +1220,30 @@ paths:
                             properties:
                                 title:
                                     type: string
-                                    example: 'Week 1'
             responses:
                 201:
                     description: Folder created successfully
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Folder'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course not found
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    folder:
+                                        $ref: '#/components/schemas/Folder'
+
         get:
             summary: Get all folders for a course
-            tags: [Courses]
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
             responses:
                 200:
                     description: List of folders
@@ -810,32 +1258,24 @@ paths:
                                         type: array
                                         items:
                                             $ref: '#/components/schemas/Folder'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course not found
 
     /courses/{courseId}/folders/{folderId}:
         get:
-            summary: Get a folder by ID
-            tags: [Courses]
+            summary: Get folder by ID
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
                 - in: path
                   name: folderId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the folder
             responses:
                 200:
                     description: Folder data
@@ -848,30 +1288,23 @@ paths:
                                         type: boolean
                                     folder:
                                         $ref: '#/components/schemas/Folder'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course or folder not found
+
         put:
-            summary: Update a folder in a course
-            tags: [Courses]
+            summary: Update folder (Teachers only)
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
                 - in: path
                   name: folderId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the folder
             requestBody:
                 required: true
                 content:
@@ -881,89 +1314,56 @@ paths:
                             properties:
                                 title:
                                     type: string
-                                    example: 'Updated Folder Title'
             responses:
                 200:
                     description: Folder updated successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    success:
-                                        type: boolean
-                                    message:
-                                        type: string
-                                    folder:
-                                        $ref: '#/components/schemas/Folder'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course or folder not found
+
         delete:
-            summary: Delete a folder from a course
-            tags: [Courses]
+            summary: Delete folder and all materials (Teachers only)
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
                 - in: path
                   name: folderId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the folder
             responses:
                 200:
                     description: Folder deleted successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    success:
-                                        type: boolean
-                                    message:
-                                        type: string
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course or folder not found
 
     /courses/{courseId}/folders/{folderId}/materials:
         post:
-            summary: Upload material to a folder in a course
-            tags: [Courses]
+            summary: Upload material to folder (Teachers only)
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
                 - in: path
                   name: folderId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the folder
             requestBody:
                 required: true
                 content:
                     multipart/form-data:
                         schema:
                             type: object
+                            required:
+                                - title
+                                - file
                             properties:
                                 title:
                                     type: string
@@ -986,32 +1386,23 @@ paths:
                                         type: string
                                     material:
                                         $ref: '#/components/schemas/Material'
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course or folder not found
+
         get:
-            summary: Get all materials in a folder
-            tags: [Courses]
+            summary: Get all materials in folder
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
                 - in: path
                   name: folderId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the folder
             responses:
                 200:
                     description: List of materials
@@ -1026,38 +1417,29 @@ paths:
                                         type: array
                                         items:
                                             $ref: '#/components/schemas/Material'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Course or folder not found
 
     /courses/{courseId}/folders/{folderId}/materials/{materialId}:
         get:
-            summary: Get a material by ID
-            tags: [Courses]
+            summary: Get material by ID
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
                 - in: path
                   name: folderId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the folder
                 - in: path
                   name: materialId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the material
             responses:
                 200:
                     description: Material data
@@ -1065,461 +1447,59 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Material'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Material not found
+
         delete:
-            summary: Delete a material from a folder
-            tags: [Courses]
+            summary: Delete material (Teachers only)
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
                 - in: path
                   name: folderId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the folder
                 - in: path
                   name: materialId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the material
             responses:
                 200:
                     description: Material deleted successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    success:
-                                        type: boolean
-                                    message:
-                                        type: string
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Material not found
 
     /courses/{courseId}/folders/{folderId}/materials/{materialId}/download:
         get:
-            summary: Download a material file
-            tags: [Courses]
+            summary: Download material file
+            tags: [Materials]
             security:
                 - bearerAuth: []
             parameters:
                 - in: path
                   name: courseId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the course
                 - in: path
                   name: folderId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the folder
                 - in: path
                   name: materialId
+                  required: true
                   schema:
                       type: string
-                  required: true
-                  description: The ID of the material
             responses:
                 200:
                     description: File download
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden
-                404:
-                    description: Material not found
-
-    /tasks:
-        get:
-            summary: Get all tasks (Teachers only)
-            tags: [Tasks]
-            security:
-                - bearerAuth: []
-            responses:
-                200:
-                    description: List of all tasks
                     content:
-                        application/json:
+                        application/octet-stream:
                             schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                        example: Tasks retrieved successfully
-                                    count:
-                                        type: number
-                                    tasks:
-                                        type: array
-                                        items:
-                                            $ref: '#/components/schemas/Task'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Teachers only
-        post:
-            summary: Create a new task (Admin only)
-            tags: [Tasks]
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/TaskCreate'
-            responses:
-                201:
-                    description: Task created successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                        example: Task created successfully
-                                    task:
-                                        $ref: '#/components/schemas/Task'
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Admin only
-
-    /tasks/{id}:
-        get:
-            summary: Get task by ID (Teachers only)
-            tags: [Tasks]
-            security:
-                - bearerAuth: []
-            parameters:
-                - in: path
-                  name: id
-                  schema:
-                      type: string
-                  required: true
-                  description: Task ID
-            responses:
-                200:
-                    description: Task details
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                        example: Task retrieved successfully
-                                    task:
-                                        $ref: '#/components/schemas/Task'
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Teachers only
-                404:
-                    description: Task not found
-        put:
-            summary: Update task (Admin only)
-            tags: [Tasks]
-            security:
-                - bearerAuth: []
-            parameters:
-                - in: path
-                  name: id
-                  schema:
-                      type: string
-                  required: true
-                  description: Task ID
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/TaskUpdate'
-            responses:
-                200:
-                    description: Task updated successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                        example: Task updated successfully
-                                    task:
-                                        $ref: '#/components/schemas/Task'
-                400:
-                    description: Bad request
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Admin only
-                404:
-                    description: Task not found
-        delete:
-            summary: Delete task (Admin only)
-            tags: [Tasks]
-            security:
-                - bearerAuth: []
-            parameters:
-                - in: path
-                  name: id
-                  schema:
-                      type: string
-                  required: true
-                  description: Task ID
-            responses:
-                200:
-                    description: Task deleted successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                        example: Task deleted successfully
-                                    taskId:
-                                        type: string
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Admin only
-                404:
-                    description: Task not found
-
-    /tasks/{id}/assign:
-        post:
-            summary: Assign task to course with due date (Teacher only)
-            tags: [Tasks]
-            security:
-                - bearerAuth: []
-            parameters:
-                - in: path
-                  name: id
-                  schema:
-                      type: string
-                  required: true
-                  description: Task ID
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            required:
-                                - courseId
-                                - dueDate
-                            properties:
-                                courseId:
-                                    type: string
-                                    example: '675a1b2c3d4e5f6789012345'
-                                dueDate:
-                                    type: string
-                                    format: date-time
-                                    example: '2024-12-25T23:59:59.000Z'
-            responses:
-                200:
-                    description: Task assigned successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                        example: Task assigned to course successfully
-                                    task:
-                                        $ref: '#/components/schemas/Task'
-                                    course:
-                                        $ref: '#/components/schemas/Course'
-                400:
-                    description: Bad request - Task already assigned or invalid data
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Not authorized for this course
-                404:
-                    description: Task or course not found
-
-    /tasks/{id}/unassign:
-        delete:
-            summary: Unassign task from course (Teacher only)
-            tags: [Tasks]
-            security:
-                - bearerAuth: []
-            parameters:
-                - in: path
-                  name: id
-                  schema:
-                      type: string
-                  required: true
-                  description: Task ID
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            required:
-                                - courseId
-                            properties:
-                                courseId:
-                                    type: string
-                                    example: '675a1b2c3d4e5f6789012345'
-            responses:
-                200:
-                    description: Task unassigned successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    success:
-                                        type: boolean
-                                        example: true
-                                    message:
-                                        type: string
-                                        example: Task unassigned from course successfully
-                400:
-                    description: Bad request - Task not assigned to course
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Not authorized for this course
-                404:
-                    description: Task or course not found
-
-    /tasks/{id}/assign/{courseId}:
-        put:
-            summary: Update task due date for specific course (Teacher only)
-            tags: [Tasks]
-            security:
-                - bearerAuth: []
-            parameters:
-                - in: path
-                  name: id
-                  schema:
-                      type: string
-                  required: true
-                  description: Task ID
-                - in: path
-                  name: courseId
-                  schema:
-                      type: string
-                  required: true
-                  description: Course ID
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            required:
-                                - dueDate
-                            properties:
-                                dueDate:
-                                    type: string
-                                    format: date-time
-                                    example: '2024-12-30T23:59:59.000Z'
-            responses:
-                200:
-                    description: Task assignment updated successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    success:
-                                        type: boolean
-                                        example: true
-                                    message:
-                                        type: string
-                                        example: Task assignment updated successfully
-                                    assingment:
-                                        type: object
-                                        properties:
-                                            course:
-                                                type: string
-                                            dueDate:
-                                                type: string
-                                                format: date-time
-                                            assingedAt:
-                                                type: string
-                                                format: date-time
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Not authorized for this course
-                404:
-                    description: Task not found or not assigned to course
-
-    /courses/{courseId}/tasks:
-        get:
-            summary: Get all tasks assigned to a course
-            tags: [Courses]
-            security:
-                - bearerAuth: []
-            parameters:
-                - in: path
-                  name: courseId
-                  schema:
-                      type: string
-                  required: true
-                  description: Course ID
-            responses:
-                200:
-                    description: List of course tasks with due dates
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    success:
-                                        type: boolean
-                                        example: true
-                                    count:
-                                        type: number
-                                    tasks:
-                                        type: array
-                                        items:
-                                            allOf:
-                                                - $ref: '#/components/schemas/Task'
-                                                - type: object
-                                                  properties:
-                                                      dueDate:
-                                                          type: string
-                                                          format: date-time
-                                                          description: Course-specific due date
-                                                      assignedAt:
-                                                          type: string
-                                                          format: date-time
-                                                          description: When task was assigned to this course
-                401:
-                    description: Unauthorized
-                403:
-                    description: Forbidden - Not enrolled in course
-                404:
-                    description: Course not found
+                                type: string
+                                format: binary
