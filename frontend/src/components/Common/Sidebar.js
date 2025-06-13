@@ -47,7 +47,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     },
     {
       name: "Admin Panel",
-      href: "/admin",
+      href: "/courses",
       icon: Settings,
       show: isAdmin(),
     },

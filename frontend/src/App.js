@@ -100,14 +100,7 @@ const App = () => {
               }
             />
 
-            {/* <Route
-              path="/task/xor"
-              element={
-                <ProtectedRoute>
-                  <XorTask />
-                </ProtectedRoute>
-              }
-            /> */}
+            {/* Course routes */}
             <Route
               path="/courses"
               element={
@@ -119,10 +112,22 @@ const App = () => {
               }
             />
             <Route
-              path="/admin"
+              path="/courses/:courseId"
               element={
                 <ProtectedRoute>
-                  <CourseDashboard />
+                  <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
+                    <CourseDashboard />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:courseId/folders/:folderId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
+                    <CourseDashboard />
+                  </RoleBasedRoute>
                 </ProtectedRoute>
               }
             />
