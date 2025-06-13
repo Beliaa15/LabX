@@ -6,21 +6,12 @@ const createWebGLStorage = (taskId) => {
     return multer.diskStorage({
         destination: (req, file, cb) => {
             // Use absolute path that works in both Docker and local development
-            const isDocker =
-                process.env.NODE_ENV === 'production' ||
-                fs.existsSync('/.dockerenv');
+            // Local development path
+            baseDir = path.join(
+                __dirname,
+                '../../frontend/public/webgl-tasks'
+            );
 
-            let baseDir;
-            if (isDocker) {
-                // Docker container path
-                baseDir = '/usr/src/app/frontend/public/webgl-tasks';
-            } else {
-                // Local development path
-                baseDir = path.join(
-                    __dirname,
-                    '../../frontend/public/webgl-tasks'
-                );
-            }
 
             const dir = path.join(baseDir, taskId);
 
