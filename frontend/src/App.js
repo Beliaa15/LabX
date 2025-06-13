@@ -121,6 +121,18 @@ const App = () => {
               }
             />
 
+            {/* Student Course Task Route */}
+            <Route
+              path="/my-courses/:courseId/tasks/:taskId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
+                    <TaskViewer />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Course routes */}
             <Route
               path="/courses"
@@ -148,6 +160,18 @@ const App = () => {
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
                     <CourseDashboard />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Course Task Route */}
+            <Route
+              path="/courses/:courseId/tasks/:taskId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
+                    <TaskViewer />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               }

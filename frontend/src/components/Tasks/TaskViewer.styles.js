@@ -2,11 +2,8 @@ import styled from "styled-components";
 
 export const UnityContainer = styled.div`
   width: 100%;
-  min-height: 600px;
+  height: 100%;
   position: relative;
-  overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   background: #1a1a1a;
 
   /* Container for the Unity canvas */
@@ -43,14 +40,11 @@ export const UnityContainer = styled.div`
 `;
 
 export const TaskWrapper = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
   width: 100%;
-  height: 100%;
-  min-height: calc(100vh - 100px);
-  
-  @media (max-width: 768px) {
-    padding: 10px;
-  }
+  height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
 `; 
