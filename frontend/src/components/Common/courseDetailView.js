@@ -11,14 +11,19 @@ import {
   Eye,
   Plus,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  PlayCircle,
+  XCircle,
+  Clock
 } from 'lucide-react';
 import SearchBar from '../ui/SearchBar';
 import ViewModeToggle from '../ui/ViewModeToggle';
 import FileViewer from './FileViewer';
 import SelectTaskModal from './Modals/SelectTaskModal';
-import { getCourseTasksById } from '../../services/taskService';
+import { getCourseTasksById, unassignTaskFromCourse } from '../../services/taskService';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useNavigate } from 'react-router-dom';
+import { showSuccessAlert, showErrorAlert, showConfirmDialog } from '../../utils/sweetAlert';
 
 const CourseDetailView = ({
   selectedCourse,
@@ -48,6 +53,55 @@ const CourseDetailView = ({
   const [showSelectTaskModal, setShowSelectTaskModal] = useState(false);
   const [courseTasks, setCourseTasks] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const navigate = useNavigate();
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'Not set';
+    
+    try {
+      // Add one hour to the display time
+      const date = new Date(dateString);
+      date.setHours(date.getHours() + 1);
+      
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Africa/Cairo' // Egypt timezone
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString || 'Not set';
+    }
+  };
+
+  const isTaskExpired = (dueDate) => {
+    if (!dueDate) return false;
+    
+    try {
+      // Get current time
+      const now = new Date();
+      // Convert the due date and add one hour
+      const taskDueDate = new Date(dueDate);
+      taskDueDate.setHours(taskDueDate.getHours() + 1);
+      
+      // For debugging
+      console.log('Task expiration check:', {
+        currentTime: now.toLocaleString('en-US', { timeZone: 'Africa/Cairo' }),
+        dueDate: taskDueDate.toLocaleString('en-US', { timeZone: 'Africa/Cairo' }),
+        deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        isExpired: now.getTime() > taskDueDate.getTime()
+      });
+
+      return now.getTime() > taskDueDate.getTime();
+    } catch (error) {
+      console.error('Error checking task expiration:', error);
+      return false;
+    }
+  };
 
   // Load course tasks when course changes
   useEffect(() => {
@@ -56,7 +110,19 @@ const CourseDetailView = ({
       getCourseTasksById(selectedCourse._id)
         .then(response => {
           // Extract tasks array from the response
-          setCourseTasks(response.tasks || []);
+          const tasks = response.tasks || [];
+          
+          // Debug task dates
+          tasks.forEach(task => {
+            const courseTaskData = task.courseTasks.find(ct => ct.course === selectedCourse._id);
+            if (courseTaskData) {
+              console.log('Task:', task.title);
+              console.log('Due date:', courseTaskData.dueDate);
+              console.log('Is expired:', isTaskExpired(courseTaskData.dueDate));
+            }
+          });
+
+          setCourseTasks(tasks);
           setLoadingTasks(false);
         })
         .catch(err => {
@@ -371,6 +437,39 @@ const CourseDetailView = ({
     }
   };
 
+  const handleOpenTask = (task) => {
+    console.log('Opening task:', task);
+    navigate(`/tasks/${task._id}`, { state: { task } });
+  };
+
+  const handleUnassignTask = async (task) => {
+    const result = await showConfirmDialog(
+      'Unassign Task',
+      `Are you sure you want to unassign "${task.title}" from this course?`,
+      'Yes, Unassign',
+      'Cancel'
+    );
+
+    if (result.isConfirmed) {
+      try {
+        await unassignTaskFromCourse(task._id, selectedCourse._id);
+        showSuccessAlert('Success', 'Task unassigned successfully');
+        // Refresh the tasks list
+        setLoadingTasks(true);
+        const response = await getCourseTasksById(selectedCourse._id);
+        setCourseTasks(response.tasks || []);
+      } catch (error) {
+        console.error('Failed to unassign task:', error);
+        showErrorAlert(
+          'Error',
+          error.response?.data?.message || 'Failed to unassign task'
+        );
+      } finally {
+        setLoadingTasks(false);
+      }
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Controls - Hide create/upload buttons for students */}
@@ -492,7 +591,7 @@ const CourseDetailView = ({
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 mb-4 mx-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
             <Calendar className="w-5 h-5 mr-2" />
-            Course Tasks
+            Course Tasks ({courseTasks.length})
           </h2>
           
           {loadingTasks ? (
@@ -504,27 +603,78 @@ const CourseDetailView = ({
               {courseTasks.map(task => {
                 // Find the course task data for the current course
                 const courseTaskData = task.courseTasks.find(ct => ct.course === selectedCourse._id);
+                const expired = isTaskExpired(courseTaskData?.dueDate);
                 
+                // Debug this specific task
+                console.log('Rendering task:', task.title, {
+                  dueDate: courseTaskData?.dueDate,
+                  expired: expired
+                });
+
                 return (
                   <div
                     key={task._id}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
+                    className={`border ${
+                      expired 
+                        ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10' 
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                    } rounded-lg p-4 hover:shadow-md transition-shadow`}
                   >
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-medium text-gray-900 dark:text-white flex items-center">
                           <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
                           {task.title}
+                          {expired && (
+                            <span className="ml-2 text-xs px-2 py-1 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Expired
+                            </span>
+                          )}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                           {task.description}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          Score: {task.score}
-                        </p>
+                        <div className="flex items-center gap-4 mt-2">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Score: {task.score}
+                          </p>
+                          <p className={`text-sm flex items-center ${
+                            expired 
+                              ? 'text-red-500 dark:text-red-400' 
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            <Calendar className="w-4 h-4 mr-1" />
+                            Due: {formatDateTime(courseTaskData?.dueDate)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Due: {courseTaskData ? new Date(courseTaskData.dueDate).toLocaleDateString() : 'Not set'}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenTask(task)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            task.webglData && task.webglData.buildFolderPath && !expired
+                              ? 'text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
+                              : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                          }`}
+                          title={
+                            expired 
+                              ? 'Task has expired' 
+                              : (task.webglData && task.webglData.buildFolderPath ? 'Open Task' : 'Task files not uploaded')
+                          }
+                          disabled={!task.webglData || !task.webglData.buildFolderPath || expired}
+                        >
+                          <PlayCircle className="w-5 h-5" />
+                        </button>
+                        {!isStudent && (
+                          <button
+                            onClick={() => handleUnassignTask(task)}
+                            className="p-2 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Unassign Task"
+                          >
+                            <XCircle className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -232,4 +232,28 @@ export const getCourseTasksById = async (courseId) => {
         });
         throw error;
     }
+};
+
+/**
+ * Unassign a task from a course
+ * @param {string} taskId - The ID of the task to unassign
+ * @param {string} courseId - The ID of the course to unassign the task from
+ * @returns {Promise} - The response data
+ */
+export const unassignTaskFromCourse = async (taskId, courseId) => {
+    try {
+        console.log('Unassigning task from course:', { taskId, courseId });
+        const response = await authApi.delete(`/api/tasks/${taskId}/unassign`, {
+            data: { courseId }  // For DELETE requests, the body needs to be sent in the 'data' property
+        });
+        console.log('Task unassigned successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to unassign task:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
 }; 
