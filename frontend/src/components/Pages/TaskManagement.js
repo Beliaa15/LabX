@@ -25,7 +25,7 @@ const TaskManagement = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [tasks.length]);
 
   const fetchTasks = async () => {
     try {
@@ -74,76 +74,96 @@ const TaskManagement = () => {
     setUploadProgress({});
   };
 
-  const handleFileUpload = async (files) => {
-    if (!selectedTaskId || !files.length) return;
+  const handleFileUpload = async (files, event) => {
+  // Prevent any form submission or default behavior
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
 
-    try {
-      console.log('Starting file upload for task:', selectedTaskId);
-      console.log('Files to upload:', files);
+  if (!selectedTaskId || !files.length) return;
 
-      if (files.length > 4) {
-        showErrorAlert('Upload Error', 'Maximum 4 files allowed');
-        return;
-      }
+  try {
+    console.log('Starting file upload for task:', selectedTaskId);
+    console.log('Files to upload:', files);
 
-      // Initialize progress state for all files
-      const initialProgress = {};
-      Array.from(files).forEach(file => {
-        initialProgress[file.name] = 0;
-      });
-      setUploadProgress(initialProgress);
-
-      await uploadTaskFiles(
-        selectedTaskId,
-        files,
-        (progressData) => {
-          if (progressData.files) {
-            // Update both individual file progress and total progress
-            setUploadProgress(prev => ({
-              ...prev,
-              ...progressData.files,
-              total: progressData.total
-            }));
-          }
-        }
-      );
-
-      showSuccessAlert('Success', 'Files uploaded successfully');
-      handleCloseUploadModal();
-      fetchTasks(); // Refresh tasks to update submissions count
-    } catch (error) {
-      console.error('Failed to upload files:', error);
-      console.error('Full error details:', {
-        taskId: selectedTaskId,
-        endpoint: `/api/tasks/${selectedTaskId}/upload`,
-        status: error.response?.status,
-        data: error.response?.data
-      });
-      showErrorAlert(
-        'Upload Failed',
-        error.message || 'Failed to upload files. Please try again.'
-      );
+    if (files.length > 4) {
+      showErrorAlert('Upload Error', 'Maximum 4 files allowed');
+      return;
     }
-  };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
+    // Initialize progress state for all files
+    const initialProgress = {};
+    Array.from(files).forEach(file => {
+      initialProgress[file.name] = 0;
+    });
+    setUploadProgress(initialProgress);
 
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
+    // Create FormData
+    const formData = new FormData();
+    Array.from(files).forEach(file => {
+      formData.append('webglFiles', file);
+    });
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFileUpload(files);
+    // Upload with proper error handling
+    const response = await fetch(`http://localhost:3000/api/tasks/${selectedTaskId}/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth implementation
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Upload failed');
     }
-  };
+
+    const result = await response.json();
+    console.log('Upload successful:', result);
+
+    showSuccessAlert('Success', 'Files uploaded successfully');
+    handleCloseUploadModal();
+    
+    // Add a short delay before refreshing tasks to allow backend to update
+    setTimeout(() => {
+      fetchTasks(); // Refresh tasks to update file status
+    }, 1000);
+  } catch (error) {
+    console.error('Failed to upload files:', error);
+    console.error('Full error details:', {
+      taskId: selectedTaskId,
+      endpoint: `/api/tasks/${selectedTaskId}/upload`,
+      error: error.message
+    });
+    showErrorAlert(
+      'Upload Failed',
+      error.message || 'Failed to upload files. Please try again.'
+    );
+  }
+};
+
+const handleDragOver = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setIsDragging(true);
+};
+
+const handleDragLeave = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setIsDragging(false);
+};
+
+const handleDrop = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setIsDragging(false);
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    handleFileUpload(files, e);
+  }
+};
 
   const handleDelete = async (taskId) => {
     const taskToDelete = tasks.find(t => t._id === taskId);
