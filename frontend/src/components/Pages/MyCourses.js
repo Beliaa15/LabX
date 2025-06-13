@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { useDarkMode } from '../Common/useDarkMode';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import {
@@ -12,6 +13,7 @@ import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { getFolders } from '../../services/folderService';
 import { getUserCourses, enrollStudentByCode } from '../../services/courseService';
 import { getMaterials, downloadMaterial } from '../../services/materialService';
+import { getCourseTasksById } from '../../services/taskService';
 import { Button } from '../ui/button';
 import CourseListView from '../Common/courseListView';
 import CourseDetailView from '../Common/courseDetailView';
@@ -23,10 +25,13 @@ const MyCourses = () => {
   const { user } = useAuth();
   const { sidebarCollapsed } = useUI();
   const { isDarkMode, handleToggle } = useDarkMode();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [courseTasks, setCourseTasks] = useState([]);
   
   // View states
   const [viewMode, setViewMode] = useState('grid');
@@ -142,6 +147,32 @@ const MyCourses = () => {
 
     loadMaterials();
   }, [selectedCourse, selectedFolder]);
+
+  // Update useEffect to use getCourseTasksById
+  useEffect(() => {
+    const loadTasks = async () => {
+      if (selectedCourse && selectedCourse._id) {
+        try {
+          setLoadingTasks(true);
+          const tasks = await getCourseTasksById(selectedCourse._id);
+          setCourseTasks(tasks);
+        } catch (error) {
+          console.error('Failed to fetch tasks:', error);
+          showErrorAlert(
+            'Error Loading Tasks',
+            'Failed to load course tasks. Please try again later.'
+          );
+          setCourseTasks([]);
+        } finally {
+          setLoadingTasks(false);
+        }
+      } else {
+        setCourseTasks([]);
+      }
+    };
+
+    loadTasks();
+  }, [selectedCourse]);
 
   const handleCourseClick = (course) => {
     setSelectedCourse(course);
@@ -304,6 +335,11 @@ const MyCourses = () => {
   const handleUpdateCourse = () => {};
   const handleDeleteCourse = () => {};
 
+  const handleOpenTask = (task) => {
+    console.log('Opening task:', task);
+    navigate(`/tasks/${task._id}`, { state: { task } });
+  };
+
   return (
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
@@ -341,9 +377,12 @@ const MyCourses = () => {
             onDelete={() => {}} // Students can't delete
             onUpdateFolder={() => {}} // Students can't update folders
             formatFileSize={formatFileSize}
-            isStudent={true} // Add this prop to hide teacher-only features
+            isStudent={true}
             isLoadingFolders={isLoadingFolders}
             isLoadingFiles={isLoadingFiles}
+            handleOpenTask={handleOpenTask}
+            courseTasks={courseTasks}
+            loadingTasks={loadingTasks}
           />
         ) : (
           <>

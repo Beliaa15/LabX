@@ -599,12 +599,6 @@ const CourseDetailView = ({
                 const courseTaskData = task.courseTasks.find(ct => ct.course === selectedCourse._id);
                 const expired = isTaskExpired(courseTaskData?.dueDate);
                 
-                // Debug this specific task
-                console.log('Rendering task:', task.title, {
-                  dueDate: courseTaskData?.dueDate,
-                  expired: expired
-                });
-
                 return (
                   <div
                     key={task._id}
