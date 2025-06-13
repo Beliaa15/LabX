@@ -39,12 +39,22 @@ exports.createTask = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
     const taskId = req.params.id;
-    console.log('Upload request for task:', taskId);
 
     const task = await Task.findById(taskId);
     if (!task) {
         res.status(404);
         throw new Error('Task not found');
+    }
+
+    // Clean up previous files if they exist
+    if (
+        task.webglData.buildFolderPath &&
+        fs.existsSync(task.webglData.buildFolderPath)
+    ) {
+        fs.rmSync(task.webglData.buildFolderPath, {
+            recursive: true,
+            force: true,
+        });
     }
 
     const upload = createWebGLStorage(taskId);
@@ -57,37 +67,12 @@ exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
         }
 
         try {
-            console.log('Files received:', req.files ? req.files.length : 0);
-            console.log('Request body:', req.body);
-
             if (!req.files || req.files.length === 0) {
                 console.error('No files in request');
                 res.status(400);
                 throw new Error(
                     'No files uploaded. Please select WebGL build files.'
                 );
-            }
-
-            // Log file details
-            req.files.forEach((file, index) => {
-                console.log(`File ${index + 1}:`, {
-                    originalname: file.originalname,
-                    filename: file.filename,
-                    path: file.path,
-                    size: file.size,
-                });
-            });
-
-            // Clean up previous files if they exist
-            if (
-                task.webglData.buildFolderPath &&
-                fs.existsSync(task.webglData.buildFolderPath)
-            ) {
-                console.log('Cleaning up previous files...');
-                fs.rmSync(task.webglData.buildFolderPath, {
-                    recursive: true,
-                    force: true,
-                });
             }
 
             // Determine base directory based on environment
@@ -151,8 +136,6 @@ exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
 
             task.webglData = webglData;
             await task.save();
-
-            console.log('WebGL files saved successfully:', webglData);
 
             res.status(200).json({
                 success: true,
