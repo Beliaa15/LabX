@@ -153,8 +153,19 @@ const App = () => {
               }
             />
 
+            {/* Task Management Routes */}
             <Route
-              path="/admin/tasks"
+              path="/taskmanagement"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
+                    <TaskManagement />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/taskmanagement/tasks/:taskId"
               element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">

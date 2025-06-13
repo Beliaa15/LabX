@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2, FileText, CheckCircle2, XCircle, PlayCircle } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import TaskCreationModal from '../Common/Modals/TaskCreationModal';
 import TaskUploadModal from '../Common/Modals/TaskUploadModal';
+import TaskViewer from '../Tasks/TaskViewer';
 import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
-import { useNavigate } from 'react-router-dom';
 
 const TaskManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,19 +21,33 @@ const TaskManagement = () => {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedTaskToOpen, setSelectedTaskToOpen] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { taskId } = useParams();
 
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  // Handle URL parameters and location changes
+  useEffect(() => {
+    if (location.pathname === '/taskmanagement') {
+      setSelectedTaskId(null);
+    } else if (taskId) {
+      const task = tasks.find(t => t._id === taskId);
+      if (task) {
+        setSelectedTaskId(taskId);
+      } else {
+        navigate('/taskmanagement');
+      }
+    }
+  }, [location.pathname, taskId, tasks]);
 
   const fetchTasks = async () => {
     try {
       setLoading(true);
       const response = await getAllTasks();
       console.log('Tasks response:', response);
-      console.log('First task data:', response.tasks[0]);
       setTasks(response.tasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -172,7 +187,11 @@ const TaskManagement = () => {
 
   const handleOpenTask = (task) => {
     console.log('Opening task:', task);
-    navigate(`/tasks/${task._id}`, { state: { task } });
+    navigate(`/taskmanagement/tasks/${task._id}`);
+  };
+
+  const handleBackToTasks = () => {
+    navigate('/taskmanagement');
   };
 
   const sortedTasks = [...tasks].sort((a, b) => {
@@ -277,192 +296,196 @@ const TaskManagement = () => {
 
         {/* Main Content Area */}
         <main className="flex-1 relative overflow-y-auto">
-          <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            <div className="animate-fadeIn space-y-6">
-              {/* Welcome Section */}
-              <div className="surface-primary shadow-sm rounded-xl p-6 border border-primary">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-2xl font-bold text-primary">
-                      Task Management
-                    </h2>
-                    <p className="mt-2 text-secondary">
-                      {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} available for students
-                    </p>
+          {taskId ? (
+            <TaskViewer task={tasks.find(t => t._id === taskId)} onBack={handleBackToTasks} />
+          ) : (
+            <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+              <div className="animate-fadeIn space-y-6">
+                {/* Welcome Section */}
+                <div className="surface-primary shadow-sm rounded-xl p-6 border border-primary">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-2xl font-bold text-primary">
+                        Task Management
+                      </h2>
+                      <p className="mt-2 text-secondary">
+                        {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} available for students
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleOpenModal}
+                      className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span className="hidden md:inline">Create Task</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={handleOpenModal}
-                    className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span className="hidden md:inline">Create Task</span>
-                  </button>
                 </div>
-              </div>
 
-              {/* Task List Section */}
-              <div className="surface-primary shadow-sm rounded-xl border border-primary overflow-hidden">
-                <div className="px-4 py-5 sm:px-6 border-b border-primary">
-                  <h3 className="text-lg leading-6 font-medium text-primary">
-                    Available Tasks
-                  </h3>
-                </div>
-                
-                {loading ? (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                  </div>
-                ) : tasks.length === 0 ? (
-                  <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
-                    <FileText className="w-12 h-12 text-muted mb-4" />
-                    <h3 className="text-lg font-medium text-primary mb-2">
-                      No tasks available
+                {/* Task List Section */}
+                <div className="surface-primary shadow-sm rounded-xl border border-primary overflow-hidden">
+                  <div className="px-4 py-5 sm:px-6 border-b border-primary">
+                    <h3 className="text-lg leading-6 font-medium text-primary">
+                      Available Tasks
                     </h3>
-                    <p className="text-secondary text-center mb-8">
-                      Create your first task to get started
-                    </p>
                   </div>
-                ) : (
-                  <>
-                    {/* Mobile View */}
-                    <div className="md:hidden p-4 space-y-4">
-                      {sortedTasks.map((task) => (
-                        <TaskCard key={task._id} task={task} />
-                      ))}
+                  
+                  {loading ? (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
                     </div>
+                  ) : tasks.length === 0 ? (
+                    <div className="animate-fadeIn flex flex-col items-center justify-center py-16">
+                      <FileText className="w-12 h-12 text-muted mb-4" />
+                      <h3 className="text-lg font-medium text-primary mb-2">
+                        No tasks available
+                      </h3>
+                      <p className="text-secondary text-center mb-8">
+                        Create your first task to get started
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Mobile View */}
+                      <div className="md:hidden p-4 space-y-4">
+                        {sortedTasks.map((task) => (
+                          <TaskCard key={task._id} task={task} />
+                        ))}
+                      </div>
 
-                    {/* Desktop View */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="min-w-full divide-y divide-primary">
-                        <thead className="bg-gray-50 dark:bg-gray-800">
-                          <tr>
-                            <th 
-                              scope="col" 
-                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
-                              onClick={() => handleSort('title')}
-                            >
-                              <div className="flex items-center gap-2">
-                                Title
-                                <ArrowUpDown className="w-4 h-4" />
-                              </div>
-                            </th>
-                            <th 
-                              scope="col" 
-                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
-                              onClick={() => handleSort('description')}
-                            >
-                              <div className="flex items-center gap-2">
-                                Description
-                                <ArrowUpDown className="w-4 h-4" />
-                              </div>
-                            </th>
-                            <th 
-                              scope="col" 
-                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider"
-                            >
-                              <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4" />
-                                Files Status
-                              </div>
-                            </th>
-                            <th 
-                              scope="col" 
-                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
-                              onClick={() => handleSort('submissions')}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Users className="w-4 h-4" />
-                                Submissions
-                                <ArrowUpDown className="w-4 h-4" />
-                              </div>
-                            </th>
-                            <th 
-                              scope="col" 
-                              className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
-                              onClick={() => handleSort('createdAt')}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4" />
-                                Created
-                                <ArrowUpDown className="w-4 h-4" />
-                              </div>
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-900 divide-y divide-primary">
-                          {sortedTasks.map((task) => (
-                            <tr 
-                              key={task._id}
-                              className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                            >
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
-                                {task.title}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-secondary max-w-xs truncate">
-                                {task.description}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                {task.webglData && task.webglData.buildFolderPath ? (
-                                  <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    Files Uploaded
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                                    <XCircle className="w-4 h-4" />
-                                    No Files
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
-                                {task.submissions.length} submissions
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
-                                {formatDate(task.createdAt)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
+                      {/* Desktop View */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="min-w-full divide-y divide-primary">
+                          <thead className="bg-gray-50 dark:bg-gray-800">
+                            <tr>
+                              <th 
+                                scope="col" 
+                                className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
+                                onClick={() => handleSort('title')}
+                              >
                                 <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => handleOpenTask(task)}
-                                    className={`p-2 rounded-lg transition-colors ${
-                                      task.webglData && task.webglData.buildFolderPath
-                                        ? 'text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
-                                        : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                                    }`}
-                                    title="Open Task"
-                                    disabled={!task.webglData || !task.webglData.buildFolderPath}
-                                  >
-                                    <PlayCircle className="w-5 h-5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleUpload(task._id)}
-                                    className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-                                    title="Upload Files"
-                                  >
-                                    <ArrowUpToLine className="w-5 h-5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(task._id)}
-                                    className="p-2 text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                    title="Delete Task"
-                                  >
-                                    <Trash2 className="w-5 h-5" />
-                                  </button>
+                                  Title
+                                  <ArrowUpDown className="w-4 h-4" />
                                 </div>
-                              </td>
+                              </th>
+                              <th 
+                                scope="col" 
+                                className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
+                                onClick={() => handleSort('description')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Description
+                                  <ArrowUpDown className="w-4 h-4" />
+                                </div>
+                              </th>
+                              <th 
+                                scope="col" 
+                                className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <FileText className="w-4 h-4" />
+                                  Files Status
+                                </div>
+                              </th>
+                              <th 
+                                scope="col" 
+                                className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
+                                onClick={() => handleSort('submissions')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Users className="w-4 h-4" />
+                                  Submissions
+                                  <ArrowUpDown className="w-4 h-4" />
+                                </div>
+                              </th>
+                              <th 
+                                scope="col" 
+                                className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider cursor-pointer"
+                                onClick={() => handleSort('createdAt')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4" />
+                                  Created
+                                  <ArrowUpDown className="w-4 h-4" />
+                                </div>
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">
+                                Actions
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
+                          </thead>
+                          <tbody className="bg-white dark:bg-gray-900 divide-y divide-primary">
+                            {sortedTasks.map((task) => (
+                              <tr 
+                                key={task._id}
+                                className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                              >
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
+                                  {task.title}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-secondary max-w-xs truncate">
+                                  {task.description}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  {task.webglData && task.webglData.buildFolderPath ? (
+                                    <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
+                                      <CheckCircle2 className="w-4 h-4" />
+                                      Files Uploaded
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                                      <XCircle className="w-4 h-4" />
+                                      No Files
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
+                                  {task.submissions.length} submissions
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
+                                  {formatDate(task.createdAt)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handleOpenTask(task)}
+                                      className={`p-2 rounded-lg transition-colors ${
+                                        task.webglData && task.webglData.buildFolderPath
+                                          ? 'text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
+                                          : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                                      }`}
+                                      title="Open Task"
+                                      disabled={!task.webglData || !task.webglData.buildFolderPath}
+                                    >
+                                      <PlayCircle className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleUpload(task._id)}
+                                      className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                      title="Upload Files"
+                                    >
+                                      <ArrowUpToLine className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDelete(task._id)}
+                                      className="p-2 text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                      title="Delete Task"
+                                    >
+                                      <Trash2 className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </main>
       </div>
 
