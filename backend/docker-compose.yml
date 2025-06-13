@@ -12,6 +12,9 @@ services:
       - redis
     volumes:
       - ./uploads:/usr/src/app/uploads # Assuming uploads directory exists in the app
+      - ../frontend/public/webgl-tasks:/usr/src/app/frontend/public/webgl-tasks
+    environment:
+      - NODE_ENV=production
 
   mongo:
     image: mongo:6
