@@ -17,7 +17,7 @@ export default function TaskViewer() {
 
   // Function to handle task completion data from Unity
   const unityTaskCompleted = (data) => {
-    console.log("Task completed with data:", data);
+    console.log('Task completed with data:', data);
     setTaskResult(data);
     
     // You can add additional logic here like:
@@ -51,7 +51,7 @@ export default function TaskViewer() {
           />
         </div>
       </UnityContainer>
-      
+
       {taskResult && (
         <div className="task-result">
           <h3>Task Completed!</h3>
