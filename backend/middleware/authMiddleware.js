@@ -26,17 +26,6 @@ const authenticate = async (req, res, next) => {
     }
 };
 
-/**
- * Authorize based on user roles
- * @param {string|string[]} roles - Single role or array of allowed roles
- */
-// const authorize =
-//     (...roles) =>
-//     (req, res, next) => {
-//         if (!roles.includes(req.user.role)) return res.sendStatus(403);
-//         next();
-//     };
-
 module.exports = {
     authenticate,
 };

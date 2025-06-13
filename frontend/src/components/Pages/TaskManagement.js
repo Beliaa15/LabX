@@ -172,7 +172,7 @@ const TaskManagement = () => {
 
   const handleOpenTask = (task) => {
     console.log('Opening task:', task);
-    navigate(`/admin/tasks/${task._id}/view`, { state: { task } });
+    navigate(`/tasks/${task._id}`, { state: { task } });
   };
 
   const sortedTasks = [...tasks].sort((a, b) => {

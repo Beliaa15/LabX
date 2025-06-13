@@ -139,7 +139,7 @@ const App = () => {
             />
 
             <Route
-              path="/admin/tasks/:taskId/view"
+              path="/tasks/:taskId"
               element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
