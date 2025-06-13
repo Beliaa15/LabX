@@ -89,8 +89,29 @@ const App = () => {
               }
             />
 
+            {/* Student Course Routes */}
             <Route
               path="/my-courses"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
+                    <MyCourses />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-courses/:courseId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
+                    <MyCourses />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-courses/:courseId/folders/:folderId"
               element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
