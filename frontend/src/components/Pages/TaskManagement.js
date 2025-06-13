@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2, FileText, CheckCircle2, XCircle, PlayCircle } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 import Sidebar from '../Common/Sidebar';
@@ -8,6 +8,7 @@ import TaskUploadModal from '../Common/Modals/TaskUploadModal';
 import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { useNavigate } from 'react-router-dom';
+import { debounce } from 'lodash';
 
 const TaskManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,29 +22,39 @@ const TaskManagement = () => {
   const [uploadProgress, setUploadProgress] = useState({});
   const [isDragging, setIsDragging] = useState(false);
   const [selectedTaskToOpen, setSelectedTaskToOpen] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchTasks();
   }, []);
 
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      const response = await getAllTasks();
-      console.log('Tasks response:', response);
-      console.log('First task data:', response.tasks[0]);
-      setTasks(response.tasks);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      showErrorAlert(
-        'Error Loading Tasks',
-        error.response?.data?.message || 'Failed to load tasks. Please try again.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+const [lastFetchTime, setLastFetchTime] = useState(0);
+const CACHE_DURATION = 60000; // 1 minute cache
+
+const fetchTasks = useCallback(async (forceFetch = false) => {
+  const now = Date.now();
+  // Return cached data if still fresh
+  if (!forceFetch && tasks.length > 0 && now - lastFetchTime < CACHE_DURATION) {
+    console.log('Using cached task data');
+    return;
+  }
+  
+  try {
+    setLoading(true);
+    const response = await getAllTasks();
+    setTasks(response.tasks);
+    setLastFetchTime(now);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    showErrorAlert(
+      'Error Loading Tasks',
+      error.response?.data?.message || 'Failed to load tasks. Please try again.'
+    );
+  } finally {
+    setLoading(false);
+  }
+}, [tasks.length, lastFetchTime]);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -51,16 +62,30 @@ const TaskManagement = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    fetchTasks(); // Refresh tasks after modal closes
   };
 
-  const handleSort = (key) => {
-    setSortConfig((prevConfig) => ({
-      key,
-      direction:
-        prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
-    }));
-  };
+  // Optimized: Update local state directly instead of refetching
+  const handleTaskCreated = useCallback((newTask) => {
+    setTasks(prevTasks => [newTask, ...prevTasks]);
+    setIsModalOpen(false);
+    showSuccessAlert('Success', 'Task created successfully');
+  }, []);
+
+  // Avoid triggering unnecessary sorts with a debounced version
+  const debouncedHandleSort = useCallback(
+    debounce((key) => {
+      setSortConfig((prevConfig) => ({
+        key,
+        direction:
+          prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+      }));
+    }, 300),
+    []
+  );
+
+  const handleSort = useCallback((key) => {
+    debouncedHandleSort(key);
+  }, [debouncedHandleSort]);
 
   const handleUpload = (taskId) => {
     console.log('Attempting upload for task with ID:', taskId);
@@ -68,14 +93,32 @@ const TaskManagement = () => {
     setIsUploadModalOpen(true);
   };
 
-  const handleCloseUploadModal = () => {
+  const handleCloseUploadModal = useCallback(() => {
     setIsUploadModalOpen(false);
     setSelectedTaskId(null);
     setUploadProgress({});
-  };
+    setIsUploading(false);
+  }, []);
 
-  const handleFileUpload = async (files) => {
-    if (!selectedTaskId || !files.length) return;
+  const updateTaskInState = useCallback((taskId, updates) => {
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task._id === taskId 
+          ? { ...task, ...updates }
+          : task
+      )
+    );
+  }, []);
+
+  // Optimized: Update local state directly instead of refetching
+  const handleFileUpload = useCallback(async (files, event) => {
+    // Prevent any form submission or default behavior
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    if (!selectedTaskId || !files.length || isUploading) return;
 
     try {
       console.log('Starting file upload for task:', selectedTaskId);
@@ -86,6 +129,8 @@ const TaskManagement = () => {
         return;
       }
 
+      setIsUploading(true);
+
       // Initialize progress state for all files
       const initialProgress = {};
       Array.from(files).forEach(file => {
@@ -93,59 +138,79 @@ const TaskManagement = () => {
       });
       setUploadProgress(initialProgress);
 
-      await uploadTaskFiles(
-        selectedTaskId,
-        files,
-        (progressData) => {
-          if (progressData.files) {
-            // Update both individual file progress and total progress
-            setUploadProgress(prev => ({
-              ...prev,
-              ...progressData.files,
-              total: progressData.total
-            }));
-          }
+      // Create FormData
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('webglFiles', file);
+      });
+
+      // Upload with proper error handling
+      const response = await fetch(`http://localhost:3000/api/tasks/${selectedTaskId}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth implementation
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Upload failed');
+      }
+
+      const result = await response.json();
+      console.log('Upload successful:', result);
+
+      // Update the specific task in local state with file upload information
+      updateTaskInState(selectedTaskId, {
+        webglData: {
+          ...result.webglData, // Use the webglData returned from the server
+          buildFolderPath: result.webglData?.buildFolderPath,
+          loader: result.webglData?.loader
         }
-      );
+      });
 
       showSuccessAlert('Success', 'Files uploaded successfully');
       handleCloseUploadModal();
-      fetchTasks(); // Refresh tasks to update submissions count
+      
     } catch (error) {
       console.error('Failed to upload files:', error);
       console.error('Full error details:', {
         taskId: selectedTaskId,
         endpoint: `/api/tasks/${selectedTaskId}/upload`,
-        status: error.response?.status,
-        data: error.response?.data
+        error: error.message
       });
       showErrorAlert(
         'Upload Failed',
         error.message || 'Failed to upload files. Please try again.'
       );
     }
-  };
+    setIsUploading(false);
+  }, [selectedTaskId, isUploading, updateTaskInState, handleCloseUploadModal]);
 
-  const handleDragOver = (e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
-  };
+  }, []);
 
-  const handleDrop = (e) => {
+  const handleDrop = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleFileUpload(files);
+      handleFileUpload(files, e);
     }
-  };
+  }, [handleFileUpload]);
 
-  const handleDelete = async (taskId) => {
+  const handleDelete = useCallback(async (taskId) => {
     const taskToDelete = tasks.find(t => t._id === taskId);
     
     const result = await showConfirmDialog(
@@ -158,7 +223,8 @@ const TaskManagement = () => {
     if (result.isConfirmed) {
       try {
         await deleteTask(taskId);
-        setTasks(tasks.filter(task => task._id !== taskId));
+        // Update local state directly instead of refetching
+        setTasks(prevTasks => prevTasks.filter(task => task._id !== taskId));
         showSuccessAlert('Task Deleted', `Task "${taskToDelete.title}" has been deleted successfully`);
       } catch (error) {
         console.error('Failed to delete task:', error);
@@ -168,30 +234,32 @@ const TaskManagement = () => {
         );
       }
     }
-  };
+  }, [tasks]);
 
-  const handleOpenTask = (task) => {
+  const handleOpenTask = useCallback((task) => {
     console.log('Opening task:', task);
     navigate(`/tasks/${task._id}`, { state: { task } });
-  };
+  }, [navigate]);
 
-  const sortedTasks = [...tasks].sort((a, b) => {
-    if (sortConfig.key === 'submissions') {
-      return sortConfig.direction === 'asc'
-        ? a.submissions.length - b.submissions.length
-        : b.submissions.length - a.submissions.length;
-    }
-    
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
-    
-    if (sortConfig.direction === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    }
-    return aValue < bValue ? 1 : -1;
-  });
+  const sortedTasks = React.useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      if (sortConfig.key === 'submissions') {
+        return sortConfig.direction === 'asc'
+          ? a.submissions.length - b.submissions.length
+          : b.submissions.length - a.submissions.length;
+      }
+      
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      
+      if (sortConfig.direction === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      }
+      return aValue < bValue ? 1 : -1;
+    });
+  }, [tasks, sortConfig]);
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
       year: 'numeric',
@@ -200,16 +268,16 @@ const TaskManagement = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
+  }, []);
 
   // Mobile card view for tasks
-  const TaskCard = ({ task }) => (
+  const TaskCard = React.memo(({ task }) => (
     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-primary mb-4">
       <div className="flex justify-between items-start mb-2">
         <div>
           <h3 className="font-medium text-primary">{task.title}</h3>
           <div className="flex items-center gap-2 mt-1">
-            {task.webglData && task.webglData.buildFolderPath ? (
+            {task.webglData && (task.webglData.buildFolderPath || task.webglData.loader) ? (
               <span className="flex items-center gap-1 text-green-600 dark:text-green-500 text-xs">
                 <CheckCircle2 className="w-3 h-3" />
                 Files Uploaded
@@ -225,9 +293,13 @@ const TaskManagement = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleOpenTask(task)}
-            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 p-1"
+            className={`p-1 ${
+              task.webglData && (task.webglData.buildFolderPath || task.webglData.loader)
+                ? 'text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400'
+                : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+            }`}
             title="Open Task"
-            disabled={!task.webglData || !task.webglData.buildFolderPath}
+            disabled={!task.webglData || (!task.webglData.buildFolderPath && !task.webglData.loader)}
           >
             <PlayCircle className="w-4 h-4" />
           </button>
@@ -235,8 +307,9 @@ const TaskManagement = () => {
             onClick={() => handleUpload(task._id)}
             className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 p-1"
             title="Upload Files"
+            disabled={isUploading && selectedTaskId === task._id}
           >
-            <ArrowUpToLine className="w-4 h-4" />
+            <ArrowUpToLine className={`w-4 h-4 ${isUploading && selectedTaskId === task._id ? 'animate-pulse' : ''}`} />
           </button>
           <button
             onClick={() => handleDelete(task._id)}
@@ -251,7 +324,7 @@ const TaskManagement = () => {
       <div className="flex flex-wrap gap-3 text-xs text-secondary">
         <div className="flex items-center gap-1">
           <Users className="w-4 h-4" />
-          {task.submissions.length} submissions
+          {task.submissions?.length || 0} submissions
         </div>
         <div className="flex items-center gap-1">
           <Calendar className="w-4 h-4" />
@@ -259,7 +332,7 @@ const TaskManagement = () => {
         </div>
       </div>
     </div>
-  );
+  ));
 
   return (
     <div className="min-h-screen surface-secondary">
@@ -405,7 +478,7 @@ const TaskManagement = () => {
                                 {task.description}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                {task.webglData && task.webglData.buildFolderPath ? (
+                                {task.webglData && (task.webglData.buildFolderPath || task.webglData.loader) ? (
                                   <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
                                     <CheckCircle2 className="w-4 h-4" />
                                     Files Uploaded
@@ -418,7 +491,7 @@ const TaskManagement = () => {
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
-                                {task.submissions.length} submissions
+                                {task.submissions?.length || 0} submissions
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
                                 {formatDate(task.createdAt)}
@@ -428,12 +501,12 @@ const TaskManagement = () => {
                                   <button
                                     onClick={() => handleOpenTask(task)}
                                     className={`p-2 rounded-lg transition-colors ${
-                                      task.webglData && task.webglData.buildFolderPath
+                                      task.webglData && (task.webglData.buildFolderPath || task.webglData.loader)
                                         ? 'text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
                                         : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
                                     }`}
                                     title="Open Task"
-                                    disabled={!task.webglData || !task.webglData.buildFolderPath}
+                                    disabled={!task.webglData || (!task.webglData.buildFolderPath && !task.webglData.loader)}
                                   >
                                     <PlayCircle className="w-5 h-5" />
                                   </button>
@@ -441,8 +514,9 @@ const TaskManagement = () => {
                                     onClick={() => handleUpload(task._id)}
                                     className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                                     title="Upload Files"
+                                    disabled={isUploading && selectedTaskId === task._id}
                                   >
-                                    <ArrowUpToLine className="w-5 h-5" />
+                                    <ArrowUpToLine className={`w-5 h-5 ${isUploading && selectedTaskId === task._id ? 'animate-pulse' : ''}`} />
                                   </button>
                                   <button
                                     onClick={() => handleDelete(task._id)}
@@ -470,6 +544,7 @@ const TaskManagement = () => {
       <TaskCreationModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        onTaskCreated={handleTaskCreated}
       />
 
       <TaskUploadModal
@@ -481,9 +556,10 @@ const TaskManagement = () => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         uploadProgress={uploadProgress}
+        isUploading={isUploading}
       />
     </div>
   );
 };
 
-export default TaskManagement; 
+export default TaskManagement;
