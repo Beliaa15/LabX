@@ -59,10 +59,7 @@ const CourseDetailView = ({
     if (!dateString) return 'Not set';
     
     try {
-      // Add one hour to the display time
       const date = new Date(dateString);
-      date.setHours(date.getHours() + 1);
-      
       return date.toLocaleString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -82,11 +79,8 @@ const CourseDetailView = ({
     if (!dueDate) return false;
     
     try {
-      // Get current time
       const now = new Date();
-      // Convert the due date and add one hour
       const taskDueDate = new Date(dueDate);
-      taskDueDate.setHours(taskDueDate.getHours() + 1);
       
       // For debugging
       console.log('Task expiration check:', {

@@ -49,25 +49,14 @@ const SelectTaskModal = ({ isOpen, onClose, onSelectTask, courseId }) => {
     setAssigning(true);
 
     try {
-      // Create a date object in Egypt timezone
+      // Create a date object and let the timezone handling be automatic
       const dueDateObj = new Date(dueDate);
-      
-      // Convert to Egypt timezone (UTC+2) and add one more hour
-      const egyptOffset = 3 * 60; // Egypt is UTC+2 plus 1 additional hour (3 hours total)
-      const userOffset = dueDateObj.getTimezoneOffset(); // Get user's timezone offset in minutes
-      const totalOffsetMinutes = userOffset + egyptOffset; // Calculate total offset
-      
-      // Adjust the date by adding the offset
-      dueDateObj.setMinutes(dueDateObj.getMinutes() + totalOffsetMinutes);
-      
-      // Convert to ISO string for the API
       const adjustedDueDate = dueDateObj.toISOString();
 
       console.log('Assigning task with due date:', {
         originalDate: dueDate,
         adjustedDate: adjustedDueDate,
-        deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        offsetApplied: totalOffsetMinutes
+        deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
 
       await assignTaskToCourse(task._id, courseId, adjustedDueDate);
@@ -98,7 +87,7 @@ const SelectTaskModal = ({ isOpen, onClose, onSelectTask, courseId }) => {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
-      timeZone: 'Africa/Cairo' // Egypt timezone
+      timeZone: 'Africa/Cairo'
     });
   };
 
