@@ -8,6 +8,7 @@ import TaskUploadModal from '../Common/Modals/TaskUploadModal';
 import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { useNavigate } from 'react-router-dom';
+import { debounce } from 'lodash';
 
 const TaskManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,29 +22,39 @@ const TaskManagement = () => {
   const [uploadProgress, setUploadProgress] = useState({});
   const [isDragging, setIsDragging] = useState(false);
   const [selectedTaskToOpen, setSelectedTaskToOpen] = useState(null);
-   const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchTasks();
   }, []);
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await getAllTasks();
-      console.log('Tasks response:', response);
-      setTasks(response.tasks);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      showErrorAlert(
-        'Error Loading Tasks',
-        error.response?.data?.message || 'Failed to load tasks. Please try again.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const [lastFetchTime, setLastFetchTime] = useState(0);
+const CACHE_DURATION = 60000; // 1 minute cache
+
+const fetchTasks = useCallback(async (forceFetch = false) => {
+  const now = Date.now();
+  // Return cached data if still fresh
+  if (!forceFetch && tasks.length > 0 && now - lastFetchTime < CACHE_DURATION) {
+    console.log('Using cached task data');
+    return;
+  }
+  
+  try {
+    setLoading(true);
+    const response = await getAllTasks();
+    setTasks(response.tasks);
+    setLastFetchTime(now);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    showErrorAlert(
+      'Error Loading Tasks',
+      error.response?.data?.message || 'Failed to load tasks. Please try again.'
+    );
+  } finally {
+    setLoading(false);
+  }
+}, [tasks.length, lastFetchTime]);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -53,21 +64,28 @@ const TaskManagement = () => {
     setIsModalOpen(false);
   };
 
-  const handleTaskCreated = useCallback(async (newTask) => {
-    setTasks(prevTasks => [...prevTasks, newTask]);
+  // Optimized: Update local state directly instead of refetching
+  const handleTaskCreated = useCallback((newTask) => {
+    setTasks(prevTasks => [newTask, ...prevTasks]);
     setIsModalOpen(false);
     showSuccessAlert('Success', 'Task created successfully');
-    // Add a short delay before refreshing tasks to allow backend to update
-    await fetchTasks();
-  }, [fetchTasks]);
+  }, []);
 
-  const handleSort = (key) => {
-    setSortConfig((prevConfig) => ({
-      key,
-      direction:
-        prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
-    }));
-  };
+  // Avoid triggering unnecessary sorts with a debounced version
+  const debouncedHandleSort = useCallback(
+    debounce((key) => {
+      setSortConfig((prevConfig) => ({
+        key,
+        direction:
+          prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+      }));
+    }, 300),
+    []
+  );
+
+  const handleSort = useCallback((key) => {
+    debouncedHandleSort(key);
+  }, [debouncedHandleSort]);
 
   const handleUpload = (taskId) => {
     console.log('Attempting upload for task with ID:', taskId);
@@ -82,7 +100,7 @@ const TaskManagement = () => {
     setIsUploading(false);
   }, []);
 
-    const updateTaskInState = useCallback((taskId, updates) => {
+  const updateTaskInState = useCallback((taskId, updates) => {
     setTasks(prevTasks => 
       prevTasks.map(task => 
         task._id === taskId 
@@ -92,79 +110,85 @@ const TaskManagement = () => {
     );
   }, []);
 
+  // Optimized: Update local state directly instead of refetching
   const handleFileUpload = useCallback(async (files, event) => {
-  // Prevent any form submission or default behavior
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  if (!selectedTaskId || !files.length || isUploading) return;
-
-  try {
-    console.log('Starting file upload for task:', selectedTaskId);
-    console.log('Files to upload:', files);
-
-    if (files.length > 4) {
-      showErrorAlert('Upload Error', 'Maximum 4 files allowed');
-      return;
+    // Prevent any form submission or default behavior
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
     }
 
-    setIsUploading(true);
+    if (!selectedTaskId || !files.length || isUploading) return;
 
-    // Initialize progress state for all files
-    const initialProgress = {};
-    Array.from(files).forEach(file => {
-      initialProgress[file.name] = 0;
-    });
-    setUploadProgress(initialProgress);
+    try {
+      console.log('Starting file upload for task:', selectedTaskId);
+      console.log('Files to upload:', files);
 
-    // Create FormData
-    const formData = new FormData();
-    Array.from(files).forEach(file => {
-      formData.append('webglFiles', file);
-    });
+      if (files.length > 4) {
+        showErrorAlert('Upload Error', 'Maximum 4 files allowed');
+        return;
+      }
 
-    // Upload with proper error handling
-    const response = await fetch(`http://localhost:3000/api/tasks/${selectedTaskId}/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth implementation
-      },
-      body: formData,
-    });
+      setIsUploading(true);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Upload failed');
+      // Initialize progress state for all files
+      const initialProgress = {};
+      Array.from(files).forEach(file => {
+        initialProgress[file.name] = 0;
+      });
+      setUploadProgress(initialProgress);
+
+      // Create FormData
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('webglFiles', file);
+      });
+
+      // Upload with proper error handling
+      const response = await fetch(`http://localhost:3000/api/tasks/${selectedTaskId}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth implementation
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Upload failed');
+      }
+
+      const result = await response.json();
+      console.log('Upload successful:', result);
+
+      // Update the specific task in local state with file upload information
+      updateTaskInState(selectedTaskId, {
+        webglData: {
+          ...result.webglData, // Use the webglData returned from the server
+          buildFolderPath: result.webglData?.buildFolderPath,
+          loader: result.webglData?.loader
+        }
+      });
+
+      showSuccessAlert('Success', 'Files uploaded successfully');
+      handleCloseUploadModal();
+      
+    } catch (error) {
+      console.error('Failed to upload files:', error);
+      console.error('Full error details:', {
+        taskId: selectedTaskId,
+        endpoint: `/api/tasks/${selectedTaskId}/upload`,
+        error: error.message
+      });
+      showErrorAlert(
+        'Upload Failed',
+        error.message || 'Failed to upload files. Please try again.'
+      );
     }
+    setIsUploading(false);
+  }, [selectedTaskId, isUploading, updateTaskInState, handleCloseUploadModal]);
 
-    const result = await response.json();
-    console.log('Upload successful:', result);
-
-    showSuccessAlert('Success', 'Files uploaded successfully');
-    handleCloseUploadModal();
-    
-    // Add a short delay before refreshing tasks to allow backend to update
-    setTimeout(() => {
-      fetchTasks(); // Refresh tasks to update file status
-    }, 1000);
-  } catch (error) {
-    console.error('Failed to upload files:', error);
-    console.error('Full error details:', {
-      taskId: selectedTaskId,
-      endpoint: `/api/tasks/${selectedTaskId}/upload`,
-      error: error.message
-    });
-    showErrorAlert(
-      'Upload Failed',
-      error.message || 'Failed to upload files. Please try again.'
-    );
-  }
-  setIsUploading(false);
-}, [selectedTaskId, isUploading, updateTaskInState, handleCloseUploadModal]);
-
-const handleDragOver = useCallback((e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -186,7 +210,7 @@ const handleDragOver = useCallback((e) => {
     }
   }, [handleFileUpload]);
 
-  const handleDelete = useCallback( async (taskId) => {
+  const handleDelete = useCallback(async (taskId) => {
     const taskToDelete = tasks.find(t => t._id === taskId);
     
     const result = await showConfirmDialog(
@@ -199,7 +223,8 @@ const handleDragOver = useCallback((e) => {
     if (result.isConfirmed) {
       try {
         await deleteTask(taskId);
-        setTasks(tasks.filter(task => task._id !== taskId));
+        // Update local state directly instead of refetching
+        setTasks(prevTasks => prevTasks.filter(task => task._id !== taskId));
         showSuccessAlert('Task Deleted', `Task "${taskToDelete.title}" has been deleted successfully`);
       } catch (error) {
         console.error('Failed to delete task:', error);
@@ -309,7 +334,7 @@ const handleDragOver = useCallback((e) => {
     </div>
   ));
 
- return (
+  return (
     <div className="min-h-screen surface-secondary">
       {/* Sidebar component handles both mobile and desktop sidebars */}
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
