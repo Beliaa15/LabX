@@ -1,25 +1,81 @@
 import React, { useEffect, useState } from 'react';
 import Modal from '../../ui/Modal';
-import { getAllTasks } from '../../../services/taskService';
+import { getAllTasks, assignTaskToCourse } from '../../../services/taskService';
 import { CheckCircle } from 'lucide-react';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
+import { showSuccessAlert, showErrorAlert } from '../../../utils/sweetAlert';
 
-const SelectTaskModal = ({ isOpen, onClose, onSelectTask }) => {
+const SelectTaskModal = ({ isOpen, onClose, onSelectTask, courseId }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [dueDate, setDueDate] = useState('');
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      getAllTasks().then(res => {
-        setTasks(res.tasks || []);
-        setLoading(false);
-      });
+      setSelectedTaskId(null);
+      setDueDate('');
+      getAllTasks()
+        .then(res => {
+          setTasks(res.tasks || []);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Failed to load tasks:', err);
+          showErrorAlert('Error', 'Failed to load tasks');
+          setLoading(false);
+        });
     }
   }, [isOpen]);
 
+  const handleAssignTask = async (task) => {
+    if (!courseId) {
+      showErrorAlert('Error', 'No course selected');
+      return;
+    }
+
+    if (!dueDate) {
+      showErrorAlert('Error', 'Please select a due date');
+      return;
+    }
+
+    setAssigning(true);
+
+    try {
+      await assignTaskToCourse(task._id, courseId, dueDate);
+      showSuccessAlert('Success', 'Task assigned successfully!');
+      if (onSelectTask) {
+        onSelectTask(task);
+      }
+      onClose();
+    } catch (err) {
+      console.error('Failed to assign task:', err);
+      showErrorAlert(
+        'Error',
+        err.response?.data?.error || err.response?.data?.message || 'Failed to assign task to course'
+      );
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Assign Task to Course">
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Due Date
+        </label>
+        <input
+          type="datetime-local"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          disabled={assigning}
+        />
+      </div>
+
       {loading ? (
         <div className="flex flex-col items-center py-8">
           <LoadingSpinner size="lg" className="text-indigo-500 mb-2" />
@@ -42,14 +98,18 @@ const SelectTaskModal = ({ isOpen, onClose, onSelectTask }) => {
                 <div className="text-sm text-secondary mt-1 line-clamp-2">{task.description}</div>
               </div>
               <button
-                className="mt-4 md:mt-0 md:ml-6 flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg shadow transition-all duration-150 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                onClick={() => {
-                  console.log('Assign task:', task);
-                  if (onSelectTask) onSelectTask(task);
-                }}
+                className={`mt-4 md:mt-0 md:ml-6 flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg shadow transition-all duration-150 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                  assigning ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                onClick={() => handleAssignTask(task)}
+                disabled={assigning}
               >
-                <CheckCircle className="w-5 h-5" />
-                Assign
+                {assigning ? (
+                  <LoadingSpinner size="sm" className="text-white" />
+                ) : (
+                  <CheckCircle className="w-5 h-5" />
+                )}
+                {assigning ? 'Assigning...' : 'Assign'}
               </button>
             </div>
           ))}

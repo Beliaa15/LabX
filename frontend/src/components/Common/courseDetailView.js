@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FolderPlus, 
   Upload, 
@@ -9,12 +9,16 @@ import {
   Edit2, 
   Trash2,
   Eye,
-  Plus
+  Plus,
+  Calendar,
+  CheckCircle
 } from 'lucide-react';
 import SearchBar from '../ui/SearchBar';
 import ViewModeToggle from '../ui/ViewModeToggle';
 import FileViewer from './FileViewer';
 import SelectTaskModal from './Modals/SelectTaskModal';
+import { getCourseTasksById } from '../../services/taskService';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 const CourseDetailView = ({
   selectedCourse,
@@ -42,6 +46,25 @@ const CourseDetailView = ({
 }) => {
   const [viewingFile, setViewingFile] = useState(null);
   const [showSelectTaskModal, setShowSelectTaskModal] = useState(false);
+  const [courseTasks, setCourseTasks] = useState([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+
+  // Load course tasks when course changes
+  useEffect(() => {
+    if (selectedCourse?._id) {
+      setLoadingTasks(true);
+      getCourseTasksById(selectedCourse._id)
+        .then(response => {
+          // Extract tasks array from the response
+          setCourseTasks(response.tasks || []);
+          setLoadingTasks(false);
+        })
+        .catch(err => {
+          console.error('Failed to load course tasks:', err);
+          setLoadingTasks(false);
+        });
+    }
+  }, [selectedCourse?._id]);
 
   // Get current materials (folders + files)
   const getCurrentMaterials = () => {
@@ -327,11 +350,25 @@ const CourseDetailView = ({
   };
 
   // Handler for adding a task
-  const handleAddTaskClick = () => setShowSelectTaskModal(true);
-  const handleSelectTask = (task) => {
-    // TODO: Add logic to associate the selected task with the course
+  const handleAddTaskClick = () => {
+    setShowSelectTaskModal(true);
+  };
+
+  const handleSelectTask = async (task) => {
     setShowSelectTaskModal(false);
-    // Optionally show a success message
+    // Refresh tasks list after assignment
+    if (selectedCourse?._id) {
+      setLoadingTasks(true);
+      try {
+        const response = await getCourseTasksById(selectedCourse._id);
+        // Extract tasks array from the response
+        setCourseTasks(response.tasks || []);
+      } catch (err) {
+        console.error('Failed to refresh tasks:', err);
+      } finally {
+        setLoadingTasks(false);
+      }
+    }
   };
 
   return (
@@ -378,8 +415,8 @@ const CourseDetailView = ({
             <SearchBar
               value={materialsSearchQuery}
               onChange={setMaterialsSearchQuery}
-              placeholder="Search folders and files..."
-              className="flex-1 min-w-0 max-w-[180px] sm:max-w-[220px] md:max-w-none md:w-56 lg:w-64 xl:w-72"
+              placeholder="Search materials..."
+              className="max-w-xs"
             />
             <ViewModeToggle
               viewMode={materialsViewMode}
@@ -389,111 +426,168 @@ const CourseDetailView = ({
         </div>
       </div>
 
+      {/* Back to Courses Button and Course Header */}
+      <div className="px-4 md:px-6 py-4">
+        {/* Back to Courses Button */}
+        <button
+          onClick={onBackToCourses}
+          className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors mb-4"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Back to Courses
+        </button>
 
-      {/* Main Content */}
-      <main className="animate-fadeIn flex-1 relative z-0 overflow-y-auto focus:outline-none">
-        <div className="py-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-            <div className="space-y-6">
-              {/* Back to Courses Button */}
-              <button
-                onClick={onBackToCourses}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Back to Courses
-              </button>
-
-              {/* Course Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-primary">
-                    {selectedCourse.name}
-                  </h2>
-                  <p className="text-sm text-muted">
-                    {selectedCourse.code}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm text-secondary">
-                    {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              </div>
-
-              {/* Breadcrumb */}
-              {currentPath.length > 0 && (
-                <div className="flex items-center space-x-2 text-sm surface-primary p-3 rounded-lg shadow-sm border border-primary">
-                  <button
-                    onClick={onNavigateBack}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                  >
-                    Back
-                  </button>
-                  <span className="text-muted">/</span>
-                  {currentPath.map((folder, index) => (
-                    <React.Fragment key={index}>
-                      <span className="text-secondary">{folder}</span>
-                      {index < currentPath.length - 1 && (
-                        <span className="text-muted">/</span>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
-
-              {/* Materials Grid/List */}
-              {(isLoadingFolders && !selectedFolder) || (isLoadingFiles && selectedFolder) ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
-                  <p className="text-secondary">Loading {selectedFolder ? 'files' : 'folders'}...</p>
-                </div>
-              ) : getFilteredMaterials().length === 0 ? (
-                <div className="text-center py-12 surface-primary rounded-xl shadow-sm border border-primary">
-                  <FileText className="w-12 h-12 text-muted mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-primary mb-2">
-                    {materialsSearchQuery ? "No matching items found" : "No materials yet"}
-                  </h3>
-                  <p className="text-secondary">
-                    {materialsSearchQuery
-                      ? "Try adjusting your search terms"
-                      : isStudent
-                      ? "No materials have been uploaded to this course yet"
-                      : "Upload files or create folders to get started"}
-                  </p>
-                </div>
-              ) : (
-                <div
-                  className={
-                    materialsViewMode === "grid"
-                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                      : "flex flex-col space-y-4"
-                  }
-                >
-                  {getFilteredMaterials().map((item) =>
-                    materialsViewMode === "grid" ? (
-                      <MaterialItem key={item._id || item.id} item={item} />
-                    ) : (
-                      <MaterialListItem key={item._id || item.id} item={item} />
-                    )
-                  )}
-                </div>
-              )}
-            </div>
+        {/* Course Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {selectedCourse.name}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedCourse.code}
+            </p>
+          </div>
+          <div className="text-right">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {getCurrentMaterials().length} item{getCurrentMaterials().length !== 1 ? 's' : ''}
+            </span>
           </div>
         </div>
-      </main>
+
+        {/* Breadcrumb for Folder Navigation */}
+        {currentPath.length > 0 && (
+          <div className="flex items-center space-x-2 text-sm bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <button
+              onClick={onNavigateBack}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+            >
+              Back
+            </button>
+            <span className="text-gray-500 dark:text-gray-400">/</span>
+            {currentPath.map((folder, index) => (
+              <React.Fragment key={index}>
+                <span className="text-gray-700 dark:text-gray-300">{folder}</span>
+                {index < currentPath.length - 1 && (
+                  <span className="text-gray-500 dark:text-gray-400">/</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Course Tasks Section */}
+      {!selectedFolder && courseTasks.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 mb-4 mx-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <Calendar className="w-5 h-5 mr-2" />
+            Course Tasks
+          </h2>
+          
+          {loadingTasks ? (
+            <div className="flex justify-center items-center py-8">
+              <LoadingSpinner size="lg" className="text-indigo-500" />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {courseTasks.map(task => {
+                // Find the course task data for the current course
+                const courseTaskData = task.courseTasks.find(ct => ct.course === selectedCourse._id);
+                
+                return (
+                  <div
+                    key={task._id}
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium text-gray-900 dark:text-white flex items-center">
+                          <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
+                          {task.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {task.description}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          Score: {task.score}
+                        </p>
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Due: {courseTaskData ? new Date(courseTaskData.dueDate).toLocaleDateString() : 'Not set'}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Materials Section */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-auto">
+          {/* Materials Grid/List */}
+          {(isLoadingFolders && !selectedFolder) || (isLoadingFiles && selectedFolder) ? (
+            <div className="flex justify-center items-center py-16">
+              <LoadingSpinner size="lg" className="text-indigo-500" />
+            </div>
+          ) : getFilteredMaterials().length === 0 && !materialsSearchQuery ? (
+            <div className="text-center py-12 mx-4 md:mx-6 mt-4 surface-primary rounded-xl shadow-sm border border-primary">
+              <FileText className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                {selectedFolder ? "This folder is empty" : "No materials yet"}
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400">
+                {isStudent
+                  ? "No materials have been uploaded to this course yet"
+                  : selectedFolder
+                  ? "Upload files to get started"
+                  : "Create folders or upload files to get started"}
+              </p>
+            </div>
+          ) : getFilteredMaterials().length === 0 && materialsSearchQuery ? (
+            <div className="text-center py-12 mx-4 md:mx-6 mt-4 surface-primary rounded-xl shadow-sm border border-primary">
+              <FileText className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No matching items found
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400">
+                Try adjusting your search terms
+              </p>
+            </div>
+          ) : (
+            <div className={`p-4 md:p-6 ${materialsViewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' : 'space-y-2'}`}>
+              {getFilteredMaterials().map(item => (
+                materialsViewMode === 'grid' ? (
+                  <MaterialItem key={item.id || item._id} item={item} />
+                ) : (
+                  <MaterialListItem key={item.id || item._id} item={item} />
+                )
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
+      <SelectTaskModal
+        isOpen={showSelectTaskModal}
+        onClose={() => setShowSelectTaskModal(false)}
+        courseId={selectedCourse?._id}
+        onSelectTask={handleSelectTask}
+      />
 
       {viewingFile && (
         <FileViewer
@@ -501,12 +595,6 @@ const CourseDetailView = ({
           onClose={() => setViewingFile(null)}
         />
       )}
-
-      <SelectTaskModal
-        isOpen={showSelectTaskModal}
-        onClose={() => setShowSelectTaskModal(false)}
-        onSelectTask={handleSelectTask}
-      />
     </div>
   );
 };

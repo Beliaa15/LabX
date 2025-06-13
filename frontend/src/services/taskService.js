@@ -185,4 +185,51 @@ export const getTaskWebGLFile = async (taskId, fileType) => {
         });
         throw error;
     }
+};
+
+/**
+ * Assign a task to a course
+ * @param {string} taskId - The ID of the task to assign
+ * @param {string} courseId - The ID of the course to assign the task to
+ * @param {string} dueDate - The due date for the task
+ * @returns {Promise} - The assigned task data
+ */
+export const assignTaskToCourse = async (taskId, courseId, dueDate) => {
+    try {
+        console.log('Assigning task to course:', { taskId, courseId, dueDate });
+        const response = await authApi.post(`/api/tasks/${taskId}/assign`, {
+            courseId,
+            dueDate
+        });
+        console.log('Task assigned successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to assign task:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};
+
+/**
+ * Get all tasks for a course
+ * @param {string} courseId - The ID of the course
+ * @returns {Promise} - Array of tasks assigned to the course
+ */
+export const getCourseTasksById = async (courseId) => {
+    try {
+        console.log('Fetching tasks for course:', courseId);
+        const response = await authApi.get(`/api/courses/${courseId}/tasks`);
+        console.log('Course tasks fetched successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch course tasks:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
 }; 
