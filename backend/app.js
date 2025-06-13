@@ -28,6 +28,12 @@ app.use(express.json());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const webglStaticPath = process.env.NODE_ENV === 'production' 
+    ? path.join(__dirname, 'frontend/public/webgl-tasks')
+    : path.join(__dirname, '../frontend/public/webgl-tasks');
+
+app.use('/webgl-tasks', express.static(webglStaticPath));
+
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes

@@ -8,4 +8,7 @@ RUN npm install
 
 COPY . .
 
+RUN mkdir -p uploads
+RUN mkdir -p ../frontend/public/webgl-tasks
+
 CMD ["npm", "start"]
