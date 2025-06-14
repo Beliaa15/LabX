@@ -1,5 +1,4 @@
 # LabX - Educational Platform
-
 A comprehensive full-stack educational platform that enables teachers to create courses, manage students, and facilitate online learning through **3D interactive laboratory experiences** and engaging educational content.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Beliaa15/GP-website)
