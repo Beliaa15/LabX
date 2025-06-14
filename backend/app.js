@@ -7,7 +7,7 @@ const path = require('path');
 const { swaggerUi, swaggerDocument } = require('./swagger');
 
 const connectDB = require('./config/database'); // MongoDB connection
-const redisClient = require('./config/redis'); // Redis client
+const redisClient = require('./config/redis');
 const errorHandler = require('./middleware/errorHandler');
 
 
