@@ -7,7 +7,8 @@ import { Button } from '../ui/button';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { useAuth } from '../../context/AuthContext';
 import authApi from '../../services/authService';
-import { submitTaskInCourse } from '../../services/taskService';
+import { submitTaskInCourse, getTaskById } from '../../services/taskService';
+import TaskCompletedModal from '../Common/Modals/TaskCompletedModal';
 
 export default function TaskViewer() {
   const [taskResult, setTaskResult] = useState(null);
@@ -16,6 +17,7 @@ export default function TaskViewer() {
   const [task, setTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState(null);
+  const [isCompletedModalOpen, setIsCompletedModalOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -52,46 +54,29 @@ export default function TaskViewer() {
     const loadTaskData = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         console.log('Loading task data:', { courseId, taskId, taskFromState, isTaskManagement });
 
         // If we have the task in state, use it
         if (taskFromState) {
           console.log('Using task from state:', taskFromState);
           setTask(taskFromState);
-          setIsLoading(false);
           return;
         }
 
-        // If we're in task management and have taskId but no state, try to fetch it
-        if (isTaskManagement && taskId) {
-          console.log('Fetching task data for task management:', { taskId });
-          const response = await authApi.get(`/api/tasks/${taskId}`);
-          if (response.data.success) {
-            console.log('Fetched task data:', response.data.task);
-            setTask(response.data.task);
-          } else {
-            throw new Error('Task not found');
-          }
-          return;
-        }
-
-        // For course context
-        if (!isTaskManagement && taskId && courseId) {
-          console.log('Fetching task data for course context:', { courseId, taskId });
-          const response = await authApi.get(`/api/tasks/${taskId}`);
-          if (response.data.success) {
-            console.log('Fetched task data:', response.data.task);
-            setTask(response.data.task);
-          } else {
-            throw new Error('Task not found');
-          }
+        // If we don't have task in state, fetch it
+        if (taskId) {
+          console.log('Fetching task data:', { taskId });
+          const response = await getTaskById(taskId);
+          console.log('Fetched task data:', response);
+          setTask(response);
           return;
         }
 
         throw new Error('No task data available');
       } catch (err) {
         console.error('Error loading task:', err);
-        setError('Failed to load task data');
+        setError('Failed to load task data. Please try again later.');
         showErrorAlert('Error', 'Failed to load task data. Please try again.');
       } finally {
         setIsLoading(false);
@@ -99,7 +84,7 @@ export default function TaskViewer() {
     };
 
     loadTaskData();
-  }, [taskId, courseId, isTaskManagement]);
+  }, [taskId, courseId, taskFromState, isTaskManagement]);
 
   // Unity event handlers
   useEffect(() => {
@@ -107,11 +92,12 @@ export default function TaskViewer() {
 
     const handleTaskCompleted = (data) => {
       console.log('Task completed with data:', data);
-      setTaskResult({
+      const result = {
         grade: 100,
         result: data
-      });
-      showSuccessAlert('Congratulations! 🎉', 'You have successfully completed the task!');
+      };
+      setTaskResult(result);
+      setIsCompletedModalOpen(true);
     };
 
     addEventListener('TaskCompleted', handleTaskCompleted);
@@ -348,32 +334,13 @@ export default function TaskViewer() {
           </Card>
         )}
 
-        {/* Task Result */}
-        {taskResult && (
-          <Card className="bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700">
-            <CardHeader>
-              <h2 className="text-xl sm:text-2xl font-semibold text-white flex items-center gap-2">
-                🎉 Game Completed!
-              </h2>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <div className="flex justify-between items-center border-b border-white/20 pb-3 sm:pb-4">
-                  <span className="text-white/80 font-medium text-sm sm:text-base">Grade:</span>
-                  <span className="text-white font-semibold text-sm sm:text-base">100</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-white/80 font-medium text-sm sm:text-base">Result:</span>
-                  <span className="text-white font-semibold text-sm sm:text-base">
-                    {typeof taskResult.result === 'object' 
-                      ? JSON.stringify(taskResult.result) 
-                      : String(taskResult.result)}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Task Completed Modal */}
+        <TaskCompletedModal
+          isOpen={isCompletedModalOpen}
+          onClose={() => setIsCompletedModalOpen(false)}
+          grade={taskResult?.grade || 100}
+          result={taskResult?.result}
+        />
       </div>
     </div>
   );
