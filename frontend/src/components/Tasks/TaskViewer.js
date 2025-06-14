@@ -274,10 +274,12 @@ export default function TaskViewer() {
                   Due: {formatDate(task.courseTasks[0].dueDate)}
                 </div>
               )}
-              <div className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                {task.submissions?.length || 0} Submissions
-              </div>
+              {!isStudent() && (
+                <div className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  {task.submissions?.length || 0} Submissions
+                </div>
+              )}
             </div>
           </CardHeader>
         </Card>
