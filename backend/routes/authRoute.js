@@ -72,5 +72,7 @@ router.get(
     }
 );
 
+// Logout route
+router.post('/logout', logout);
 
 module.exports = router;
