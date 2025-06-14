@@ -7,7 +7,6 @@ import Header from '../Common/Header';
 import TaskCreationModal from '../Common/Modals/TaskCreationModal';
 import TaskUploadModal from '../Common/Modals/TaskUploadModal';
 import { Unity, useUnityContext } from "react-unity-webgl";
-import { UnityContainer, TaskWrapper } from "../Tasks/TaskViewer.styles";
 import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { debounce } from 'lodash';
@@ -383,33 +382,23 @@ const fetchTasks = useCallback(async (forceFetch = false) => {
     }, [addEventListener, removeEventListener]);
 
     return (
-      <div className="p-4">
-        <div className="mb-4">
-          <button
-            onClick={handleBackToTasks}
-            className="flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back
-          </button>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="relative w-full h-[600px] rounded-lg overflow-hidden bg-gray-900">
+          <Unity 
+            unityProvider={unityProvider}
+            className="w-full h-full"
+            style={{ background: '#1a1a1a' }}
+          />
         </div>
-        <TaskWrapper>
-          <UnityContainer>
-            <div>
-              <Unity 
-                unityProvider={unityProvider}
-                style={{ background: '#1a1a1a' }}
-              />
+        {taskResult && (
+          <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Task Completed!</h3>
+            <div className="space-y-2">
+              <p className="text-gray-700 dark:text-gray-300">Score: {taskResult}</p>
+              <p className="text-gray-700 dark:text-gray-300">Time: {taskResult}</p>
             </div>
-          </UnityContainer>
-          {taskResult && (
-            <div className="task-result">
-              <h3>Task Completed!</h3>
-              <p>Score: {taskResult}</p>
-              <p>Time: {taskResult}</p>
-            </div>
-          )}
-        </TaskWrapper>
+          </div>
+        )}
       </div>
     );
   };
