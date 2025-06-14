@@ -54,6 +54,7 @@ exports.submitTask = asyncHandler(async (req, res) => {
     const isLate = new Date() > courseTask.dueDate;
     const status = isLate ? 'late' : 'submitted';
 
+
     const submission = await StudentSubmission.create({
         student: user._id,
         task: taskId,
@@ -61,6 +62,13 @@ exports.submitTask = asyncHandler(async (req, res) => {
         status: status,
         submittedAt: new Date(),
     });
+
+    // Update the task's submissions array
+    task.submissions.push(submission._id);
+
+    await task.save();
+
+    res.status(201).json(submission);
 });
 
 // @desc    Update a student submission
