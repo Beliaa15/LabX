@@ -327,7 +327,7 @@ const MyCourses = () => {
 
   const handleOpenTask = (task) => {
     console.log('Opening task:', task);
-    navigate(`/my-courses/${selectedCourse._id}/tasks/${task._id}`, { state: { task } });
+    navigate(`/my-courses/${selectedCourse._id}/task/${task._id}`, { state: { task } });
   };
 
   return (
