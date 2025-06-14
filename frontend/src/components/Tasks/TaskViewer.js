@@ -7,7 +7,7 @@ import { Button } from '../ui/button';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { useAuth } from '../../context/AuthContext';
 import authApi from '../../services/authService';
-import { submitTaskInCourse } from '../../services/taskService';
+import { submitTaskInCourse, getTaskById } from '../../services/taskService';
 
 export default function TaskViewer() {
   const [taskResult, setTaskResult] = useState(null);
@@ -52,46 +52,29 @@ export default function TaskViewer() {
     const loadTaskData = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         console.log('Loading task data:', { courseId, taskId, taskFromState, isTaskManagement });
 
         // If we have the task in state, use it
         if (taskFromState) {
           console.log('Using task from state:', taskFromState);
           setTask(taskFromState);
-          setIsLoading(false);
           return;
         }
 
-        // If we're in task management and have taskId but no state, try to fetch it
-        if (isTaskManagement && taskId) {
-          console.log('Fetching task data for task management:', { taskId });
-          const response = await authApi.get(`/api/tasks/${taskId}`);
-          if (response.data.success) {
-            console.log('Fetched task data:', response.data.task);
-            setTask(response.data.task);
-          } else {
-            throw new Error('Task not found');
-          }
-          return;
-        }
-
-        // For course context
-        if (!isTaskManagement && taskId && courseId) {
-          console.log('Fetching task data for course context:', { courseId, taskId });
-          const response = await authApi.get(`/api/tasks/${taskId}`);
-          if (response.data.success) {
-            console.log('Fetched task data:', response.data.task);
-            setTask(response.data.task);
-          } else {
-            throw new Error('Task not found');
-          }
+        // If we don't have task in state, fetch it
+        if (taskId) {
+          console.log('Fetching task data:', { taskId });
+          const response = await getTaskById(taskId);
+          console.log('Fetched task data:', response);
+          setTask(response);
           return;
         }
 
         throw new Error('No task data available');
       } catch (err) {
         console.error('Error loading task:', err);
-        setError('Failed to load task data');
+        setError('Failed to load task data. Please try again later.');
         showErrorAlert('Error', 'Failed to load task data. Please try again.');
       } finally {
         setIsLoading(false);
@@ -99,7 +82,7 @@ export default function TaskViewer() {
     };
 
     loadTaskData();
-  }, [taskId, courseId, isTaskManagement]);
+  }, [taskId, courseId, taskFromState, isTaskManagement]);
 
   // Unity event handlers
   useEffect(() => {

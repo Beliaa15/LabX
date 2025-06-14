@@ -282,4 +282,26 @@ export const submitTaskInCourse = async (courseId, taskId, grade) => {
         });
         throw error;
     }
+};
+
+/**
+ * Get a task by ID
+ * @param {string} taskId - The ID of the task to fetch
+ * @returns {Promise} - The task data
+ */
+export const getTaskById = async (taskId) => {
+    try {
+        console.log('Fetching task:', taskId);
+        const response = await authApi.get(`/api/tasks/${taskId}`);
+        console.log('Task fetched successfully:', response.data);
+        // Return the task data directly if it's in response.data.task, otherwise return response.data
+        return response.data.task || response.data;
+    } catch (error) {
+        console.error('Failed to fetch task:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
 }; 
