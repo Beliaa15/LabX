@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { useDarkMode } from '../Common/useDarkMode';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import {
@@ -26,6 +26,8 @@ const MyCourses = () => {
   const { sidebarCollapsed } = useUI();
   const { isDarkMode, handleToggle } = useDarkMode();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { courseId, folderId } = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
@@ -57,15 +59,96 @@ const MyCourses = () => {
   // Add state for selected folder
   const [selectedFolder, setSelectedFolder] = useState(null);
 
-  // Fetch courses when component mounts
+  // Handle location changes
   useEffect(() => {
-    const fetchCourses = async () => {
+    // If we're at the root my-courses page, reset all view states
+    if (location.pathname === '/my-courses') {
+      setSelectedCourse(null);
+      setSelectedFolder(null);
+      setCurrentPath([]);
+      setMaterials([]);
+      setFolders([]);
+    }
+  }, [location.pathname]);
+
+  // Load courses and handle URL parameters on mount
+  useEffect(() => {
+    const initializeFromUrl = async () => {
       try {
         setIsLoading(true);
         const fetchedCourses = await getUserCourses();
         setCourses(fetchedCourses);
+
+        // If we have a courseId in the URL, load that course
+        if (courseId) {
+          const course = fetchedCourses.find(c => c._id === courseId);
+          if (course) {
+            setSelectedCourse(course);
+
+            // If we have a folderId, load folders and select the right one
+            if (folderId) {
+              try {
+                setIsLoadingFolders(true);
+                const response = await getFolders(course._id);
+                const folders = response.folders || [];
+                setFolders(folders);
+                
+                const folder = folders.find(f => f._id === folderId);
+                if (folder) {
+                  setSelectedFolder(folder);
+                  setCurrentPath([folder.title]);
+
+                  // Load materials for the folder
+                  setIsLoadingFiles(true);
+                  const materialsResponse = await getMaterials(course._id, folder._id);
+                  const transformedMaterials = materialsResponse.materials.map(material => ({
+                    _id: material._id,
+                    id: material._id,
+                    name: material.title,
+                    title: material.title,
+                    type: 'file',
+                    size: material.fileSize || 0,
+                    uploadedAt: material.createdAt,
+                    courseId: course._id,
+                    folderId: folder._id,
+                    path: [folder.title],
+                    filePath: material.filePath
+                  }));
+                  setMaterials(transformedMaterials);
+                }
+              } catch (error) {
+                console.error('Failed to load folders/materials:', error);
+                showErrorAlert(
+                  'Error Loading Data',
+                  'Failed to load folders or materials. Please try again later.'
+                );
+              } finally {
+                setIsLoadingFolders(false);
+                setIsLoadingFiles(false);
+              }
+            } else {
+              // Just load folders for the course
+              try {
+                setIsLoadingFolders(true);
+                const response = await getFolders(course._id);
+                setFolders(response.folders || []);
+              } catch (error) {
+                console.error('Failed to load folders:', error);
+                showErrorAlert(
+                  'Error Loading Folders',
+                  'Failed to load folders. Please try again later.'
+                );
+              } finally {
+                setIsLoadingFolders(false);
+              }
+            }
+          } else {
+            // If course not found, redirect to my-courses list
+            navigate('/my-courses');
+          }
+        }
       } catch (error) {
-        console.error('Error fetching courses:', error);
+        console.error('Error fetching initial data:', error);
         showErrorAlert(
           'Error Loading Courses',
           'Failed to load your courses. Please try again later.'
@@ -76,114 +159,19 @@ const MyCourses = () => {
       }
     };
 
-    fetchCourses();
-  }, []);
-
-  // Add useEffect to fetch folders when course is selected
-  useEffect(() => {
-    const loadFolders = async () => {
-      if (selectedCourse && selectedCourse._id) {
-        try {
-          setIsLoadingFolders(true);
-          console.log('Fetching folders for course:', selectedCourse._id);
-          const response = await getFolders(selectedCourse._id);
-          setFolders(response.folders || []);
-        } catch (error) {
-          console.error('Failed to fetch folders:', error);
-          showErrorAlert(
-            'Error Loading Folders',
-            'Failed to load course folders. Please try again later.'
-          );
-        } finally {
-          setIsLoadingFolders(false);
-        }
-      } else {
-        // Reset folders when no course is selected
-        setFolders([]);
-      }
-    };
-
-    loadFolders();
-  }, [selectedCourse]);
-
-  // Update the useEffect to fetch materials when folder is selected
-  useEffect(() => {
-    const loadMaterials = async () => {
-      if (selectedCourse && selectedFolder) {
-        try {
-          setIsLoadingFiles(true);
-          console.log('Fetching materials for folder:', selectedFolder._id);
-          const response = await getMaterials(selectedCourse._id, selectedFolder._id);
-          
-          // Transform the materials to match your existing structure
-          const transformedMaterials = response.materials.map(material => ({
-            _id: material._id,
-            id: material._id,
-            name: material.title,
-            title: material.title,
-            type: 'file',
-            size: material.fileSize || 0,
-            uploadedAt: material.createdAt,
-            courseId: selectedCourse._id,
-            folderId: selectedFolder._id,
-            path: currentPath,
-            filePath: material.filePath
-          }));
-
-          setMaterials(transformedMaterials);
-        } catch (error) {
-          console.error('Failed to fetch materials:', error);
-          showErrorAlert(
-            'Error Loading Materials',
-            'Failed to load course materials. Please try again later.'
-          );
-        } finally {
-          setIsLoadingFiles(false);
-        }
-      } else {
-        setMaterials([]);
-      }
-    };
-
-    loadMaterials();
-  }, [selectedCourse, selectedFolder]);
-
-  // Update useEffect to use getCourseTasksById
-  useEffect(() => {
-    const loadTasks = async () => {
-      if (selectedCourse && selectedCourse._id) {
-        try {
-          setLoadingTasks(true);
-          const tasks = await getCourseTasksById(selectedCourse._id);
-          setCourseTasks(tasks);
-        } catch (error) {
-          console.error('Failed to fetch tasks:', error);
-          showErrorAlert(
-            'Error Loading Tasks',
-            'Failed to load course tasks. Please try again later.'
-          );
-          setCourseTasks([]);
-        } finally {
-          setLoadingTasks(false);
-        }
-      } else {
-        setCourseTasks([]);
-      }
-    };
-
-    loadTasks();
-  }, [selectedCourse]);
+    initializeFromUrl();
+  }, [courseId, folderId]); // Include courseId and folderId in dependencies
 
   const handleCourseClick = (course) => {
-    setSelectedCourse(course);
-    setSelectedFolder(null);
-    setCurrentPath([]);
-    setMaterials([]);
+    navigate(`/my-courses/${course._id}`);
   };
 
   const handleBackToCourses = () => {
     setSelectedCourse(null);
+    setSelectedFolder(null);
     setCurrentPath([]);
+    setMaterials([]);
+    navigate('/my-courses');
   };
 
   const handleDownload = async (material) => {
@@ -212,6 +200,7 @@ const MyCourses = () => {
   const navigateToFolder = (folder) => {
     setSelectedFolder(folder);
     setCurrentPath(prev => [...prev, folder.title]);
+    navigate(`/my-courses/${selectedCourse._id}/folders/${folder._id}`);
   };
 
   const navigateBack = () => {
@@ -219,6 +208,7 @@ const MyCourses = () => {
       setCurrentPath(prev => prev.slice(0, -1));
       if (currentPath.length === 1) {
         setSelectedFolder(null);
+        navigate(`/my-courses/${selectedCourse._id}`);
       }
     }
   };
@@ -337,7 +327,7 @@ const MyCourses = () => {
 
   const handleOpenTask = (task) => {
     console.log('Opening task:', task);
-    navigate(`/tasks/${task._id}`, { state: { task } });
+    navigate(`/my-courses/${selectedCourse._id}/tasks/${task._id}`, { state: { task } });
   };
 
   return (

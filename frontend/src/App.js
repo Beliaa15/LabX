@@ -89,6 +89,7 @@ const App = () => {
               }
             />
 
+            {/* Student Course Routes */}
             <Route
               path="/my-courses"
               element={
@@ -99,15 +100,40 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-
-            {/* <Route
-              path="/task/xor"
+            <Route
+              path="/my-courses/:courseId"
               element={
                 <ProtectedRoute>
-                  <XorTask />
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
+                    <MyCourses />
+                  </RoleBasedRoute>
                 </ProtectedRoute>
               }
-            /> */}
+            />
+            <Route
+              path="/my-courses/:courseId/folders/:folderId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
+                    <MyCourses />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Student Course Task Route */}
+            <Route
+              path="/my-courses/:courseId/tasks/:taskId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
+                    <TaskViewer />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Course routes */}
             <Route
               path="/courses"
               element={
@@ -119,16 +145,51 @@ const App = () => {
               }
             />
             <Route
-              path="/admin"
+              path="/courses/:courseId"
               element={
                 <ProtectedRoute>
-                  <CourseDashboard />
+                  <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
+                    <CourseDashboard />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:courseId/folders/:folderId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
+                    <CourseDashboard />
+                  </RoleBasedRoute>
                 </ProtectedRoute>
               }
             />
 
+            {/* Course Task Route */}
             <Route
-              path="/admin/tasks"
+              path="/courses/:courseId/tasks/:taskId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
+                    <TaskViewer />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Task Management Routes */}
+            <Route
+              path="/taskmanagement"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
+                    <TaskManagement />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/taskmanagement/tasks/:taskId"
               element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
@@ -138,6 +199,7 @@ const App = () => {
               }
             />
 
+            {/* Unified Task Viewer Route */}
             <Route
               path="/tasks/:taskId"
               element={

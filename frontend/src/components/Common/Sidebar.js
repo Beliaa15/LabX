@@ -47,13 +47,13 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     },
     {
       name: "Admin Panel",
-      href: "/admin",
+      href: "/courses",
       icon: Settings,
       show: isAdmin(),
     },
     {
       name: "Task Management",
-      href: "/admin/tasks",
+      href: "/taskmanagement",
       icon: ListTodo,
       show: isAdmin(),
     },
@@ -71,7 +71,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     },
   ].filter((link) => link.show);
 
-  const isActive = (href) => location.pathname === href;
+  const isActive = (href) => location.pathname.startsWith(href);
 
   const SidebarContent = ({ isMobile = false }) => (
     <div className="flex flex-col h-full">

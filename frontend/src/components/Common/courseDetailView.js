@@ -16,13 +16,13 @@ import {
   XCircle,
   Clock
 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import SearchBar from '../ui/SearchBar';
 import ViewModeToggle from '../ui/ViewModeToggle';
 import FileViewer from './FileViewer';
 import SelectTaskModal from './Modals/SelectTaskModal';
 import { getCourseTasksById, unassignTaskFromCourse } from '../../services/taskService';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { useNavigate } from 'react-router-dom';
 import { showSuccessAlert, showErrorAlert, showConfirmDialog } from '../../utils/sweetAlert';
 
 const CourseDetailView = ({
@@ -54,6 +54,7 @@ const CourseDetailView = ({
   const [courseTasks, setCourseTasks] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const formatDateTime = (dateString) => {
     if (!dateString) return 'Not set';
