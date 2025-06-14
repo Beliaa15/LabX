@@ -10,7 +10,6 @@ import { Unity, useUnityContext } from "react-unity-webgl";
 import { UnityContainer, TaskWrapper } from "../Tasks/TaskViewer.styles";
 import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
-import { useNavigate } from 'react-router-dom';
 import { debounce } from 'lodash';
 
 const TaskManagement = () => {
