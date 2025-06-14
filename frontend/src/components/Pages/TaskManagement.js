@@ -6,7 +6,7 @@ import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import TaskCreationModal from '../Common/Modals/TaskCreationModal';
 import TaskUploadModal from '../Common/Modals/TaskUploadModal';
-import { Unity, useUnityContext } from "react-unity-webgl";
+import TaskViewer from '../Tasks/TaskViewer';
 import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { debounce } from 'lodash';
@@ -177,6 +177,11 @@ const fetchTasks = useCallback(async (forceFetch = false) => {
 
       const result = await response.json();
       console.log('Upload successful:', result);
+      console.log('Task WebGL data paths:', {
+        taskId: selectedTaskId,
+        webglData: result.webglData,
+        expectedPath: `/webgl-tasks/${selectedTaskId}/`
+      });
 
       // Update the specific task in local state with file upload information
       updateTaskInState(selectedTaskId, {
@@ -253,14 +258,12 @@ const fetchTasks = useCallback(async (forceFetch = false) => {
     }
   }, [tasks]);
 
-  const handleOpenTask = useCallback((task) => {
+  const handleOpenTask = (task) => {
     console.log('Opening task:', task);
-    if (task.webglData && task.webglData.buildFolderPath) {
-      navigate(`/taskmanagement/task/${task._id}`, { state: { task } });
-    } else {
-      showErrorAlert('Error', 'Task files not uploaded');
-    }
-  }, [navigate]);
+    navigate(`/taskmanagement/task/${task._id}`, {
+      state: { task },
+    });
+  };
 
   const handleBackToTasks = () => {
     navigate('/taskmanagement');
@@ -359,54 +362,6 @@ const fetchTasks = useCallback(async (forceFetch = false) => {
     </div>
   ));
 
-  const TaskViewerComponent = ({ task }) => {
-    const { unityProvider, addEventListener, removeEventListener } = useUnityContext({
-      loaderUrl: `/webgl-tasks/${task._id}/Build.loader.js`,
-      dataUrl: `/webgl-tasks/${task._id}/Build.data`,
-      frameworkUrl: `/webgl-tasks/${task._id}/Build.framework.js`,
-      codeUrl: `/webgl-tasks/${task._id}/Build.wasm`,
-    });
-
-    const [taskResult, setTaskResult] = useState(null);
-
-    // Function to handle task completion data from Unity
-    const unityTaskCompleted = (data) => {
-      console.log('Task completed with data:', data);
-      setTaskResult(data);
-    };
-
-    useEffect(() => {
-      addEventListener("TaskCompleted", unityTaskCompleted);
-      window.unityTaskCompleted = unityTaskCompleted;
-      
-      return () => {
-        removeEventListener("TaskCompleted", unityTaskCompleted);
-        delete window.unityTaskCompleted;
-      };
-    }, [addEventListener, removeEventListener]);
-
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="relative w-full h-[600px] rounded-lg overflow-hidden bg-gray-900">
-          <Unity 
-            unityProvider={unityProvider}
-            className="w-full h-full"
-            style={{ background: '#1a1a1a' }}
-          />
-        </div>
-        {taskResult && (
-          <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Task Completed!</h3>
-            <div className="space-y-2">
-              <p className="text-gray-700 dark:text-gray-300">Score: {taskResult}</p>
-              <p className="text-gray-700 dark:text-gray-300">Time: {taskResult}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
@@ -416,7 +371,7 @@ const fetchTasks = useCallback(async (forceFetch = false) => {
 
         <main className="flex-1 relative overflow-y-auto">
           {taskId ? (
-            <TaskViewerComponent task={tasks.find(t => t._id === taskId)} />
+            <TaskViewer />
           ) : (
             <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
               <div className="animate-fadeIn space-y-6">
@@ -583,7 +538,7 @@ const fetchTasks = useCallback(async (forceFetch = false) => {
                                       className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-500 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                                       title="Upload Files"
                                       disabled={isUploading && selectedTaskId === task._id}
-                                  >
+                                    >
                                       <ArrowUpToLine className={`w-5 h-5 ${isUploading && selectedTaskId === task._id ? 'animate-pulse' : ''}`} />
                                     </button>
                                     <button

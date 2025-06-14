@@ -62,7 +62,20 @@ export default function TaskViewer() {
           return;
         }
 
-        // Only fetch from API if we're in course context and don't have task data
+        // If we're in task management and have taskId but no state, try to fetch it
+        if (isTaskManagement && taskId) {
+          console.log('Fetching task data for task management:', { taskId });
+          const response = await authApi.get(`/api/tasks/${taskId}`);
+          if (response.data.success) {
+            console.log('Fetched task data:', response.data.task);
+            setTask(response.data.task);
+          } else {
+            throw new Error('Task not found');
+          }
+          return;
+        }
+
+        // For course context
         if (!isTaskManagement && taskId && courseId) {
           console.log('Fetching task data for course context:', { courseId, taskId });
           const response = await authApi.get(`/api/tasks/${taskId}`);
@@ -72,9 +85,10 @@ export default function TaskViewer() {
           } else {
             throw new Error('Task not found');
           }
-        } else if (!taskFromState) {
-          throw new Error('No task data available');
+          return;
         }
+
+        throw new Error('No task data available');
       } catch (err) {
         console.error('Error loading task:', err);
         setError('Failed to load task data');
@@ -85,7 +99,7 @@ export default function TaskViewer() {
     };
 
     loadTaskData();
-  }, [taskId, courseId, taskFromState, isTaskManagement]);
+  }, [taskId, courseId, isTaskManagement]);
 
   // Unity event handlers
   useEffect(() => {
