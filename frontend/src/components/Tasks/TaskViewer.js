@@ -7,38 +7,64 @@ import { Button } from '../ui/button';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { useAuth } from '../../context/AuthContext';
 import authApi from '../../services/authService';
+import { submitTaskInCourse } from '../../services/taskService';
 
 export default function TaskViewer() {
   const [taskResult, setTaskResult] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [task, setTask] = useState(null);
-  const [submissionText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
-  const params = useParams();
+  const { courseId, taskId } = useParams();
   const { isStudent } = useAuth();
 
+  // Get task from location state if available
   const taskFromState = location.state?.task;
-  const taskId = params.id || taskFromState?._id;
+  const isTaskManagement = location.pathname.startsWith('/taskmanagement');
+
+  // Unity context setup
+  const { unityProvider, isLoaded, addEventListener, removeEventListener } = useUnityContext({
+    loaderUrl: `/webgl-tasks/${taskId}/Build.loader.js`,
+    dataUrl: `/webgl-tasks/${taskId}/Build.data`,
+    frameworkUrl: `/webgl-tasks/${taskId}/Build.framework.js`,
+    codeUrl: `/webgl-tasks/${taskId}/Build.wasm`,
+  });
+
+  // Check if user is on the correct route based on their role
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const isStudentPath = currentPath.startsWith('/my-courses');
+    const isTeacherPath = currentPath.startsWith('/courses');
+
+    if (isStudent() && !isStudentPath) {
+      navigate(currentPath.replace('/courses', '/my-courses'));
+    } else if (!isStudent() && !isTeacherPath) {
+      navigate(currentPath.replace('/my-courses', '/courses'));
+    }
+  }, [location.pathname, isStudent, navigate]);
 
   // Load task data
   useEffect(() => {
     const loadTaskData = async () => {
       try {
         setIsLoading(true);
+        console.log('Loading task data:', { courseId, taskId, taskFromState, isTaskManagement });
 
-        if (taskFromState && taskFromState._id) {
-          console.log('Using task from navigation state:', taskFromState);
+        // If we have the task in state, use it
+        if (taskFromState) {
+          console.log('Using task from state:', taskFromState);
           setTask(taskFromState);
+          setIsLoading(false);
           return;
         }
 
-        if (taskId) {
-          console.log('Fetching task data for ID:', taskId);
+        // Only fetch from API if we're in course context and don't have task data
+        if (!isTaskManagement && taskId && courseId) {
+          console.log('Fetching task data for course context:', { courseId, taskId });
           const response = await authApi.get(`/api/tasks/${taskId}`);
           if (response.data.success) {
             console.log('Fetched task data:', response.data.task);
@@ -46,8 +72,8 @@ export default function TaskViewer() {
           } else {
             throw new Error('Task not found');
           }
-        } else {
-          throw new Error('No task ID provided');
+        } else if (!taskFromState) {
+          throw new Error('No task data available');
         }
       } catch (err) {
         console.error('Error loading task:', err);
@@ -59,15 +85,7 @@ export default function TaskViewer() {
     };
 
     loadTaskData();
-  }, [taskId, taskFromState]);
-
-  const { unityProvider, isLoaded, addEventListener, removeEventListener } =
-    useUnityContext({
-      loaderUrl: `/webgl-tasks/${taskId}/Build.loader.js`,
-      dataUrl: `/webgl-tasks/${taskId}/Build.data`,
-      frameworkUrl: `/webgl-tasks/${taskId}/Build.framework.js`,
-      codeUrl: `/webgl-tasks/${taskId}/Build.wasm`,
-    });
+  }, [taskId, courseId, taskFromState, isTaskManagement]);
 
   // Unity event handlers
   useEffect(() => {
@@ -75,7 +93,10 @@ export default function TaskViewer() {
 
     const handleTaskCompleted = (data) => {
       console.log('Task completed with data:', data);
-      setTaskResult(data);
+      setTaskResult({
+        grade: 100,
+        result: data
+      });
       showSuccessAlert('Congratulations! 🎉', 'You have successfully completed the task!');
     };
 
@@ -88,41 +109,6 @@ export default function TaskViewer() {
     };
   }, [addEventListener, removeEventListener, unityProvider]);
 
-  // Submit task function
-  const handleSubmitTask = async () => {
-    if (!task?._id) return;
-
-    try {
-      setIsSubmitting(true);
-
-      const submissionData = {
-        taskId: task._id,
-        submissionText: submissionText.trim(),
-        gameResult: taskResult,
-        submittedAt: new Date().toISOString(),
-      };
-
-      console.log('Submitting task:', submissionData);
-
-      const response = await authApi.post(
-        `/api/tasks/${task._id}/submit`,
-        submissionData
-      );
-
-      if (response.data.success) {
-        setSubmissionStatus('submitted');
-        showSuccessAlert('Task Submitted! 🎯', 'Your task has been submitted successfully!');
-      } else {
-        throw new Error(response.data.message || 'Submission failed');
-      }
-    } catch (error) {
-      console.error('Error submitting task:', error);
-      showErrorAlert('Submission Failed', 'Failed to submit task. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // Format date helper
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -134,18 +120,54 @@ export default function TaskViewer() {
     });
   };
 
-  const handleBack = () => {
-    if (location.key !== "default") {
-      navigate(-1);
-    } else {
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (user?.role === 'admin') {
-        navigate('/taskmanagement');
-      } else if (user?.role === 'teacher') {
-        navigate('/courses');
-      } else {
-        navigate('/my-courses');
+  // Submit task function
+  const handleSubmitTask = async () => {
+    try {
+      setIsSubmitting(true);
+
+      if (!courseId || !taskId) {
+        showErrorAlert('Error', 'Missing course or task information');
+        return;
       }
+
+      console.log('Submitting task:', {
+        courseId,
+        taskId,
+        grade: 100
+      });
+
+      // Submit with grade 100
+      await submitTaskInCourse(courseId, taskId, 100);
+      
+      setSubmissionStatus('submitted');
+      showSuccessAlert('Success! 🎯', 'Your task has been submitted successfully!');
+      
+      // Navigate back to the course page immediately
+      const basePath = isStudent() ? '/my-courses' : '/courses';
+      navigate(`${basePath}/${courseId}`);
+      
+    } catch (error) {
+      console.error('Error submitting task:', error);
+      // Check if it's the "already submitted" error
+      if (error.response?.data?.error === "You have already submitted this task") {
+        showErrorAlert('Already Submitted', 'You have already submitted this task.');
+        // Navigate back to course page immediately
+        const basePath = isStudent() ? '/my-courses' : '/courses';
+        navigate(`${basePath}/${courseId}`);
+      } else {
+        showErrorAlert('Submission Failed', 'Failed to submit task. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleBack = () => {
+    if (isTaskManagement) {
+      navigate('/taskmanagement');
+    } else {
+      const basePath = isStudent() ? '/my-courses' : '/courses';
+      navigate(`${basePath}/${courseId}`);
     }
   };
 
@@ -178,12 +200,12 @@ export default function TaskViewer() {
             <Button onClick={() => window.location.reload()}>
               Try Again
             </Button>
-            <Button variant="outline" onClick={() => navigate('/admin/tasks')}>
-              Back to Tasks
+            <Button variant="outline" onClick={handleBack}>
+              Back
             </Button>
           </CardFooter>
         </Card>
-        </div>
+      </div>
     );
   }
 
@@ -193,12 +215,12 @@ export default function TaskViewer() {
         <Card className="max-w-2xl mx-auto">
           <CardContent className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400 mb-6">No task data available</p>
-            <Button onClick={() => navigate('/admin/tasks')}>
-            Back to Tasks
+            <Button onClick={handleBack}>
+              Back
             </Button>
           </CardContent>
         </Card>
-        </div>
+      </div>
     );
   }
 
@@ -275,7 +297,7 @@ export default function TaskViewer() {
         </Card>
 
         {/* Submission Section */}
-        {isStudent() && (
+        {isStudent() && !isTaskManagement && (
           <Card>
             <CardHeader>
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -289,7 +311,7 @@ export default function TaskViewer() {
                     onClick={handleSubmitTask}
                     disabled={
                       isSubmitting ||
-                      !submissionText.trim() ||
+                      !taskResult ||
                       submissionStatus === 'submitted'
                     }
                     className="w-full sm:w-auto"
@@ -320,22 +342,18 @@ export default function TaskViewer() {
             </CardHeader>
             <CardContent>
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
-                {typeof taskResult === 'object' ? (
-                  Object.entries(taskResult).map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="flex justify-between items-center border-b border-white/20 pb-3 sm:pb-4 last:border-0 last:pb-0"
-                    >
-                      <span className="text-white/80 font-medium text-sm sm:text-base">{key}:</span>
-                      <span className="text-white font-semibold text-sm sm:text-base">{String(value)}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/80 font-medium text-sm sm:text-base">Result:</span>
-                    <span className="text-white font-semibold text-sm sm:text-base">{String(taskResult)}</span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center border-b border-white/20 pb-3 sm:pb-4">
+                  <span className="text-white/80 font-medium text-sm sm:text-base">Grade:</span>
+                  <span className="text-white font-semibold text-sm sm:text-base">100</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/80 font-medium text-sm sm:text-base">Result:</span>
+                  <span className="text-white font-semibold text-sm sm:text-base">
+                    {typeof taskResult.result === 'object' 
+                      ? JSON.stringify(taskResult.result) 
+                      : String(taskResult.result)}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -256,4 +256,30 @@ export const unassignTaskFromCourse = async (taskId, courseId) => {
         });
         throw error;
     }
+};
+
+/**
+ * Submit a task completion in a course
+ * @param {string} courseId - The ID of the course
+ * @param {string} taskId - The ID of the task
+ * @param {number} grade - The grade for the task submission
+ * @returns {Promise} - The submission response data
+ */
+export const submitTaskInCourse = async (courseId, taskId, grade) => {
+    try {
+        console.log('Submitting task in course:', { courseId, taskId, grade });
+        const response = await authApi.post(
+            `/api/courses/${courseId}/tasks/${taskId}/submit`,
+            { grade }
+        );
+        console.log('Task submitted successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to submit task:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
 }; 

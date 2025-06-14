@@ -123,12 +123,10 @@ const App = () => {
 
             {/* Student Course Task Route */}
             <Route
-              path="/my-courses/:courseId/tasks/:taskId"
+              path="/my-courses/:courseId/task/:taskId"
               element={
                 <ProtectedRoute>
-                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/courses">
-                    <TaskViewer />
-                  </RoleBasedRoute>
+                  <TaskViewer />
                 </ProtectedRoute>
               }
             />
@@ -167,7 +165,7 @@ const App = () => {
 
             {/* Course Task Route */}
             <Route
-              path="/courses/:courseId/tasks/:taskId"
+              path="/courses/:courseId/task/:taskId"
               element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
@@ -189,25 +187,25 @@ const App = () => {
               }
             />
             <Route
-              path="/taskmanagement/tasks/:taskId"
+              path="/taskmanagement/task/:taskId"
               element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
-                    <TaskManagement />
+                    <TaskViewer />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               }
             />
 
             {/* Unified Task Viewer Route */}
-            <Route
+            {/* <Route
               path="/tasks/:taskId"
               element={
                 <ProtectedRoute>
                   <TaskViewer />
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
             {/* Fallback for unknown routes */}
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -255,7 +255,11 @@ const fetchTasks = useCallback(async (forceFetch = false) => {
 
   const handleOpenTask = useCallback((task) => {
     console.log('Opening task:', task);
-    navigate(`/tasks/${task._id}`, { state: { task } });
+    if (task.webglData && task.webglData.buildFolderPath) {
+      navigate(`/taskmanagement/task/${task._id}`, { state: { task } });
+    } else {
+      showErrorAlert('Error', 'Task files not uploaded');
+    }
   }, [navigate]);
 
   const handleBackToTasks = () => {
