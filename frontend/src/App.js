@@ -199,6 +199,7 @@ const App = () => {
               }
             />
 
+            {/* Unified Task Viewer Route */}
             <Route
               path="/tasks/:taskId"
               element={

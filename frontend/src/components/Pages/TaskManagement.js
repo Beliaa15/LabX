@@ -188,7 +188,7 @@ const TaskManagement = () => {
 
   const handleOpenTask = (task) => {
     console.log('Opening task:', task);
-    navigate(`/taskmanagement/tasks/${task._id}`);
+    navigate(`/tasks/${task._id}`, { state: { task } });
   };
 
   const handleBackToTasks = () => {

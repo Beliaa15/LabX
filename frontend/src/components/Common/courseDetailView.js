@@ -434,7 +434,7 @@ const CourseDetailView = ({
 
   const handleOpenTask = (task) => {
     console.log('Opening task:', task);
-    navigate(`${location.pathname}/tasks/${task._id}`);
+    navigate(`/tasks/${task._id}`, { state: { task } });
   };
 
   const handleUnassignTask = async (task) => {
