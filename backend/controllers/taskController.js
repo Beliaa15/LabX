@@ -166,6 +166,119 @@ exports.uploadWebGLFiles = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Upload single WebGL file for a task
+// @route   POST /api/tasks/:id/upload-webgl/:fileType
+// @access  Private/Admin
+exports.uploadSingleWebGLFile = asyncHandler(async (req, res) => {
+    const taskId = req.params.id;
+    const fileType = req.params.fileType; // 'loader', 'data', 'framework', or 'wasm'
+    const validFileTypes = ['loader', 'data', 'framework', 'wasm'];
+    if (!validFileTypes.includes(fileType)) {
+        res.status(400);
+        throw new Error(
+            'Invalid file type. Must be one of: ' + validFileTypes.join(', ')
+        );
+    }
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+        res.status(404);
+        throw new Error('Task not found');
+    }
+
+    // Determine base directory based on environment
+    const isDocker =
+        process.env.NODE_ENV === 'production' || fs.existsSync('/.dockerenv');
+    const baseDir = isDocker
+        ? `/usr/src/app/frontend/public/webgl-tasks`
+        : path.join(__dirname, '../../frontend/public/webgl-tasks');
+
+    const buildFolderPath = path.join(baseDir, taskId);
+
+    // Ensure the build folder exists
+    if (!fs.existsSync(buildFolderPath)) {
+        fs.mkdirSync(buildFolderPath, { recursive: true });
+    }
+
+    // The bug is here: we need to delete the old file OUTSIDE of the upload middleware
+    // so that multer has access to the correct file structure after deletion
+    if (task.webglData[fileType]) {
+        try {
+            const oldFilePath = path.join(
+                baseDir,
+                task.webglData[fileType].replace('/webgl-tasks/', '')
+            );
+
+            if (fs.existsSync(oldFilePath)) {
+                fs.unlinkSync(oldFilePath);
+                console.log(`Deleted old ${fileType} file: ${oldFilePath}`);
+            }
+        } catch (error) {
+            console.error(`Error deleting old ${fileType} file:`, error);
+            // Continue with upload even if delete fails
+        }
+    }
+
+    // Set up multer upload AFTER deleting the old file
+    const upload = createWebGLStorage(taskId);
+
+    upload.single('webglFile')(req, res, async (err) => {
+        if (err) {
+            console.error('Multer error:', err);
+            res.status(400);
+            throw new Error('Error uploading WebGL file: ' + err.message);
+        }
+
+        try {
+            if (!req.file) {
+                console.error('No file in request');
+                res.status(400);
+                throw new Error(
+                    'No file uploaded. Please select a WebGL file.'
+                );
+            }
+
+            const relativePath = `/webgl-tasks/${taskId}/${req.file.filename}`;
+
+            // Update webglData based on file type
+            task.webglData[fileType] = relativePath;
+
+            // If this is the first file, initialize the buildFolderPath
+            if (!task.webglData.buildFolderPath) {
+                task.webglData.buildFolderPath = buildFolderPath;
+            }
+
+            await task.save();
+
+            res.status(200).json({
+                success: true,
+                message: `${
+                    fileType.charAt(0).toUpperCase() + fileType.slice(1)
+                } file uploaded successfully`,
+                task: {
+                    id: task._id,
+                    title: task.title,
+                    webglData: task.webglData,
+                },
+                fileUploaded: {
+                    originalName: req.file.originalname,
+                    savedAs: req.file.filename,
+                    size: req.file.size,
+                },
+            });
+        } catch (error) {
+            console.error(`Error processing ${fileType} file:`, error);
+            // Clean up uploaded file in case of error
+            if (req.file && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+            throw new Error(
+                `Error processing ${fileType} file: ${error.message}`
+            );
+        }
+    });
+});
+
 // @desc    Get all tasks
 // @route   GET /api/tasks
 // @access  Private/Teacher
@@ -321,6 +434,43 @@ exports.deleteTask = asyncHandler(async (req, res) => {
         throw new Error('Task not found');
     }
 
+    // Delete WebGL files if they exist
+    if (task.webglData && task.webglData.buildFolderPath) {
+        try {
+            // Determine base directory based on environment
+            const isDocker =
+                process.env.NODE_ENV === 'production' ||
+                fs.existsSync('/.dockerenv');
+
+            const baseDir = isDocker
+                ? `/usr/src/app/frontend/public/webgl-tasks`
+                : path.join(__dirname, '../../frontend/public/webgl-tasks');
+
+            const buildFolderPath = path.join(baseDir, taskId);
+
+            if (fs.existsSync(buildFolderPath)) {
+                console.log(
+                    `Deleting WebGL files for task ${taskId} from path: ${buildFolderPath}`
+                );
+                fs.rmSync(buildFolderPath, { recursive: true, force: true });
+                console.log(
+                    `Successfully deleted WebGL files for task ${taskId}`
+                );
+            } else {
+                console.log(
+                    `WebGL folder not found for task ${taskId} at path: ${buildFolderPath}`
+                );
+            }
+        } catch (error) {
+            console.error(
+                `Error deleting WebGL files for task ${taskId}:`,
+                error
+            );
+            // Continue with task deletion even if file deletion fails
+        }
+    }
+
+    // Remove task from all courses
     if (task.courseTasks.length > 0) {
         const courseIds = task.courseTasks.map(
             (assignment) => assignment.course
@@ -329,12 +479,15 @@ exports.deleteTask = asyncHandler(async (req, res) => {
             { _id: { $in: courseIds } },
             { $pull: { tasks: taskId } }
         );
+        console.log(`Removed task ${taskId} from ${courseIds.length} courses`);
     }
 
+    // Delete the task itself
     await task.deleteOne();
 
     res.status(200).json({
-        message: 'Task deleted successfully',
+        success: true,
+        message: 'Task and associated files deleted successfully',
         taskId,
     });
 });
@@ -509,17 +662,6 @@ exports.getWebGLInfo = asyncHandler(async (req, res) => {
 exports.getWebGLFiles = asyncHandler(async (req, res) => {
     const { id: taskId, fileType } = req.params;
     const task = await Task.findById(taskId);
-    if (!task) {
-        res.status(404);
-        throw new Error('Task not found');
-    }
-
-    const validFileTypes = ['loader', 'data', 'framework', 'wasm'];
-    if (!validFileTypes.includes(fileType)) {
-        res.status(400);
-        throw new Error('Invalid file type');
-    }
-    const filePath = task.webglData[fileType];
     if (!filePath) {
         res.status(404);
         throw new Error(`No ${fileType} file found for this task`);

@@ -6,6 +6,7 @@ const fs = require('fs');
 const {
     createTask,
     uploadWebGLFiles,
+    uploadSingleWebGLFile,
     getAllTasks,
     getTaskById,
     updateTask,
@@ -42,6 +43,8 @@ router
 
 
 router.post('/:id/upload', authenticate, isAdmin, uploadWebGLFiles);
+
+router.post('/:id/upload/:fileType', authenticate, isAdmin, uploadSingleWebGLFile);
 
 // Route to assign a task to a course
 router.post('/:id/assign', authenticate, isTeacher, assignTaskToCourse);
