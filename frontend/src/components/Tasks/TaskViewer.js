@@ -8,6 +8,7 @@ import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { useAuth } from '../../context/AuthContext';
 import authApi from '../../services/authService';
 import { submitTaskInCourse, getTaskById } from '../../services/taskService';
+import TaskCompletedModal from '../Common/Modals/TaskCompletedModal';
 
 export default function TaskViewer() {
   const [taskResult, setTaskResult] = useState(null);
@@ -16,6 +17,7 @@ export default function TaskViewer() {
   const [task, setTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState(null);
+  const [isCompletedModalOpen, setIsCompletedModalOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -90,11 +92,12 @@ export default function TaskViewer() {
 
     const handleTaskCompleted = (data) => {
       console.log('Task completed with data:', data);
-      setTaskResult({
+      const result = {
         grade: 100,
         result: data
-      });
-      showSuccessAlert('Congratulations! 🎉', 'You have successfully completed the task!');
+      };
+      setTaskResult(result);
+      setIsCompletedModalOpen(true);
     };
 
     addEventListener('TaskCompleted', handleTaskCompleted);
@@ -331,32 +334,13 @@ export default function TaskViewer() {
           </Card>
         )}
 
-        {/* Task Result */}
-        {taskResult && (
-          <Card className="bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700">
-            <CardHeader>
-              <h2 className="text-xl sm:text-2xl font-semibold text-white flex items-center gap-2">
-                🎉 Game Completed!
-              </h2>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <div className="flex justify-between items-center border-b border-white/20 pb-3 sm:pb-4">
-                  <span className="text-white/80 font-medium text-sm sm:text-base">Grade:</span>
-                  <span className="text-white font-semibold text-sm sm:text-base">100</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-white/80 font-medium text-sm sm:text-base">Result:</span>
-                  <span className="text-white font-semibold text-sm sm:text-base">
-                    {typeof taskResult.result === 'object' 
-                      ? JSON.stringify(taskResult.result) 
-                      : String(taskResult.result)}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Task Completed Modal */}
+        <TaskCompletedModal
+          isOpen={isCompletedModalOpen}
+          onClose={() => setIsCompletedModalOpen(false)}
+          grade={taskResult?.grade || 100}
+          result={taskResult?.result}
+        />
       </div>
     </div>
   );
