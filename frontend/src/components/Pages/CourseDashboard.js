@@ -90,6 +90,7 @@ const CourseDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [isEnrollingStudent, setIsEnrollingStudent] = useState(false);
   
   // Form states
   const [courseName, setCourseName] = useState('');
@@ -379,6 +380,7 @@ const CourseDashboard = () => {
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (tempCourse && studentEmail.trim()) {
+      setIsEnrollingStudent(true);
       try {
         await enrollStudent(tempCourse._id, studentEmail);
         setStudentEmail('');
@@ -406,6 +408,8 @@ const CourseDashboard = () => {
         }
 
         showErrorAlert('Error Adding Student', errorMessage);
+      } finally {
+        setIsEnrollingStudent(false);
       }
     }
   };
@@ -907,6 +911,7 @@ const CourseDashboard = () => {
             studentEmail={studentEmail}
             setStudentEmail={setStudentEmail}
             courseName={tempCourse?.name}
+            isLoading={isEnrollingStudent}
           />
         )}
 
