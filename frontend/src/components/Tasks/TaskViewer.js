@@ -278,7 +278,7 @@ export default function TaskViewer() {
             </h2>
           </CardHeader>
           <CardContent>
-            <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] rounded-lg overflow-hidden bg-gray-900">
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>  {/* 56.25% represents 9/16 ratio */}
               {!isLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 backdrop-blur-sm z-10">
                   <div className="text-center px-4">
@@ -291,7 +291,7 @@ export default function TaskViewer() {
 
               <Unity
                 unityProvider={unityProvider}
-                className="w-full h-full"
+                className="absolute top-0 left-0 w-full h-full"
                 style={{ background: '#1a1a1a' }}
               />
             </div>
