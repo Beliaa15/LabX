@@ -26,7 +26,41 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Remove the current CSP middleware and replace with this
+app.use((req, res, next) => {
+    // Special handling for WebGL paths
+    if (req.path.includes('/webgl') || req.path.includes('/webgl-tasks')) {
+        // Unity WebGL requires these specific headers
+        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+        
+        // Permissive CSP for Unity WebGL
+        res.setHeader(
+            'Content-Security-Policy',
+            "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+            "script-src * 'unsafe-inline' 'unsafe-eval' blob:; " +
+            "connect-src * 'unsafe-inline'; " +
+            "img-src * data: blob: 'unsafe-inline'; " +
+            "frame-src *; " +
+            "style-src * 'unsafe-inline';"
+        );
+    } else {
+        // Regular CSP for other routes
+        res.setHeader(
+            'Content-Security-Policy',
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "img-src 'self' data:; " +
+            "connect-src 'self';"
+        );
+    }
+    next();
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use('/webgl', express.static(path.join(__dirname, 'uploads/webgl')));
 
 const webglStaticPath = process.env.NODE_ENV === 'production' 
     ? path.join(__dirname, 'frontend/public/webgl-tasks')

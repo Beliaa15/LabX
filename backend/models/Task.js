@@ -36,6 +36,7 @@ const taskSchema = new Schema(
         ],
         webglData: {
             buildFolderPath: String,
+            indexHtml: String,
             loader: String,
             data: String,
             framework: String,

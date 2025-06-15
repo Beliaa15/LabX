@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const zipUpload = require('../config/zipMulter');
 
 const {
     createTask,
     uploadWebGLFiles,
     uploadSingleWebGLFile,
+    uploadZipFile,
     getAllTasks,
     getTaskById,
     updateTask,
@@ -43,6 +45,8 @@ router
 
 
 router.post('/:id/upload', authenticate, isAdmin, uploadWebGLFiles);
+
+router.post('/:id/upload-zip', authenticate, isAdmin, zipUpload.single('file'), uploadZipFile);
 
 router.post('/:id/upload/:fileType', authenticate, isAdmin, uploadSingleWebGLFile);
 
