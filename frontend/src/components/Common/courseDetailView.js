@@ -201,9 +201,7 @@ const CourseDetailView = ({
                 {item.name}
               </h3>
               {item.type === 'file' && (
-                <div className="flex items-center justify-center space-x-2 text-sm text-muted">
-                  <span>{formatFileSize(item.size)}</span>
-                  <span>•</span>
+                <div className="flex items-center justify-center text-sm text-muted">
                   <span>{new Date(item.uploadedAt || Date.now()).toLocaleDateString()}</span>
                 </div>
               )}
@@ -330,8 +328,6 @@ const CourseDetailView = ({
                 <span className="capitalize">{item.type}</span>
                 {item.type === 'file' && (
                   <>
-                    <span>•</span>
-                    <span>{formatFileSize(item.size)}</span>
                     <span>•</span>
                     <span>{new Date(item.uploadedAt || Date.now()).toLocaleDateString()}</span>
                   </>
