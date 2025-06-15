@@ -513,10 +513,12 @@ const CourseDetailView = ({
               placeholder="Search materials..."
               className="max-w-xs"
             />
-            <ViewModeToggle
-              viewMode={materialsViewMode}
-              onViewModeChange={setMaterialsViewMode}
-            />
+            <div className="hidden md:block">
+              <ViewModeToggle
+                viewMode={materialsViewMode}
+                onViewModeChange={setMaterialsViewMode}
+              />
+            </div>
           </div>
         </div>
       </div>

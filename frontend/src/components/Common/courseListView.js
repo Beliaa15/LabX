@@ -56,10 +56,12 @@ const CourseListView = ({
                 placeholder={`Search ${user?.role === "admin" ? "courses" : "your courses"}...`}
                 className="flex-1 min-w-0 max-w-[180px] sm:max-w-[220px] md:max-w-none md:w-56 lg:w-64 xl:w-72"
               />
-              <ViewModeToggle
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-              />
+              <div className="hidden md:block">
+                <ViewModeToggle
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -90,6 +90,7 @@ const CourseDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [isEnrollingStudent, setIsEnrollingStudent] = useState(false);
   
   // Form states
   const [courseName, setCourseName] = useState('');
@@ -379,6 +380,7 @@ const CourseDashboard = () => {
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (tempCourse && studentEmail.trim()) {
+      setIsEnrollingStudent(true);
       try {
         await enrollStudent(tempCourse._id, studentEmail);
         setStudentEmail('');
@@ -396,15 +398,18 @@ const CourseDashboard = () => {
         console.error('Failed to add student:', error);
         let errorMessage = 'Failed to add student to the course. ';
         
-        if (error.response?.status === 500) {
-          errorMessage += 'Server error occurred. The student might already be enrolled in this course.';
+        // Get the specific error message from the response data
+        if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
         } else if (error.response?.data?.message) {
-          errorMessage += error.response.data.message;
-        } else {
-          errorMessage += 'Please try again later.';
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
         }
 
         showErrorAlert('Error Adding Student', errorMessage);
+      } finally {
+        setIsEnrollingStudent(false);
       }
     }
   };
@@ -906,6 +911,7 @@ const CourseDashboard = () => {
             studentEmail={studentEmail}
             setStudentEmail={setStudentEmail}
             courseName={tempCourse?.name}
+            isLoading={isEnrollingStudent}
           />
         )}
 

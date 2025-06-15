@@ -28,8 +28,8 @@ export default function TaskViewer() {
   const taskFromState = location.state?.task;
   const isTaskManagement = location.pathname.startsWith('/taskmanagement');
 
-  // Unity context setup
-  const { unityProvider, isLoaded, addEventListener, removeEventListener } = useUnityContext({
+  // Unity context setup with unload method
+  const { unityProvider, isLoaded, addEventListener, removeEventListener, unload } = useUnityContext({
     loaderUrl: `/webgl-tasks/${taskId}/Build.loader.js`,
     dataUrl: `/webgl-tasks/${taskId}/Build.data`,
     frameworkUrl: `/webgl-tasks/${taskId}/Build.framework.js`,
@@ -86,26 +86,62 @@ export default function TaskViewer() {
     loadTaskData();
   }, [taskId, courseId, taskFromState, isTaskManagement]);
 
-  // Unity event handlers
+  // Safe cleanup function
+  const safeUnload = async () => {
+    try {
+      if (unload) {
+        console.log('Cleaning up Unity instance...');
+        await Promise.resolve(unload()); // Ensure we handle the promise properly
+        console.log('Unity cleanup completed');
+      }
+    } catch (error) {
+      console.error('Error during Unity cleanup:', error);
+      // Continue with navigation even if cleanup fails
+    }
+  };
+
+  // Cleanup Unity instance on unmount or navigation
+  useEffect(() => {
+    return () => {
+      safeUnload().catch(error => {
+        console.error('Error in cleanup effect:', error);
+      });
+    };
+  }, [unload]);
+
+  // Unity event handlers with error handling
   useEffect(() => {
     if (!unityProvider) return;
 
     const handleTaskCompleted = (data) => {
-      console.log('Task completed with data:', data);
-      const result = {
-        grade: 100,
-        result: data
-      };
-      setTaskResult(result);
-      setIsCompletedModalOpen(true);
+      try {
+        console.log('Task completed with data:', data);
+        const result = {
+          grade: 100,
+          result: data
+        };
+        setTaskResult(result);
+        setIsCompletedModalOpen(true);
+      } catch (error) {
+        console.error('Error handling task completion:', error);
+        showErrorAlert('Error', 'Failed to process task completion');
+      }
     };
 
-    addEventListener('TaskCompleted', handleTaskCompleted);
-    window.unityTaskCompleted = handleTaskCompleted;
+    try {
+      addEventListener('TaskCompleted', handleTaskCompleted);
+      window.unityTaskCompleted = handleTaskCompleted;
+    } catch (error) {
+      console.error('Error setting up Unity event listeners:', error);
+    }
 
     return () => {
-      removeEventListener('TaskCompleted', handleTaskCompleted);
-      delete window.unityTaskCompleted;
+      try {
+        removeEventListener('TaskCompleted', handleTaskCompleted);
+        delete window.unityTaskCompleted;
+      } catch (error) {
+        console.error('Error removing Unity event listeners:', error);
+      }
     };
   }, [addEventListener, removeEventListener, unityProvider]);
 
@@ -120,7 +156,18 @@ export default function TaskViewer() {
     });
   };
 
-  // Submit task function
+  // Modified back handler with safe cleanup
+  const handleBack = async () => {
+    await safeUnload();
+    if (isTaskManagement) {
+      navigate('/taskmanagement');
+    } else {
+      const basePath = isStudent() ? '/my-courses' : '/courses';
+      navigate(`${basePath}/${courseId}`);
+    }
+  };
+
+  // Modified submit handler with safe cleanup
   const handleSubmitTask = async () => {
     try {
       setIsSubmitting(true);
@@ -136,22 +183,23 @@ export default function TaskViewer() {
         grade: 100
       });
 
-      // Submit with grade 100
       await submitTaskInCourse(courseId, taskId, 100);
       
       setSubmissionStatus('submitted');
       showSuccessAlert('Success! 🎯', 'Your task has been submitted successfully!');
       
-      // Navigate back to the course page immediately
+      // Cleanup Unity instance before navigation
+      await safeUnload();
+      
+      // Navigate back to the course page
       const basePath = isStudent() ? '/my-courses' : '/courses';
       navigate(`${basePath}/${courseId}`);
       
     } catch (error) {
       console.error('Error submitting task:', error);
-      // Check if it's the "already submitted" error
       if (error.response?.data?.error === "You have already submitted this task") {
         showErrorAlert('Already Submitted', 'You have already submitted this task.');
-        // Navigate back to course page immediately
+        await safeUnload();
         const basePath = isStudent() ? '/my-courses' : '/courses';
         navigate(`${basePath}/${courseId}`);
       } else {
@@ -159,15 +207,6 @@ export default function TaskViewer() {
       }
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleBack = () => {
-    if (isTaskManagement) {
-      navigate('/taskmanagement');
-    } else {
-      const basePath = isStudent() ? '/my-courses' : '/courses';
-      navigate(`${basePath}/${courseId}`);
     }
   };
 

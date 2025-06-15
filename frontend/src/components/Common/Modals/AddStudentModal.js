@@ -1,5 +1,6 @@
 import React from 'react';
 import Modal from '../../ui/Modal';
+import { Loader2 } from 'lucide-react';
 
 const AddStudentModal = ({
   isOpen,
@@ -7,7 +8,8 @@ const AddStudentModal = ({
   onSubmit,
   studentEmail,
   setStudentEmail,
-  courseName
+  courseName,
+  isLoading
 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -37,6 +39,7 @@ const AddStudentModal = ({
               placeholder="Student Email"
               className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
               required
+              disabled={isLoading}
             />
             <label
               htmlFor="studentEmail"
@@ -45,21 +48,30 @@ const AddStudentModal = ({
               Student Email
             </label>
           </div>
-        </div>
-        <div className="flex justify-end space-x-3 mt-6">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="px-4 py-2 text-secondary bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-          >
-            Add Student
-          </button>
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Adding...</span>
+                </>
+              ) : (
+                <span>Add Student</span>
+              )}
+            </button>
+          </div>
         </div>
       </form>
     </Modal>
