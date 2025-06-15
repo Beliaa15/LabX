@@ -55,19 +55,26 @@ const Signup = () => {
     matches: confirmPassword === formData.password
   });
 
-  // Clear errors when user types
-  useEffect(() => {
-    if (Object.keys(touched).length > 0) {
-      validateField(Object.keys(touched)[0]);
-    }
-  }, [formData]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Mark field as touched when user starts typing
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+
+    // Show requirements while typing
+    setShowRequirements(prev => ({
+      ...prev,
+      [name]: true
+    }));
+
+    // Validate field in real-time
     validateField(name);
   };
 
@@ -88,6 +95,16 @@ const Signup = () => {
       [fieldName]: true
     }));
   };
+
+  // Remove the useEffect since we're validating in real-time now
+  useEffect(() => {
+    if (Object.keys(touched).length > 0) {
+      // Only validate confirm password in real-time since it depends on password
+      if (formData.confirmPassword) {
+        validateField('confirmPassword');
+      }
+    }
+  }, [formData.password, formData.confirmPassword]);
 
   const validateField = (fieldName) => {
     let newErrors = { ...errors };
@@ -149,6 +166,15 @@ const Signup = () => {
           newErrors.password = passwordErrors;
         } else {
           delete newErrors.password;
+        }
+
+        // Also validate confirmPassword when password changes
+        if (formData.confirmPassword) {
+          if (formData.confirmPassword !== formData.password) {
+            newErrors.confirmPassword = 'Passwords do not match';
+          } else {
+            delete newErrors.confirmPassword;
+          }
         }
         break;
 
