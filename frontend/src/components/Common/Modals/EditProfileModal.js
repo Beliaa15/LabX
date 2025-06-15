@@ -44,7 +44,14 @@ const EditProfileModal = ({
 
   const getInputStatus = (fieldName) => {
     if (touched[fieldName]) {
-      return errors[fieldName] ? 'error' : 'success';
+      if (errors[fieldName]) {
+        return 'error';
+      }
+      // For phone field, only show success if it has a valid value
+      if (fieldName === 'phone') {
+        return formData[fieldName]?.trim() ? 'success' : 'error';
+      }
+      return 'success';
     }
     return 'default';
   };
@@ -202,7 +209,7 @@ const EditProfileModal = ({
                   value={formData.phone}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  placeholder="Phone number (optional)"
+                  placeholder="Phone number"
                   maxLength={12}
                   pattern="20[0-9]{10}"
                   className={getInputStyles(getInputStatus('phone'))}
@@ -212,7 +219,7 @@ const EditProfileModal = ({
                   htmlFor="phone"
                   className="absolute left-4 -top-2.5 surface-primary px-1 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm text-secondary peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
                 >
-                  Phone number (optional)
+                  Phone number
                 </label>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   {getInputIcon(getInputStatus('phone'))}

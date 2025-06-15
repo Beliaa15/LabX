@@ -64,12 +64,12 @@ const Profile = () => {
         }
         break;
       case 'phone':
-        // Phone is optional, but if provided should match Egyptian format (20 + 10 digits)
-        if (value && value.trim()) {
-          const phoneRegex = /^20[0-9]{10}$/;
-          if (!phoneRegex.test(value.trim())) {
-            return 'Phone number must start with 20 and be exactly 12 digits';
-          }
+        if (!value || !value.trim()) {
+          return 'Phone number is required';
+        }
+        const phoneRegex = /^20[0-9]{10}$/;
+        if (!phoneRegex.test(value.trim())) {
+          return 'Phone number must start with 20 and be exactly 12 digits';
         }
         break;
       default:
