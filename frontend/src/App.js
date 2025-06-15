@@ -22,6 +22,7 @@ import About from './components/Pages/About';
 import Features from './components/Pages/Features';
 import TaskManagement from './components/Pages/TaskManagement';
 import TaskViewer from './components/Tasks/TaskViewer';
+import TaskUploadProcess from './components/Pages/TaskUploadProcess';
 
 const App = () => {
   return (
@@ -192,6 +193,16 @@ const App = () => {
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
                     <TaskViewer />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/taskmanagement/upload/:taskId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']} redirectTo="/dashboard">
+                    <TaskUploadProcess />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               }

@@ -104,10 +104,17 @@ const fetchTasks = useCallback(async (forceFetch = false) => {
     debouncedHandleSort(key);
   }, [debouncedHandleSort]);
 
-  const handleUpload = (taskId) => {
+  /*const handleUpload = (taskId) => {
     console.log('Attempting upload for task with ID:', taskId);
     setSelectedTaskId(taskId);
     setIsUploadModalOpen(true);
+  };*/
+
+  const handleUpload = (taskId) => {
+    console.log('Attempting upload for task with ID:', taskId);
+    navigate(`/taskmanagement/upload/${taskId}`, {
+      state: { taskId }
+    });
   };
 
   const handleCloseUploadModal = useCallback(() => {
