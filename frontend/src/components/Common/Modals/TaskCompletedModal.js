@@ -34,7 +34,7 @@ const TaskCompletedModal = ({
               <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{grade}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-700 dark:text-gray-300 font-medium">Result:</span>
+              <span className="text-gray-700 dark:text-gray-300 font-medium">Task:</span>
               <span className="text-gray-900 dark:text-gray-100 font-medium">
                 {typeof result === 'object' ? JSON.stringify(result) : String(result)}
               </span>
