@@ -53,10 +53,15 @@ export const AuthProvider = ({ children }) => {
             setToken(response.token);
             
             // Get fresh user data from API
-            //await refreshUserData();
+            await refreshUserData();
             return response;
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed');
+            // Set specific error message for invalid credentials
+            if (err.response?.status === 400 && err.response?.data?.error === "Invalid credentials") {
+                setError("Invalid email or password");
+            } else {
+                setError(err.response?.data?.message || 'Login failed');
+            }
             throw err;
         } finally {
             setLoading(false);
