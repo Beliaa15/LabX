@@ -47,11 +47,15 @@ const StudentDashboard = () => {
                     // Fetch folders
                     const foldersResponse = await getFolders(course._id);
                     totalFolders += foldersResponse.folders?.length || 0;
-                }
-
-                // Sort tasks by due date
-                allTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                setRecentTasks(allTasks.slice(0, 5)); // Keep only 5 most recent tasks
+                }                // Filter tasks to show only those due within next 2 days and sort them
+                const tasksWithinTwoDays = allTasks.filter(task => {
+                    const dueDate = new Date(task.dueDate);
+                    const now = new Date();
+                    const diffDays = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+                    return diffDays >= 0 && diffDays <= 2; // Only show tasks due within next 2 days
+                });
+                tasksWithinTwoDays.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                setRecentTasks(tasksWithinTwoDays); // Show all urgent tasks
 
                 setStats({                    totalCourses: coursesData.length,
                     totalTasks,
@@ -154,11 +158,10 @@ const StudentDashboard = () => {
                 <div className="surface-primary shadow-sm rounded-xl border border-primary">
                     <div className="px-6 py-4 flex justify-between items-center border-b border-primary">
                         <h3 className="text-lg leading-6 font-semibold text-primary flex items-center">
-                            <BookOpen className="w-5 h-5 mr-2" />
-                            My Courses
+                            <BookOpen className="w-5 h-5 mr-2" />                            Recent Courses
                         </h3>
                         <span className="text-sm text-secondary">
-                            {loading ? 'Loading...' : `${courses.length} total courses`}
+                            {loading ? 'Loading...' : `Showing ${Math.min(4, courses.length)} of ${courses.length} courses`}
                         </span>
                     </div>
                     <div className="divide-y divide-primary">
@@ -174,9 +177,11 @@ const StudentDashboard = () => {
                                     Enroll in a course to get started
                                 </p>
                             </div>
-                        ) : (
-                            <div className="divide-y divide-primary">
-                {courses.map((course) => (                                    <div
+                        ) : (                            <div className="divide-y divide-primary">
+                {courses
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by newest first
+                    .slice(0, 4) // Take only the 4 most recent courses
+                    .map((course) => (                                    <div
                                         key={course._id}
                                         className="p-6 hover:bg-secondary/5 transition-colors group"
                                     >
@@ -237,10 +242,9 @@ const StudentDashboard = () => {
                     </div>
                 </div>                {/* Recent Tasks */}
                 <div className="surface-primary shadow-sm rounded-xl border border-primary h-fit">
-                    <div className="px-6 py-4 border-b border-primary">
-                        <h3 className="text-lg leading-6 font-semibold text-primary flex items-center">
+                    <div className="px-6 py-4 border-b border-primary">                        <h3 className="text-lg leading-6 font-semibold text-primary flex items-center">
                             <FileText className="w-5 h-5 mr-2" />
-                            Recent Tasks
+                            Tasks Due Soon (Next 2 Days)
                         </h3>
                     </div>
                     <div className="divide-y divide-primary">
