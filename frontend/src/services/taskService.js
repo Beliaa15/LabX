@@ -304,4 +304,27 @@ export const getTaskById = async (taskId) => {
         });
         throw error;
     }
-}; 
+};
+
+/**
+ * Update task due date
+ * @param {string} taskId - The ID of the task
+ * @param {string} courseId - The ID of the course
+ * @param {string} dueDate - The new due date
+ * @returns {Promise} - The updated task data
+ */
+export const updateTaskDueDate = async (taskId, courseId, dueDate) => {
+    try {
+        console.log('Updating task due date:', { taskId, courseId, dueDate });
+        const response = await authApi.put(`/api/tasks/${taskId}/assign/${courseId}`, { dueDate });
+        console.log('Task due date updated successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to update task due date:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};

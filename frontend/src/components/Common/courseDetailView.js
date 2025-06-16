@@ -21,6 +21,7 @@ import SearchBar from '../ui/SearchBar';
 import ViewModeToggle from '../ui/ViewModeToggle';
 import FileViewer from './FileViewer';
 import SelectTaskModal from './Modals/SelectTaskModal';
+import UpdateDueDateModal from './Modals/UpdateDueDateModal';
 import { getCourseTasksById, unassignTaskFromCourse } from '../../services/taskService';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { showSuccessAlert, showErrorAlert, showConfirmDialog } from '../../utils/sweetAlert';
@@ -53,6 +54,8 @@ const CourseDetailView = ({
   const [showSelectTaskModal, setShowSelectTaskModal] = useState(false);
   const [courseTasks, setCourseTasks] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const [showUpdateDueDateModal, setShowUpdateDueDateModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -411,6 +414,26 @@ const CourseDetailView = ({
     setShowSelectTaskModal(true);
   };
 
+  const handleOpenUpdateDueDate = (task) => {
+    setSelectedTask(task);
+    setShowUpdateDueDateModal(true);
+  };
+
+  const handleUpdateDueDate = async () => {
+    // Refresh tasks list after due date update
+    if (selectedCourse?._id) {
+      setLoadingTasks(true);
+      try {
+        const response = await getCourseTasksById(selectedCourse._id);
+        setCourseTasks(response.tasks || []);
+      } catch (err) {
+        console.error('Failed to refresh tasks:', err);
+      } finally {
+        setLoadingTasks(false);
+      }
+    }
+  };
+
   const handleSelectTask = async (task) => {
     setShowSelectTaskModal(false);
     // Refresh tasks list after assignment
@@ -655,13 +678,22 @@ const CourseDetailView = ({
                           <PlayCircle className="w-5 h-5" />
                         </button>
                         {!isStudent && (
-                          <button
-                            onClick={() => handleUnassignTask(task)}
-                            className="p-2 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            title="Unassign Task"
-                          >
-                            <XCircle className="w-5 h-5" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleUnassignTask(task)}
+                              className="p-2 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Unassign Task"
+                            >
+                              <XCircle className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleOpenUpdateDueDate(task)}
+                              className="p-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                              title="Update Due Date"
+                            >
+                              <Calendar className="w-5 h-5" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -725,6 +757,14 @@ const CourseDetailView = ({
         onClose={() => setShowSelectTaskModal(false)}
         courseId={selectedCourse?._id}
         onSelectTask={handleSelectTask}
+      />
+
+      <UpdateDueDateModal
+        isOpen={showUpdateDueDateModal}
+        onClose={() => setShowUpdateDueDateModal(false)}
+        task={selectedTask}
+        courseId={selectedCourse?._id}
+        onUpdate={handleUpdateDueDate}
       />
 
       {viewingFile && (
