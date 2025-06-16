@@ -19,25 +19,127 @@ const taskRoutes = require('./routes/taskRoute');
 
 const app = express();
 
-// Security middleware and JSON parsing
-app.use(helmet());
+// CORS configuration - more permissive for development
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        // Allow localhost and development origins
+        const allowedOrigins = [
+            ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
+        ];
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+            return callback(null, true);
+        }
+        
+        return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
 app.use(express.json());
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Custom helmet configuration to allow iframes
+app.use(helmet({
+    frameguard: false, // Disable X-Frame-Options to allow iframes
+    crossOriginEmbedderPolicy: false // Disable COEP for Unity WebGL
+}));
+
+// Custom security headers middleware
+app.use((req, res, next) => {
+    // Special handling for WebGL paths
+    if (req.path.includes('/webgl') || req.path.includes('/webgl-tasks')) {
+        // Remove X-Frame-Options to allow embedding in iframes
+        res.removeHeader('X-Frame-Options');
+        
+        // Unity WebGL specific headers
+        res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+        res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+        
+        // Very permissive CSP for Unity WebGL
+        res.setHeader(
+            'Content-Security-Policy',
+            "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+            "script-src * 'unsafe-inline' 'unsafe-eval' blob: data:; " +
+            "connect-src * 'unsafe-inline' data: blob:; " +
+            "img-src * data: blob: 'unsafe-inline'; " +
+            "media-src * data: blob:; " +
+            "frame-src * data: blob:; " +
+            "child-src * data: blob:; " +
+            "worker-src * data: blob: 'unsafe-inline'; " +
+            "style-src * 'unsafe-inline' data:; " +
+            "font-src * data: blob:;"
+        );
+        
+        // Allow embedding in any iframe
+        res.setHeader('X-Frame-Options', 'ALLOWALL');
+        
+        // Set permissive CORS headers for WebGL resources
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        
+    } else {
+        // Regular CSP for other routes
+        res.setHeader(
+            'Content-Security-Policy',
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "img-src 'self' data: blob:; " +
+            "connect-src 'self'; " +
+            "frame-src 'self' data: blob:; " +
+            "child-src 'self' data: blob:;"
+        );
+        
+        // Allow same-origin framing for regular content
+        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    }
+    
+    next();
+});
+
+// Static file serving with proper headers
+app.use('/uploads', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+}, express.static(path.join(__dirname, 'uploads')));
+
+// WebGL static serving with permissive headers
+app.use('/webgl', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('X-Frame-Options', 'ALLOWALL');
+    res.removeHeader('X-Content-Type-Options'); // Allow Unity to determine content types
+    next();
+}, express.static(path.join(__dirname, 'uploads/webgl')));
 
 const webglStaticPath = process.env.NODE_ENV === 'production' 
     ? path.join(__dirname, 'frontend/public/webgl-tasks')
     : path.join(__dirname, '../frontend/public/webgl-tasks');
 
-app.use('/webgl-tasks', express.static(webglStaticPath));
+app.use('/webgl-tasks', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('X-Frame-Options', 'ALLOWALL');
+    res.removeHeader('X-Content-Type-Options');
+    next();
+}, express.static(webglStaticPath));
 
-// Rate limiting
+// Rate limiting (more permissive for development)
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for dev
+    skip: (req) => {
+        // Skip rate limiting for WebGL resources
+        return req.path.includes('/webgl') || req.path.includes('/webgl-tasks');
+    }
 });
 app.use(limiter);
 
@@ -45,13 +147,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Serve static files (including WebGL builds)
 app.use('/static', express.static('public'));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
-
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -70,6 +171,8 @@ const startServer = async () => {
         const PORT = process.env.PORT || 3000;
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
+            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`CORS enabled for development origins`);
         });
     } catch (err) {
         console.error('Database connection error:', err);

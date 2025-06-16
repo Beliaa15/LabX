@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Unity, useUnityContext } from 'react-unity-webgl';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Send, Trophy, Clock, Star, Users, XCircle } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter } from '../ui/card';
@@ -18,6 +17,7 @@ export default function TaskViewer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState(null);
   const [isCompletedModalOpen, setIsCompletedModalOpen] = useState(false);
+  const [gameLoaded, setGameLoaded] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -28,13 +28,17 @@ export default function TaskViewer() {
   const taskFromState = location.state?.task;
   const isTaskManagement = location.pathname.startsWith('/taskmanagement');
 
-  // Unity context setup with unload method
-  const { unityProvider, isLoaded, addEventListener, removeEventListener, unload } = useUnityContext({
-    loaderUrl: `/webgl-tasks/${taskId}/Build.loader.js`,
-    dataUrl: `/webgl-tasks/${taskId}/Build.data`,
-    frameworkUrl: `/webgl-tasks/${taskId}/Build.framework.js`,
-    codeUrl: `/webgl-tasks/${taskId}/Build.wasm`,
-  });
+  // Debug logging
+  useEffect(() => {
+    console.log('TaskViewer Debug Info:', {
+      currentPath: location.pathname,
+      isTaskManagement,
+      taskId,
+      courseId,
+      isStudent: isStudent(),
+      taskFromState
+    });
+  }, [location.pathname, isTaskManagement, taskId, courseId, isStudent, taskFromState]);
 
   // Check if user is on the correct route based on their role
   useEffect(() => {
@@ -42,12 +46,19 @@ export default function TaskViewer() {
     const isStudentPath = currentPath.startsWith('/my-courses');
     const isTeacherPath = currentPath.startsWith('/courses');
 
-    if (isStudent() && !isStudentPath) {
-      navigate(currentPath.replace('/courses', '/my-courses'));
-    } else if (!isStudent() && !isTeacherPath) {
-      navigate(currentPath.replace('/my-courses', '/courses'));
+    // Only redirect if NOT in task management and role doesn't match path
+    if (!isTaskManagement) {
+      if (isStudent() && !isStudentPath) {
+        console.log('Redirecting student to correct path');
+        navigate(currentPath.replace('/courses', '/my-courses'));
+        return;
+      } else if (!isStudent() && !isTeacherPath) {
+        console.log('Redirecting teacher to correct path');
+        navigate(currentPath.replace('/my-courses', '/courses'));
+        return;
+      }
     }
-  }, [location.pathname, isStudent, navigate]);
+  }, [location.pathname, isStudent, navigate, isTaskManagement]);
 
   // Load task data
   useEffect(() => {
@@ -86,33 +97,8 @@ export default function TaskViewer() {
     loadTaskData();
   }, [taskId, courseId, taskFromState, isTaskManagement]);
 
-  // Safe cleanup function
-  const safeUnload = async () => {
-    try {
-      if (unload) {
-        console.log('Cleaning up Unity instance...');
-        await Promise.resolve(unload()); // Ensure we handle the promise properly
-        console.log('Unity cleanup completed');
-      }
-    } catch (error) {
-      console.error('Error during Unity cleanup:', error);
-      // Continue with navigation even if cleanup fails
-    }
-  };
-
-  // Cleanup Unity instance on unmount or navigation
+  // Unity event handlers for iframe communication
   useEffect(() => {
-    return () => {
-      safeUnload().catch(error => {
-        console.error('Error in cleanup effect:', error);
-      });
-    };
-  }, [unload]);
-
-  // Unity event handlers with error handling
-  useEffect(() => {
-    if (!unityProvider) return;
-
     const handleTaskCompleted = (data) => {
       try {
         console.log('Task completed with data:', data);
@@ -128,22 +114,30 @@ export default function TaskViewer() {
       }
     };
 
-    try {
-      addEventListener('TaskCompleted', handleTaskCompleted);
-      window.unityTaskCompleted = handleTaskCompleted;
-    } catch (error) {
-      console.error('Error setting up Unity event listeners:', error);
-    }
-
-    return () => {
-      try {
-        removeEventListener('TaskCompleted', handleTaskCompleted);
-        delete window.unityTaskCompleted;
-      } catch (error) {
-        console.error('Error removing Unity event listeners:', error);
+    // Listen for messages from the iframe
+    const handleMessage = (event) => {
+      console.log('Received message from iframe:', event);
+      
+      // Allow any origin for iframe communication since we're using srcDoc
+      if (event.data && typeof event.data === 'object') {
+        if (event.data.type === 'TaskCompleted') {
+          handleTaskCompleted(event.data.data);
+        } else if (event.data.type === 'GameLoaded') {
+          setGameLoaded(true);
+        }
       }
     };
-  }, [addEventListener, removeEventListener, unityProvider]);
+
+    window.addEventListener('message', handleMessage);
+    
+    // Global function for Unity to call (fallback)
+    window.unityTaskCompleted = handleTaskCompleted;
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      delete window.unityTaskCompleted;
+    };
+  }, []);
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -208,6 +202,354 @@ export default function TaskViewer() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleBack = () => {
+    if (isTaskManagement) {
+      navigate('/taskmanagement');
+    } else {
+      const basePath = isStudent() ? '/my-courses' : '/courses';
+      navigate(`${basePath}/${courseId}`);
+    }
+  };
+
+  const handleIframeLoad = () => {
+    console.log('Iframe loaded successfully');
+    // Don't set gameLoaded here, wait for the actual Unity game to load
+  };
+
+  const handleIframeError = () => {
+    console.error('Iframe failed to load');
+    setError('Failed to load the interactive task. Please check if the game files exist.');
+  };
+
+  // Create Unity HTML content with relative paths to avoid CORS issues
+  const createUnityHTML = (taskTitle) => {
+    const cleanTitle = taskTitle
+      .replace(/\s+/g, '-')  // Replace spaces with hyphens
+      .replace(/[^\w\-]/g, '') // Remove special characters except hyphens and alphanumeric
+      .toLowerCase(); // Convert to lowercase for consistency
+    
+    return `
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity Web Player | ${taskTitle}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #unity-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        #unity-canvas {
+            background: #231F20;
+            width: 95% !important;
+            height: 90% !important;
+            max-width: none;
+            max-height: none;
+            min-width: 800px;
+            min-height: 600px;
+        }
+        
+        #unity-loading-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+            position: absolute;
+            z-index: 10;
+        }
+        
+        #unity-progress-bar-empty {
+            width: 200px;
+            height: 18px;
+            margin: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9px;
+        }
+        
+        #unity-progress-bar-full {
+            width: 0%;
+            height: 18px;
+            background: linear-gradient(90deg, #ff6b35, #f7931e);
+            border-radius: 9px;
+            transition: width 0.3s ease;
+        }
+        
+        #unity-warning {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        #unity-footer {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        #unity-fullscreen-button {
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            user-select: none;
+        }
+        
+        #unity-fullscreen-button:hover {
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        #unity-build-title {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .loading-text {
+            color: white;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            #unity-canvas {
+                width: 90% !important;
+                height: 85% !important;
+                min-width: 600px;
+                min-height: 450px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #unity-canvas {
+                width: 98% !important;
+                height: 80% !important;
+                min-width: 320px;
+                min-height: 240px;
+            }
+            
+            #unity-footer {
+                bottom: 5px;
+                right: 5px;
+            }
+        }
+</style>
+</head>
+<body>
+    <div id="unity-container">
+        <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
+        <div id="unity-loading-bar">
+            <div id="unity-logo"></div>
+            <div id="unity-progress-bar-empty">
+                <div id="unity-progress-bar-full"></div>
+            </div>
+            <div class="loading-text">Loading ${taskTitle}...</div>
+        </div>
+        <div id="unity-warning"></div>
+        <div id="unity-footer">
+            <div id="unity-fullscreen-button">⛶</div>
+        </div>
+    </div>
+    
+    <script>
+        var canvas = document.querySelector("#unity-canvas");
+        
+        // Communication with parent window
+        function notifyParent(type, data) {
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: type, data: data }, '*');
+                    console.log('Sent message to parent:', type, data);
+                }
+            } catch (e) {
+                console.warn('Failed to send message to parent:', e);
+            }
+        }
+        
+        // Task completion handler
+        window.unityTaskCompleted = function(data) {
+            console.log('Task completed:', data);
+            notifyParent('TaskCompleted', data);
+        };
+
+        function unityShowBanner(msg, type) {
+            var warningBanner = document.querySelector("#unity-warning");
+            function updateBannerVisibility() {
+                warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+            }
+            var div = document.createElement('div');
+            div.innerHTML = msg;
+            warningBanner.appendChild(div);
+            if (type == 'error') div.style = 'background: red; padding: 10px; color: white;';
+            else {
+                if (type == 'warning') div.style = 'background: yellow; padding: 10px; color: black;';
+                setTimeout(function() {
+                    warningBanner.removeChild(div);
+                    updateBannerVisibility();
+                }, 5000);
+            }
+            updateBannerVisibility();
+        }
+
+        // Use the current window location protocol and host
+        var baseUrl = "http://localhost:3000/webgl/${cleanTitle}";
+        var buildUrl = baseUrl + "/Build";
+        var loaderUrl = buildUrl + "/build.loader.js";
+        
+        console.log('Loading Unity from:', baseUrl);
+        console.log('Loader URL:', loaderUrl);
+        
+        var config = {
+            arguments: [],
+            dataUrl: buildUrl + "/build.data",
+            frameworkUrl: buildUrl + "/build.framework.js",
+            codeUrl: buildUrl + "/build.wasm",
+            streamingAssetsUrl: baseUrl + "/StreamingAssets",
+            companyName: "DefaultCompany",
+            productName: "${cleanTitle}",
+            productVersion: "1.0",
+            showBanner: unityShowBanner,
+        };
+
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            try {
+                var container = document.querySelector("#unity-container");
+                var containerRect = container.getBoundingClientRect();
+                var aspectRatio = 1920 / 1080; // Original aspect ratio
+                
+                var maxWidth = containerRect.width * 0.9;
+                var maxHeight = containerRect.height * 0.8;
+                
+                var width, height;
+                
+                if (maxWidth / aspectRatio <= maxHeight) {
+                    width = maxWidth;
+                    height = maxWidth / aspectRatio;
+                } else {
+                    height = maxHeight;
+                    width = maxHeight * aspectRatio;
+                }
+                
+                canvas.style.width = width + "px";
+                canvas.style.height = height + "px";
+            } catch (e) {
+                console.warn('Error resizing canvas:', e);
+            }
+        }
+
+        // Mobile detection
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            var meta = document.createElement('meta');
+            meta.name = 'viewport';
+            meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+            document.getElementsByTagName('head')[0].appendChild(meta);
+            
+            // Mobile specific styling
+            document.querySelector("#unity-container").style.padding = "10px";
+            canvas.style.maxWidth = "100%";
+            canvas.style.maxHeight = "70vh";
+        } else {
+            // Desktop sizing
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        document.querySelector("#unity-loading-bar").style.display = "block";
+
+        // Load Unity with error handling
+        function loadUnity() {
+            var script = document.createElement("script");
+            script.src = loaderUrl;
+            script.crossOrigin = "anonymous"; // Add crossOrigin attribute
+            
+            script.onload = function() {
+                console.log('Unity loader script loaded successfully');
+                
+                if (typeof createUnityInstance === 'undefined') {
+                    console.error('createUnityInstance is not defined');
+                    unityShowBanner('Unity loader did not define createUnityInstance function', 'error');
+                    return;
+                }
+                
+                createUnityInstance(canvas, config, function(progress) {
+                    document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+                }).then(function(unityInstance) {
+                    document.querySelector("#unity-loading-bar").style.display = "none";
+                    
+                    // Fullscreen button
+                    document.querySelector("#unity-fullscreen-button").onclick = function() {
+                        unityInstance.SetFullscreen(1);
+                    };
+                    
+                    // Notify parent that game has loaded
+                    notifyParent('GameLoaded', true);
+                    
+                    console.log('Unity instance created successfully');
+                    
+                }).catch(function(message) {
+                    console.error('Unity loading error:', message);
+                    unityShowBanner('Failed to load Unity: ' + message, 'error');
+                    document.querySelector("#unity-loading-bar").style.display = "none";
+                });
+            };
+            
+            script.onerror = function() {
+                console.error('Failed to load Unity loader script from:', loaderUrl);
+                unityShowBanner('Failed to load Unity loader script. The game files may not exist at the expected location.', 'error');
+                document.querySelector("#unity-loading-bar").style.display = "none";
+            };
+
+            document.body.appendChild(script);
+        }
+        
+        // Start loading Unity
+        loadUnity();
+        
+        // Test communication with parent
+        setTimeout(function() {
+            notifyParent('IframeReady', { title: '${cleanTitle}' });
+        }, 1000);
+    </script>
+</body>
+</html>`;
   };
 
   if (isLoading) {
@@ -317,21 +659,29 @@ export default function TaskViewer() {
             </h2>
           </CardHeader>
           <CardContent>
-            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>  {/* 56.25% represents 9/16 ratio */}
-              {!isLoaded && (
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+              {!gameLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 backdrop-blur-sm z-10">
                   <div className="text-center px-4">
                     <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
                       Loading Unity Game...
                     </h3>
+                    <p className="text-gray-300 text-sm">
+                      {task.title}
+                    </p>
                   </div>
                 </div>
               )}
 
-              <Unity
-                unityProvider={unityProvider}
-                className="absolute top-0 left-0 w-full h-full"
+              <iframe
+                srcDoc={createUnityHTML(task.title)}
+                className="absolute top-0 left-0 w-full h-full border-0"
+                title={`Task ${taskId} - ${task.title}`}
+                allowFullScreen
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
                 style={{ background: '#1a1a1a' }}
+                allow="fullscreen"
               />
             </div>
           </CardContent>

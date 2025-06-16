@@ -5,6 +5,8 @@ const asyncHandler = require('express-async-handler');
 const createWebGLStorage = require('../config/webglMulter');
 const fs = require('fs');
 const path = require('path');
+const AdmZip = require('adm-zip');
+const zipUpload = require('../config/zipMulter');
 
 // @desc    Create a new task
 // @route   POST /api/tasks
@@ -683,4 +685,47 @@ exports.getWebGLFiles = asyncHandler(async (req, res) => {
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.sendFile(path.resolve(filePath));
+});
+
+// @desc    Upload a zip file containing WebGL build files
+// @route   POST /api/tasks/:id/upload-zip
+// @access  Private/Admin
+exports.uploadZipFile = asyncHandler(async (req, res) => {
+    const taskId = req.params.id;
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+        res.status(404);
+        throw new Error('Task not found');
+    }
+
+    const zipPath = req.file.path;
+    const taskName = task.title.toLowerCase().replace(/\s+/g, '-');
+    const extractPath = path.join(__dirname, '../uploads/webgl', taskName);
+
+    const zip = new AdmZip(zipPath);
+    zip.extractAllTo(extractPath, true);
+    console.log(`Extracted zip to: ${extractPath}`);
+
+    task.webglData.buildFolderPath = extractPath;
+    task.webglData.indexHtml = extractPath + '/index.html';
+    task.webglData.loader = extractPath + `/Build/${taskName}.loader.js`;
+    task.webglData.data = extractPath + `/Build/${taskName}.data`;
+    task.webglData.framework = extractPath + `/Framework/${taskName}.framework.js`;
+    task.webglData.wasm = extractPath + `/Build/${taskName}.wasm`;
+
+    // Clean up the zip file after extraction
+    fs.unlinkSync(zipPath);
+    console.log(`Deleted zip file: ${zipPath}`);
+
+    await task.save();
+    res.status(200).json({
+        success: true,
+        message: 'Zip file uploaded and extracted successfully',
+        task: {
+            id: task._id,
+            title: task.title,
+            webglData: task.webglData,
+        },
+    });
 });

@@ -15,7 +15,6 @@ const TaskUploadModal = ({
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (event) => {
-    event.preventDefault();
     const files = Array.from(event.target.files);
     setSelectedFiles(files);
   };
@@ -68,13 +67,7 @@ const TaskUploadModal = ({
 
         <div className="space-y-4">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Upload the required WebGL build files (max 4 files):
-            <ul className="mt-2 list-disc list-inside text-xs">
-              <li>Build.loader.js (required)</li>
-              <li>Build.data (required)</li>
-              <li>Build.framework.js (optional)</li>
-              <li>Build.wasm (optional)</li>
-            </ul>
+            Upload the required WebGL build file
           </div>
 
           {/* File Drop Zone */}
@@ -106,7 +99,7 @@ const TaskUploadModal = ({
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".js,.data,.wasm"
+            accept=".js,.data,.wasm,.zip,.gz"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -176,7 +169,7 @@ const TaskUploadModal = ({
             disabled={selectedFiles.length === 0 || selectedFiles.length > 4}
             className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Upload Files
+            Upload
           </button>
         </div>
       </div>
