@@ -151,15 +151,7 @@ export default function TaskViewer() {
   };
 
   // Modified back handler with safe cleanup
-  const handleBack = async () => {
-    await safeUnload();
-    if (isTaskManagement) {
-      navigate('/taskmanagement');
-    } else {
-      const basePath = isStudent() ? '/my-courses' : '/courses';
-      navigate(`${basePath}/${courseId}`);
-    }
-  };
+
 
   // Modified submit handler with safe cleanup
   const handleSubmitTask = async () => {
@@ -182,8 +174,6 @@ export default function TaskViewer() {
       setSubmissionStatus('submitted');
       showSuccessAlert('Success! 🎯', 'Your task has been submitted successfully!');
       
-      // Cleanup Unity instance before navigation
-      await safeUnload();
       
       // Navigate back to the course page
       const basePath = isStudent() ? '/my-courses' : '/courses';
@@ -193,7 +183,6 @@ export default function TaskViewer() {
       console.error('Error submitting task:', error);
       if (error.response?.data?.error === "You have already submitted this task") {
         showErrorAlert('Already Submitted', 'You have already submitted this task.');
-        await safeUnload();
         const basePath = isStudent() ? '/my-courses' : '/courses';
         navigate(`${basePath}/${courseId}`);
       } else {
