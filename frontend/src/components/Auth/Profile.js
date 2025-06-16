@@ -3,8 +3,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
-import ToggleButton from '../ui/ToggleButton';
+import Header from '../Common/Header';
+import EditProfileModal from '../Common/Modals/EditProfileModal';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
+import { User, Mail, Phone, Pencil, UserCircle, Building2, Calendar, Shield, MapPin } from 'lucide-react';
 
 /**
  * Profile page component for user profile management
@@ -16,6 +18,7 @@ const Profile = () => {
   const { isDarkMode, handleToggle } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -23,6 +26,9 @@ const Profile = () => {
     email: user?.email || '',
     phone: user?.phone || '',
   });
+
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   // Update form data when user changes
   useEffect(() => {
@@ -34,18 +40,112 @@ const Profile = () => {
     });
   }, [user]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'firstName':
+        if (!value.trim()) {
+          return 'First name is required';
+        } else if (value.trim().length < 3) {
+          return 'First name must be at least 3 characters';
+        }
+        break;
+      case 'lastName':
+        if (!value.trim()) {
+          return 'Last name is required';
+        } else if (value.trim().length < 3) {
+          return 'Last name must be at least 3 characters';
+        }
+        break;
+      case 'email':
+        if (!value) {
+          return 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(value)) {
+          return 'Please enter a valid email address';
+        }
+        break;
+      case 'phone':
+        if (!value || !value.trim()) {
+          return 'Phone number is required';
+        }
+        const phoneRegex = /^20[0-9]{10}$/;
+        if (!phoneRegex.test(value.trim())) {
+          return 'Phone number must start with 20 and be exactly 12 digits';
+        }
+        break;
+      default:
+        return '';
+    }
+    return '';
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    // Only validate required fields and phone number if it's not empty
+    const fieldsToValidate = ['firstName', 'lastName', 'email'];
+    fieldsToValidate.forEach(key => {
+      const error = validateField(key, formData[key]);
+      if (error) {
+        newErrors[key] = error;
+      }
+    });
+
+    // Only validate phone if it's not empty
+    if (formData.phone && formData.phone.trim() !== '') {
+      const phoneError = validateField('phone', formData.phone);
+      if (phoneError) {
+        newErrors.phone = phoneError;
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    
+    // Validate the field on blur
+    const error = validateField(name, formData[name]);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Mark all fields as touched
+    setTouched({
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true
+    });
+    
+    // Validate form
+    if (!validateForm()) {
+      showErrorAlert('Validation Error', 'Please fix the errors in the form before submitting.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await updateProfile(formData);
+      // Create a copy of formData and set empty phone to null or undefined
+      const dataToSubmit = {
+        ...formData,
+        phone: formData.phone.trim() || null // Set empty phone to null
+      };
+
+      await updateProfile(dataToSubmit);
       await refreshUserData(); // Refresh user data after update
       showSuccessAlert('Success', 'Profile updated successfully!');
+      setIsEditModalOpen(false);
     } catch (err) {
       showErrorAlert('Error', err.response?.data?.message || 'Failed to update profile. Please try again.');
     } finally {
@@ -55,171 +155,170 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen surface-secondary">
-      {/* Sidebar component handles both mobile and desktop sidebars */}
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
-      {/* Main content */}
       <div
         className={`${
           sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'
         } flex flex-col flex-1 transition-all duration-300 ease-in-out`}
       >
-        <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-primary transition-all duration-300">
-                    <div className="h-16 px-4 md:px-6 pr-16 md:pr-6 flex items-center justify-between">
-                        <div className="flex-1 flex items-center">
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent dark:from-indigo-400 dark:to-indigo-200 transition-colors duration-300">
-                                Profile
-                            </h1>
-                        </div>
-                        <div className="hidden md:flex items-center space-x-6">
-                            {/* User Profile */}
-                            <div className="flex items-center space-x-4">
-                                <div className="relative">
-                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-slate-700 transform hover:scale-105 transition-all duration-200">
-                                        <span className="text-sm font-semibold text-white">
-                                            {user?.firstName?.charAt(0)}
-                                            {user?.lastName?.charAt(0)}
-                                        </span>
-                                    </div>
-                                    <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-slate-700"></div>
-                                </div>
-                                <div className="block">
-                                    <p className="text-sm font-medium text-primary">
-                                        {user?.firstName} {user?.lastName}
-                                    </p>
-                                    <p className="text-xs text-muted">
-                                        {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Divider */}
-                            <div className="h-6 w-px bg-gray-200 dark:bg-slate-700"></div>
-
-                            {/* Dark Mode Toggle */}
-                            <ToggleButton
-                                isChecked={isDarkMode}
-                                onChange={handleToggle}
-                                className="transform hover:scale-105 transition-transform duration-200"
-                            />
-                        </div>
-                    </div>
-                </header>
+        <Header 
+          title="Profile"
+          user={user}
+          isAdmin={isAdmin}
+          isTeacher={isTeacher}
+          isDarkMode={isDarkMode}
+          handleToggle={handleToggle}
+        />
 
         <main className="animate-fadeIn flex-1 relative z-0 overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              <div className="surface-primary shadow-sm overflow-hidden sm:rounded-xl border border-primary">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-primary">
-                    User Information
-                  </h3>
-                  <p className="mt-1 max-w-2xl text-sm text-secondary">
-                    Update your personal details.
-                  </p>
+          <div className="py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col gap-8">
+                {/* Profile Header */}
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-6">
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                        {user?.firstName?.charAt(0)}
+                        {user?.lastName?.charAt(0)}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-green-400 border-4 border-white dark:border-gray-900"></div>
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-primary">
+                        {user?.firstName} {user?.lastName}
+                      </h1>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Shield className="w-4 h-4 text-indigo-500" />
+                        <span className="text-secondary font-medium">
+                          {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow transform hover:translate-y-[-1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900"
+                  >
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </button>
                 </div>
-                <div className="border-t border-primary px-4 py-5 sm:p-6">
-                  <form onSubmit={handleSubmit} className="space-y-8">
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="firstName"
-                          id="firstName"
-                          value={formData.firstName}
-                          onChange={handleChange}
-                          placeholder="First name"
-                          className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
-                        />
-                        <label
-                          htmlFor="firstName"
-                          className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                        >
-                          First name
-                        </label>
-                      </div>
 
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="lastName"
-                          id="lastName"
-                          value={formData.lastName}
-                          onChange={handleChange}
-                          placeholder="Last name"
-                          className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
-                        />
-                        <label
-                          htmlFor="lastName"
-                          className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                        >
-                          Last name
-                        </label>
+                {/* Profile Content */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Main Info Card */}
+                  <div className="lg:col-span-2 space-y-8">
+                    {/* Personal Information */}
+                    <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div className="px-6 py-5 border-b border-primary/10">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
+                            <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-primary">Personal Information</h3>
+                        </div>
                       </div>
-
-                      <div className="relative">
-                        <input
-                          type="email"
-                          name="email"
-                          id="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          placeholder="Email address"
-                          className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
-                        />
-                        <label
-                          htmlFor="email"
-                          className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                        >
-                          Email address
-                        </label>
-                      </div>
-
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="phone"
-                          id="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          placeholder="Phone number"
-                          className="peer w-full px-4 py-3.5 border border-primary rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all duration-200 surface-primary"
-                        />
-                        <label
-                          htmlFor="phone"
-                          className="absolute left-4 -top-2.5 surface-primary px-1 text-sm text-secondary transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-                        >
-                          Phone number
-                        </label>
+                      <div className="p-6">
+                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                          <div>
+                            <dt className="text-sm text-secondary">Full Name</dt>
+                            <dd className="mt-1 text-sm font-medium text-primary">
+                              {user?.firstName} {user?.lastName}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-sm text-secondary">Role</dt>
+                            <dd className="mt-1 text-sm font-medium text-primary">
+                              {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
+                            </dd>
+                          </div>
+                        </dl>
                       </div>
                     </div>
 
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-6 py-3.5 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[160px]"
-                      >
-                        {loading ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Saving Changes...</span>
-                          </>
-                        ) : (
-                          'Save Changes'
-                        )}
-                      </button>
+                    {/* Contact Information */}
+                    <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div className="px-6 py-5 border-b border-primary/10">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-purple-50 dark:bg-purple-500/10 rounded-xl">
+                            <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-primary">Contact Information</h3>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                          <div>
+                            <dt className="text-sm text-secondary">Email Address</dt>
+                            <dd className="mt-1 text-sm font-medium text-primary flex items-center">
+                              <Mail className="w-4 h-4 mr-2 text-purple-500" />
+                              {user?.email}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-sm text-secondary">Phone Number</dt>
+                            <dd className="mt-1 text-sm font-medium text-primary flex items-center">
+                              <Phone className="w-4 h-4 mr-2 text-purple-500" />
+                              {user?.phone || 'Not provided'}
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
                     </div>
-                  </form>
+                  </div>
+
+                  {/* Side Info Card */}
+                  <div className="lg:col-span-1">
+                    <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div className="px-6 py-5 border-b border-primary/10">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-green-50 dark:bg-green-500/10 rounded-xl">
+                            <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-primary">Account Status</h3>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-500/5 rounded-xl">
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-green-100 dark:bg-green-500/10 rounded-lg">
+                                <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-green-700 dark:text-green-400">Active</div>
+                                <div className="text-xs text-green-600 dark:text-green-500">Your account is in good standing</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </main>
       </div>
+
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleSubmit}
+        formData={formData}
+        setFormData={setFormData}
+        loading={loading}
+        errors={errors}
+        touched={touched}
+        handleBlur={handleBlur}
+        validateField={validateField}
+        setErrors={setErrors}
+        setTouched={setTouched}
+      />
     </div>
   );
 };

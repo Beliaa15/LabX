@@ -112,11 +112,18 @@ const Login = () => {
       navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error('Login error:', err);
-      showErrorAlert(
-        'Login Failed',
-        err.response?.data?.message || 
-        'Failed to sign in. Please check your credentials and try again.'
-      );
+      if (err.response?.status === 400 && err.response?.data?.error === "Invalid credentials") {
+        showErrorAlert(
+          'Login Failed',
+          'Invalid email or password. Please check your credentials and try again.'
+        );
+      } else {
+        showErrorAlert(
+          'Login Failed',
+          err.response?.data?.message || 
+          'Failed to sign in. Please try again later.'
+        );
+      }
     } finally {
       setLoading(false);
     }

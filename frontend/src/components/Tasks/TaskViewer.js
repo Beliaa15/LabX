@@ -100,13 +100,18 @@ export default function TaskViewer() {
   // Unity event handlers for iframe communication
   useEffect(() => {
     const handleTaskCompleted = (data) => {
-      console.log('Task completed with data:', data);
-      const result = {
-        grade: 100,
-        result: data
-      };
-      setTaskResult(result);
-      setIsCompletedModalOpen(true);
+      try {
+        console.log('Task completed with data:', data);
+        const result = {
+          grade: 100,
+          result: data
+        };
+        setTaskResult(result);
+        setIsCompletedModalOpen(true);
+      } catch (error) {
+        console.error('Error handling task completion:', error);
+        showErrorAlert('Error', 'Failed to process task completion');
+      }
     };
 
     // Listen for messages from the iframe
@@ -145,7 +150,18 @@ export default function TaskViewer() {
     });
   };
 
-  // Submit task function
+  // Modified back handler with safe cleanup
+  const handleBack = async () => {
+    await safeUnload();
+    if (isTaskManagement) {
+      navigate('/taskmanagement');
+    } else {
+      const basePath = isStudent() ? '/my-courses' : '/courses';
+      navigate(`${basePath}/${courseId}`);
+    }
+  };
+
+  // Modified submit handler with safe cleanup
   const handleSubmitTask = async () => {
     try {
       setIsSubmitting(true);
@@ -161,22 +177,23 @@ export default function TaskViewer() {
         grade: 100
       });
 
-      // Submit with grade 100
       await submitTaskInCourse(courseId, taskId, 100);
       
       setSubmissionStatus('submitted');
       showSuccessAlert('Success! 🎯', 'Your task has been submitted successfully!');
       
-      // Navigate back to the course page immediately
+      // Cleanup Unity instance before navigation
+      await safeUnload();
+      
+      // Navigate back to the course page
       const basePath = isStudent() ? '/my-courses' : '/courses';
       navigate(`${basePath}/${courseId}`);
       
     } catch (error) {
       console.error('Error submitting task:', error);
-      // Check if it's the "already submitted" error
       if (error.response?.data?.error === "You have already submitted this task") {
         showErrorAlert('Already Submitted', 'You have already submitted this task.');
-        // Navigate back to course page immediately
+        await safeUnload();
         const basePath = isStudent() ? '/my-courses' : '/courses';
         navigate(`${basePath}/${courseId}`);
       } else {
