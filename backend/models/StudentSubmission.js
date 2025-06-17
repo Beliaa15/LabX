@@ -14,6 +14,11 @@ const studentSubmissionSchema = new Schema(
             ref: 'Task',
             required: true,
         },
+        course: {
+            type: Schema.Types.ObjectId,
+            ref: 'Course',
+            required: true,
+        },
         grade: {
             type: Number,
             default: null,
