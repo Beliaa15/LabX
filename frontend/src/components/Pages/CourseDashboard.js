@@ -316,39 +316,67 @@ const CourseDashboard = () => {
 
   const handleCreateCourse = async (e) => {
     e.preventDefault();
-    if (courseName.trim()) {
-      try {
-        const courseData = {
-          name: courseName,
-          description: courseDescription,
-        };
-        
-        const newCourse = await createCourse(courseData);
-        
-        const courseWithTeacher = {
-          ...newCourse,
-          teacher: {
-            _id: user._id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email
-          },
-          students: []
-        };
+    
+    // Validate both fields are filled and meet length requirements
+    const name = courseName.trim();
+    const description = courseDescription.trim();
 
-        setCourses(prevCourses => [...prevCourses, courseWithTeacher]);
-        setCourseName('');
-        setCourseDescription('');
-        setShowCreateModal(false);
-        
-        showSuccessAlert('Course Created', `Course "${courseName}" has been created successfully. Course Code: ${newCourse.code}`);
-      } catch (error) {
-        console.error('Failed to create course:', error);
-        showErrorAlert(
-          'Error Creating Course',
-          error.response?.data?.message || 'Failed to create course. Please try again.'
-        );
-      }
+    if (!name || !description) {
+      showErrorAlert(
+        'Validation Error',
+        'Both course name and description are required fields.'
+      );
+      return;
+    }
+
+    // Validate length requirements
+    if (name.length < 3 || name.length > 100) {
+      showErrorAlert(
+        'Validation Error',
+        'Name must be between 3 and 100 characters'
+      );
+      return;
+    }
+
+    if (description.length < 10 || description.length > 500) {
+      showErrorAlert(
+        'Validation Error',
+        'Description must be between 10 and 500 characters'
+      );
+      return;
+    }
+
+    try {
+      const courseData = {
+        name: name,
+        description: description,
+      };
+      
+      const newCourse = await createCourse(courseData);
+      
+      const courseWithTeacher = {
+        ...newCourse,
+        teacher: {
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email
+        },
+        students: []
+      };
+
+      setCourses(prevCourses => [...prevCourses, courseWithTeacher]);
+      setCourseName('');
+      setCourseDescription('');
+      setShowCreateModal(false);
+      
+      showSuccessAlert('Course Created', `Course "${name}" has been created successfully. Course Code: ${newCourse.code}`);
+    } catch (error) {
+      console.error('Failed to create course:', error);
+      const errorMessage = error.response?.data?.message || 
+                         error.response?.data?.error || 
+                         'Failed to create course. Please try again.';
+      showErrorAlert('Error Creating Course', errorMessage);
     }
   };
 
