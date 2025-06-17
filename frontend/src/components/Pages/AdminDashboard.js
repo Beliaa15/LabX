@@ -348,18 +348,18 @@ const AdminDashboard = () => {
             <h3 className="text-lg leading-6 font-medium text-primary">
               User Management
             </h3>
-            <div className="mt-4 sm:mt-0 flex space-x-3">
+            <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 placeholder="Search users..."
-                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-sm"
+                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-sm w-full sm:w-auto"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-sm"
+                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-sm w-full sm:w-auto"
               >
                 <option value="all">All Roles</option>
                 <option value="student">Students</option>
@@ -370,7 +370,64 @@ const AdminDashboard = () => {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+          <div className="block sm:hidden">
+            {filteredUsers.slice(0, 10).map((user) => (
+              <div key={user._id} className="p-4 border-b border-gray-200 dark:border-slate-700">
+                <div className="flex items-center space-x-4 mb-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center text-white text-sm font-medium">
+                    {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {user.firstName} {user.lastName}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    user.role === 'admin' 
+                      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      : user.role === 'teacher'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                  }`}>
+                    {user.role}
+                  </span>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    user.isActive
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                  }`}>
+                    {user.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                  <span className="inline-flex px-2 py-1 text-xs text-gray-500 dark:text-gray-400">
+                    Joined: {new Date(user.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                  <select
+                    value={user.role}
+                    onChange={(e) => handleUpdateUserRole(user._id, e.target.value, `${user.firstName} ${user.lastName}`)}
+                    className="px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800"
+                  >
+                    <option value="student">Student</option>
+                    <option value="teacher">Teacher</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button
+                    onClick={() => handleDeleteUser(user._id, `${user.firstName} ${user.lastName}`)}
+                    className="text-sm px-3 py-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <table className="hidden sm:table min-w-full divide-y divide-gray-200 dark:divide-slate-700">
             <thead className="bg-gray-50 dark:bg-slate-800">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
