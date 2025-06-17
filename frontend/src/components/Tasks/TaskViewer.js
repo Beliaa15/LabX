@@ -418,7 +418,7 @@ export default function TaskViewer() {
         }
 
         // Use the current window location protocol and host
-        var baseUrl = "http://localhost:3000/webgl/${cleanTitle}";
+        var baseUrl = "http://localhost:3000/webgl/${taskId}";
         var buildUrl = baseUrl + "/Build";
         var loaderUrl = buildUrl + "/build.loader.js";
         
@@ -432,7 +432,7 @@ export default function TaskViewer() {
             codeUrl: buildUrl + "/build.wasm",
             streamingAssetsUrl: baseUrl + "/StreamingAssets",
             companyName: "DefaultCompany",
-            productName: "${cleanTitle}",
+            productName: "${taskTitle}",
             productVersion: "1.0",
             showBanner: unityShowBanner,
         };
