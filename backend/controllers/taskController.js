@@ -436,13 +436,11 @@ exports.deleteTask = asyncHandler(async (req, res) => {
         throw new Error('Task not found');
     }
 
-    const taskName = task.title.toLowerCase().replace(/\s+/g, '-');
-
     // Delete WebGL files if they exist
     if (task.webglData && task.webglData.buildFolderPath) {
         try {
             // Determine base directory based on environment
-            const extractPath = path.join(__dirname, '../uploads/webgl', taskName);
+            const extractPath = path.join(__dirname, '../uploads/webgl', taskId);
 
             if (fs.existsSync(extractPath)) {
                 console.log(
@@ -462,7 +460,6 @@ exports.deleteTask = asyncHandler(async (req, res) => {
                 `Error deleting WebGL files for task ${taskId}:`,
                 error
             );
-            // Continue with task deletion even if file deletion fails
         }
     }
 
@@ -694,8 +691,7 @@ exports.uploadZipFile = asyncHandler(async (req, res) => {
     }
 
     const zipPath = req.file.path;
-    const taskName = task.title.toLowerCase().replace(/\s+/g, '-');
-    const extractPath = path.join(__dirname, '../uploads/webgl', taskName);
+    const extractPath = path.join(__dirname, '../uploads/webgl', taskId);
 
     // remove old build folder if it exists
     if (task.webglData.buildFolderPath && fs.existsSync(task.webglData.buildFolderPath)) {
@@ -709,10 +705,10 @@ exports.uploadZipFile = asyncHandler(async (req, res) => {
 
     task.webglData.buildFolderPath = extractPath;
     task.webglData.indexHtml = extractPath + '/index.html';
-    task.webglData.loader = extractPath + `/Build/${taskName}.loader.js`;
-    task.webglData.data = extractPath + `/Build/${taskName}.data`;
-    task.webglData.framework = extractPath + `/Framework/${taskName}.framework.js`;
-    task.webglData.wasm = extractPath + `/Build/${taskName}.wasm`;
+    task.webglData.loader = extractPath + `/Build/build.loader.js`;
+    task.webglData.data = extractPath + `/Build/build.data`;
+    task.webglData.framework = extractPath + `/Build/build.framework.js`;
+    task.webglData.wasm = extractPath + `/Build/build.wasm`;
 
     // Clean up the zip file after extraction
     fs.unlinkSync(zipPath);
