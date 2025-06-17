@@ -165,13 +165,20 @@ const TeacherDashboard = () => {
                 <li className="px-4 py-4 text-center text-secondary">
                   Loading courses...
                 </li>
+              ) : courses.length === 0 ? (
+                <li className="px-4 py-8 text-center">
+                  <BookOpen className="mx-auto h-12 w-12 text-muted" />
+                  <h3 className="mt-2 text-sm font-medium text-primary">No courses</h3>
+                  <p className="mt-1 text-sm text-secondary">Get started by creating a new course.</p>
+                </li>
               ) : (
                 courses.map((course) => (
                   <li
                     key={course._id}
-                    className="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                   >
-                    <div className="flex items-center justify-between">
+                    {/* Desktop View */}
+                    <div className="hidden sm:flex items-center justify-between px-4 py-4 sm:px-6">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <BookOpen className="h-5 w-5 text-muted" />
@@ -184,7 +191,7 @@ const TeacherDashboard = () => {
                             {course.description || 'No description available'}
                           </div>
                         </div>
-                      </div>{' '}
+                      </div>
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center">
                           <Users className="h-5 w-5 text-muted" />
@@ -203,6 +210,40 @@ const TeacherDashboard = () => {
                           <span className="ml-2 text-sm text-muted">
                             {course.folders?.length || 0} folders
                           </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mobile View */}
+                    <div className="sm:hidden p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <BookOpen className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                          <h4 className="text-base font-medium text-primary">{course.name}</h4>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm text-secondary mb-4 line-clamp-2">
+                        {course.description || 'No description available'}
+                      </p>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="flex flex-col items-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <Users className="h-5 w-5 text-muted mb-1" />
+                          <span className="text-xs font-medium text-primary">{course.students?.length || 0}</span>
+                          <span className="text-xs text-secondary">Students</span>
+                        </div>
+                        
+                        <div className="flex flex-col items-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <FileText className="h-5 w-5 text-muted mb-1" />
+                          <span className="text-xs font-medium text-primary">{course.tasks?.length || 0}</span>
+                          <span className="text-xs text-secondary">Tasks</span>
+                        </div>
+                        
+                        <div className="flex flex-col items-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <Folder className="h-5 w-5 text-muted mb-1" />
+                          <span className="text-xs font-medium text-primary">{course.folders?.length || 0}</span>
+                          <span className="text-xs text-secondary">Folders</span>
                         </div>
                       </div>
                     </div>
@@ -360,60 +401,62 @@ const TeacherDashboard = () => {
                 <div className="lg:hidden divide-y divide-primary">
                   {courses.map((course) => {
                     if (!course.tasks || course.tasks.length === 0) return null;
+                    const isExpanded = expandedCourses[course._id];
 
                     return (
-                      <div key={course._id} className="p-4 sm:p-6 space-y-4">
-                        {/* Course Header */}
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-500" />
-                          <h4 className="font-medium text-primary">{course.name}</h4>
+                      <div key={course._id} className="p-4">
+                        <div 
+                          className="flex items-center justify-between cursor-pointer"
+                          onClick={() => toggleCourse(course._id)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-500" />
+                            <span className="font-medium text-primary">{course.name}</span>
+                          </div>
+                          {isExpanded ? 
+                            <ChevronDown className="w-4 h-4 text-primary" /> : 
+                            <ChevronRight className="w-4 h-4 text-primary" />
+                          }
                         </div>
 
-                        {/* Tasks List */}
-                        <div className="space-y-4">
-                          {course.tasks.map((task) => (
-                            <div
-                              key={task._id}
-                              className="surface-primary rounded-lg border border-primary p-4 hover:bg-secondary/5 transition-colors"
-                            >
-                              <div className="space-y-3">
-                                <div>
-                                  <h5 className="font-medium text-primary">
-                                    {task.title}
-                                  </h5>
-                                  {task.description && (
-                                    <p className="mt-1 text-sm text-secondary line-clamp-2">
-                                      {task.description}
-                                    </p>
-                                  )}
-                                </div>                                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                                    <div className="flex items-center gap-1.5 text-secondary">
-                                      <Users className="w-4 h-4" />
-                                      <span>{course.students?.length || 0} students</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-secondary">
+                        {isExpanded && (
+                          <div className="mt-4 space-y-4">
+                            {course.tasks.map((task) => (
+                              <div 
+                                key={task._id}
+                                className="ml-6 p-3 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <FileText className="w-4 h-4 text-primary" />
+                                  <span className="text-primary">{task.title}</span>
+                                </div>
+                                <p className="text-sm text-secondary mt-1 line-clamp-2">
+                                  {task.description || 'No description available'}
+                                </p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <div className="text-sm text-secondary">
+                                    <span className="flex items-center gap-1">
                                       <FileText className="w-4 h-4" />
-                                      <span>
-                                        {taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount || 0}
-                                        /
-                                        {taskSubmissions[`${course._id}-${task._id}`]?.totalStudents || 0} submissions
-                                      </span>
-                                    </div>
-                                    {taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount > 0 && (
-                                      <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
-                                        Average: {
-                                          Math.round(
-                                            taskSubmissions[`${course._id}-${task._id}`]?.submissions.reduce((acc, sub) => acc + sub.grade, 0) / 
-                                            taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount
-                                          ) || 0
-                                        }%
-                                      </div>
-                                    )}
+                                      {taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount || 0}
+                                      /
+                                      {taskSubmissions[`${course._id}-${task._id}`]?.totalStudents || 0} submissions
+                                    </span>
                                   </div>
+                                  {taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount > 0 && (
+                                    <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+                                      Average: {
+                                        Math.round(
+                                          taskSubmissions[`${course._id}-${task._id}`]?.submissions.reduce((acc, sub) => acc + sub.grade, 0) / 
+                                          taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount
+                                        ) || 0
+                                      }%
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
