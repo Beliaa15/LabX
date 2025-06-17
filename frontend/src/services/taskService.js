@@ -328,3 +328,25 @@ export const updateTaskDueDate = async (taskId, courseId, dueDate) => {
         throw error;
     }
 };
+
+/**
+ * Get task submissions for a specific course
+ * @param {string} courseId - The ID of the course
+ * @param {string} taskId - The ID of the task
+ * @returns {Promise} - The submissions data including count and details
+ */
+export const getTaskSubmissionsForCourse = async (courseId, taskId) => {
+    try {
+        console.log('Fetching task submissions:', { courseId, taskId });
+        const response = await authApi.get(`/api/courses/${courseId}/tasks/${taskId}/submissions`);
+        console.log('Task submissions fetched successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch task submissions:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};

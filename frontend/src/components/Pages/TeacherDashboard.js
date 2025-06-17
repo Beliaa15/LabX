@@ -1,22 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Users, BookOpen, FileText, Folder, ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { getUserCourses } from '../../services/courseService';
+import { getTaskSubmissionsForCourse } from '../../services/taskService';
 
 
 const TeacherDashboard = () => {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedCourses, setExpandedCourses] = useState({});
+    const [taskSubmissions, setTaskSubmissions] = useState({});
     const [stats, setStats] = useState({
         totalStudents: 0,
         totalTasks: 0
     });
 
-    const toggleCourse = (courseId) => {
+    const toggleCourse = async (courseId) => {
+        const isExpanding = !expandedCourses[courseId];
         setExpandedCourses(prev => ({
             ...prev,
-            [courseId]: !prev[courseId]
+            [courseId]: isExpanding
         }));
+
+        // If expanding, fetch submissions for all tasks in this course
+        if (isExpanding) {
+            const course = courses.find(c => c._id === courseId);
+            if (course && course.tasks) {
+                for (const task of course.tasks) {
+                    try {
+                        const submissionsData = await getTaskSubmissionsForCourse(courseId, task._id);
+                        setTaskSubmissions(prev => ({
+                            ...prev,
+                            [`${courseId}-${task._id}`]: submissionsData
+                        }));
+                    } catch (error) {
+                        console.error('Error fetching task submissions:', error);
+                    }
+                }
+            }
+        }
     };
 
     useEffect(() => {
@@ -304,15 +325,26 @@ const TeacherDashboard = () => {
                                         <span className="text-sm text-secondary line-clamp-2">
                                             {task.description || 'No description available'}
                                         </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                    </td>                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                                         <div className="flex items-center justify-end space-x-4">
                                             <div className="flex items-center gap-1">
                                                 <FileText className="w-4 h-4 text-primary" />
                                                 <span className="text-secondary">
-                                                    {task.submissions?.length || 0} submissions
+                                                    {taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount || 0}
+                                                    /
+                                                    {taskSubmissions[`${course._id}-${task._id}`]?.totalStudents || 0} submissions
                                                 </span>
                                             </div>
+                                            {taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount > 0 && (
+                                                <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+                                                    Average: {
+                                                        Math.round(
+                                                            taskSubmissions[`${course._id}-${task._id}`]?.submissions.reduce((acc, sub) => acc + sub.grade, 0) / 
+                                                            taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount
+                                                        ) || 0
+                                                    }%
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -354,18 +386,30 @@ const TeacherDashboard = () => {
                                       {task.description}
                                     </p>
                                   )}
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-3 text-sm">
-                                  <div className="flex items-center gap-1.5 text-secondary">
-                                    <Users className="w-4 h-4" />
-                                    <span>{course.students?.length || 0} students</span>
+                                </div>                                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                                    <div className="flex items-center gap-1.5 text-secondary">
+                                      <Users className="w-4 h-4" />
+                                      <span>{course.students?.length || 0} students</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-secondary">
+                                      <FileText className="w-4 h-4" />
+                                      <span>
+                                        {taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount || 0}
+                                        /
+                                        {taskSubmissions[`${course._id}-${task._id}`]?.totalStudents || 0} submissions
+                                      </span>
+                                    </div>
+                                    {taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount > 0 && (
+                                      <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+                                        Average: {
+                                          Math.round(
+                                            taskSubmissions[`${course._id}-${task._id}`]?.submissions.reduce((acc, sub) => acc + sub.grade, 0) / 
+                                            taskSubmissions[`${course._id}-${task._id}`]?.submissionsCount
+                                          ) || 0
+                                        }%
+                                      </div>
+                                    )}
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-secondary">
-                                    <FileText className="w-4 h-4" />
-                                    <span>{task.submissions?.length || 0} submissions</span>
-                                  </div>
-                                </div>
                               </div>
                             </div>
                           ))}
