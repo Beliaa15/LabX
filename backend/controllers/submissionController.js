@@ -44,6 +44,7 @@ exports.submitTask = asyncHandler(async (req, res) => {
     const existingSubmission = await StudentSubmission.findOne({
         student: user._id,
         task: taskId,
+        course: courseId,
     });
 
     if (existingSubmission) {
@@ -59,6 +60,7 @@ exports.submitTask = asyncHandler(async (req, res) => {
         student: user._id,
         task: taskId,
         grade: grade || null,
+        course: courseId,
         status: status,
         submittedAt: new Date(),
     });
@@ -155,6 +157,7 @@ exports.getTaskSubmissions = asyncHandler(async (req, res) => {
     const submissions = await StudentSubmission.find({ task: taskId })
         .populate('student', 'firstName lastName email')
         .populate('task', 'title description score')
+        .populate('course', 'title')
         .sort({ submittedAt: -1 });
 
     const enrolledStudents = await User.find({
