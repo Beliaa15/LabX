@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, BookOpen, FileText, Users, Folder, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getUserCourses } from '../../services/courseService';
 import { getCourseTasksById } from '../../services/taskService';
 import { getFolders } from '../../services/folderService';
 
 const StudentDashboard = () => {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [courses, setCourses] = useState([]);    const [stats, setStats] = useState({
         totalCourses: 0,
@@ -190,8 +192,9 @@ const StudentDashboard = () => {
                     .slice(0, 4) // Take only the 4 most recent courses
                     .map((course) => (                                    <div
                                         key={course._id}
-                                        className="p-6 hover:bg-secondary/5 transition-colors group"
-                                    >                                        <div className="flex flex-col sm:flex-row gap-4">
+                                        onClick={() => navigate(`/my-courses/${course._id}`)}
+                                        className="p-6 hover:bg-secondary/5 transition-colors group cursor-pointer"
+                                    ><div className="flex flex-col sm:flex-row gap-4">
                                             {/* Course Info - Left Side */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start sm:items-center gap-3 mb-2">
@@ -244,7 +247,7 @@ const StudentDashboard = () => {
                             Tasks Due Soon (Next 2 Days)
                         </h3>
                     </div>
-                    <div className="divide-y divide-primary">
+                    <div className="divide-y divide-primary" >
                         {loading ? (
                             <div className="flex items-center justify-center h-64">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -264,7 +267,7 @@ const StudentDashboard = () => {
                                     const isDueSoon = !isExpired && new Date(task.dueDate) < new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 
                                     return (
-                                        <div
+                                        <div onClick={() => navigate('/tasks')}
                                             key={task._id}
                                             className={`group p-4 sm:p-6 transition-all ${
                                                 isExpired 
