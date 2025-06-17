@@ -22,6 +22,7 @@ import About from './components/Pages/About';
 import Features from './components/Pages/Features';
 import TaskManagement from './components/Pages/TaskManagement';
 import TaskViewer from './components/Tasks/TaskViewer';
+import Tasks from './components/Pages/Tasks';
 
 const App = () => {
   return (
@@ -169,6 +170,27 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['teacher', 'admin']} redirectTo="/my-courses">
+                    <TaskViewer />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Tasks route */}            <Route
+              path="/tasks"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/dashboard">
+                    <Tasks />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks/:taskId"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['student']} redirectTo="/dashboard">
                     <TaskViewer />
                   </RoleBasedRoute>
                 </ProtectedRoute>

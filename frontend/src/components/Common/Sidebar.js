@@ -44,6 +44,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       href: "/profile",
       icon: User,
       show: true,
+    },    {
+      name: "Tasks",
+      href: "/tasks",
+      icon: ListTodo,
+      show: isStudent(),
     },
     {
       name: "Admin Panel",
