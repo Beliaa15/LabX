@@ -436,31 +436,25 @@ exports.deleteTask = asyncHandler(async (req, res) => {
         throw new Error('Task not found');
     }
 
+    const taskName = task.title.toLowerCase().replace(/\s+/g, '-');
+
     // Delete WebGL files if they exist
     if (task.webglData && task.webglData.buildFolderPath) {
         try {
             // Determine base directory based on environment
-            const isDocker =
-                process.env.NODE_ENV === 'production' ||
-                fs.existsSync('/.dockerenv');
+            const extractPath = path.join(__dirname, '../uploads/webgl', taskName);
 
-            const baseDir = isDocker
-                ? `/usr/src/app/frontend/public/webgl-tasks`
-                : path.join(__dirname, '../../frontend/public/webgl-tasks');
-
-            const buildFolderPath = path.join(baseDir, taskId);
-
-            if (fs.existsSync(buildFolderPath)) {
+            if (fs.existsSync(extractPath)) {
                 console.log(
-                    `Deleting WebGL files for task ${taskId} from path: ${buildFolderPath}`
+                    `Deleting WebGL files for task ${taskId} from path: ${extractPath}`
                 );
-                fs.rmSync(buildFolderPath, { recursive: true, force: true });
+                fs.rmSync(extractPath, { recursive: true, force: true });
                 console.log(
                     `Successfully deleted WebGL files for task ${taskId}`
                 );
             } else {
                 console.log(
-                    `WebGL folder not found for task ${taskId} at path: ${buildFolderPath}`
+                    `WebGL folder not found for task ${taskId} at path: ${extractPath}`
                 );
             }
         } catch (error) {
@@ -702,6 +696,12 @@ exports.uploadZipFile = asyncHandler(async (req, res) => {
     const zipPath = req.file.path;
     const taskName = task.title.toLowerCase().replace(/\s+/g, '-');
     const extractPath = path.join(__dirname, '../uploads/webgl', taskName);
+
+    // remove old build folder if it exists
+    if (task.webglData.buildFolderPath && fs.existsSync(task.webglData.buildFolderPath)) {
+        fs.rmSync(task.webglData.buildFolderPath, { recursive: true, force: true });
+        console.log(`Deleted old build folder: ${task.webglData.buildFolderPath}`);
+    }
 
     const zip = new AdmZip(zipPath);
     zip.extractAllTo(extractPath, true);
