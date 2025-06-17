@@ -49,15 +49,16 @@ const StudentDashboard = () => {
                     // Fetch folders
                     const foldersResponse = await getFolders(course._id);
                     totalFolders += foldersResponse.folders?.length || 0;
-                }                // Filter tasks to show only those due within next 2 days and sort them
-                const tasksWithinTwoDays = allTasks.filter(task => {
-                    const dueDate = new Date(task.dueDate);
-                    const now = new Date();
-                    const diffDays = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
-                    return diffDays >= 0 && diffDays <= 2; // Only show tasks due within next 2 days
-                });
-                tasksWithinTwoDays.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                setRecentTasks(tasksWithinTwoDays); // Show all urgent tasks
+                }                // Filter tasks to show only the 3 most urgent upcoming tasks
+                const now = new Date();
+                const upcomingTasks = allTasks
+                    .filter(task => {
+                        const dueDate = new Date(task.dueDate);
+                        return dueDate >= now; // Only include tasks that haven't expired yet
+                    })
+                    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)) // Sort by earliest due date first
+                    .slice(0, 3); // Take only the 3 most urgent tasks
+                setRecentTasks(upcomingTasks);
 
                 setStats({                    totalCourses: coursesData.length,
                     totalTasks,
@@ -241,10 +242,9 @@ const StudentDashboard = () => {
                         )}
                     </div>
                 </div>                {/* Recent Tasks */}
-                <div className="surface-primary shadow-sm rounded-xl border border-primary h-fit">
-                    <div className="px-6 py-4 border-b border-primary">                        <h3 className="text-lg leading-6 font-semibold text-primary flex items-center">
+                <div className="surface-primary shadow-sm rounded-xl border border-primary h-fit">                    <div className="px-6 py-4 border-b border-primary">                        <h3 className="text-lg leading-6 font-semibold text-primary flex items-center">
                             <FileText className="w-5 h-5 mr-2" />
-                            Tasks Due Soon (Next 2 Days)
+                            Most Urgent Tasks
                         </h3>
                     </div>
                     <div className="divide-y divide-primary" >
