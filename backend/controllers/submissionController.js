@@ -154,7 +154,7 @@ exports.getTaskSubmissions = asyncHandler(async (req, res) => {
         throw new Error('Task not found');
     }
 
-    const submissions = await StudentSubmission.find({ task: taskId })
+    const submissions = await StudentSubmission.find({ course: courseId, task: taskId })
         .populate('student', 'firstName lastName email')
         .populate('task', 'title description score')
         .populate('course', 'title')
