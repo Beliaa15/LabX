@@ -449,7 +449,7 @@ const CourseDashboard = () => {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'video/*', 'audio/*'];
+      'video/*', 'audio/*', 'application/zip'];
 
     const uploadFile = async (file) => {
       try {
@@ -463,6 +463,13 @@ const CourseDashboard = () => {
 
         if (!isValidType) {
           showErrorAlert('Invalid File Type', `${file.name} is not an allowed file type.`);
+          return null;
+        }
+
+        // Check file size (limit to 50MB per file)
+        const maxFileSize = 50 * 1024 * 1024; // 50MB in bytes
+        if (file.size > maxFileSize) {
+          showErrorAlert('File Too Large', `${file.name} is too large. Maximum file size is 50MB.`);
           return null;
         }
 
@@ -482,6 +489,12 @@ const CourseDashboard = () => {
           }
         );
 
+        // Mark as completed
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: 100
+        }));
+
         return result.material;
       } catch (error) {
         console.error('Upload failed:', error);
@@ -489,44 +502,81 @@ const CourseDashboard = () => {
                            error.response?.data?.error || 
                            'Failed to upload file. Please try again.';
         showErrorAlert('Upload Failed', `${file.name}: ${errorMessage}`);
+        
+        // Mark as failed
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: -1 // -1 indicates failure
+        }));
+        
         return null;
       }
     };
 
     const fileArray = Array.from(files);
-    const uploadPromises = fileArray.map(uploadFile);
-    const results = await Promise.all(uploadPromises);
-    const successfulUploads = results.filter(Boolean);
+    
+    // Show initial progress for all files
+    const initialProgress = {};
+    fileArray.forEach(file => {
+      initialProgress[file.name] = 0;
+    });
+    setUploadProgress(initialProgress);
 
-    if (successfulUploads.length > 0) {
-      const response = await getMaterials(selectedCourse._id, selectedFolder?._id || '');
-      const transformedMaterials = response.materials.map(material => ({
-        _id: material._id,
-        id: material._id,
-        name: material.title,
-        title: material.title,
-        type: 'file',
-        size: material.fileSize || 0,
-        uploadedAt: material.createdAt,
-        courseId: selectedCourse._id,
-        folderId: selectedFolder?._id || '',
-        path: currentPath,
-        filePath: material.filePath
-      }));
-
-      setMaterials(transformedMaterials);
-
-      showSuccessAlert(
-        'Files Uploaded',
-        `Successfully uploaded ${successfulUploads.length} file(s)${
-          selectedFolder ? ` to ${selectedFolder.title}` : ''
-        }`
-      );
+    // Upload files sequentially to avoid overwhelming the server
+    const results = [];
+    for (const file of fileArray) {
+      const result = await uploadFile(file);
+      results.push(result);
     }
 
-    setSelectedFile(null);
-    setShowAddMaterialModal(false);
-    setUploadProgress({});
+    const successfulUploads = results.filter(Boolean);
+    const failedUploads = fileArray.length - successfulUploads.length;
+
+    if (successfulUploads.length > 0) {
+      // Refresh materials list
+      try {
+        const response = await getMaterials(selectedCourse._id, selectedFolder?._id || '');
+        const transformedMaterials = response.materials.map(material => ({
+          _id: material._id,
+          id: material._id,
+          name: material.title,
+          title: material.title,
+          type: 'file',
+          size: material.fileSize || 0,
+          uploadedAt: material.createdAt,
+          courseId: selectedCourse._id,
+          folderId: selectedFolder?._id || '',
+          path: currentPath,
+          filePath: material.filePath
+        }));
+
+        setMaterials(transformedMaterials);
+
+        // Show success message
+        let message = `Successfully uploaded ${successfulUploads.length} file(s)`;
+        if (selectedFolder) {
+          message += ` to ${selectedFolder.title}`;
+        }
+        if (failedUploads > 0) {
+          message += `. ${failedUploads} file(s) failed to upload.`;
+        }
+
+        showSuccessAlert('Upload Complete', message);
+      } catch (error) {
+        console.error('Failed to refresh materials:', error);
+        showErrorAlert('Upload Complete', 
+          `${successfulUploads.length} file(s) uploaded successfully, but failed to refresh the file list. Please refresh the page.`);
+      }
+    } else if (failedUploads > 0) {
+      showErrorAlert('Upload Failed', 'All files failed to upload. Please check the file types and sizes and try again.');
+    }
+
+    // Clear upload progress after a delay to show completion
+    setTimeout(() => {
+      setUploadProgress({});
+      setSelectedFile(null);
+      setShowAddMaterialModal(false);
+    }, 2000);
   };
 
   const handleDragOver = (e) => {
@@ -544,6 +594,11 @@ const CourseDashboard = () => {
     setIsDragging(false);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
+      // Validate total number of files
+      if (files.length > 20) {
+        showErrorAlert('Too Many Files', 'You can upload a maximum of 20 files at once.');
+        return;
+      }
       handleFileUpload(files);
     }
   };
