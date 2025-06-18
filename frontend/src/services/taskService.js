@@ -350,3 +350,23 @@ export const getTaskSubmissionsForCourse = async (courseId, taskId) => {
         throw error;
     }
 };
+
+/**
+ * Update the title of a task
+ * @param {string} taskId - The ID of the task to update
+ * @param {string} title - The new title for the task
+ * @returns {Promise} - The updated task data
+ */
+export const updateTaskTitle = async (taskId, title) => {
+    try {
+        const response = await authApi.put(`/api/tasks/${taskId}`, { title });
+        return response.data;
+    } catch (error) {
+        console.error('Failed to update task title:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};
