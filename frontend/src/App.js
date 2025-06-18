@@ -23,6 +23,7 @@ import Features from './components/Pages/Features';
 import TaskManagement from './components/Pages/TaskManagement';
 import TaskViewer from './components/Tasks/TaskViewer';
 import Tasks from './components/Pages/Tasks';
+import NotFound from './components/Common/NotFound';
 
 const App = () => {
   return (
@@ -230,7 +231,7 @@ const App = () => {
             /> */}
 
             {/* Fallback for unknown routes */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
         </Router>
