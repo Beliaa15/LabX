@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { useAuth } from '../../context/AuthContext';
 import authApi from '../../services/authService';
-import { submitTaskInCourse, getTaskById } from '../../services/taskService';
+import { submitTaskInCourse, getTaskById, getTaskSubmissionsForCourse } from '../../services/taskService';
 import TaskCompletedModal from '../Common/Modals/TaskCompletedModal';
 
 export default function TaskViewer() {
@@ -18,6 +18,7 @@ export default function TaskViewer() {
   const [submissionStatus, setSubmissionStatus] = useState(null);
   const [isCompletedModalOpen, setIsCompletedModalOpen] = useState(false);
   const [gameLoaded, setGameLoaded] = useState(false);
+  const [taskSubmission, setTaskSubmission] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -138,6 +139,20 @@ export default function TaskViewer() {
       delete window.unityTaskCompleted;
     };
   }, []);
+
+
+  useEffect(() => {
+    const loadSubmissions = async () => {
+      try {
+        const submissions = await getTaskSubmissionsForCourse(courseId, taskId);
+        setTaskSubmission(submissions);
+      } catch (error) {
+        console.error('Error loading task submissions:', error);
+      }
+    };
+
+    loadSubmissions();
+  }, [courseId, taskId]);
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -633,7 +648,7 @@ export default function TaskViewer() {
               {!isStudent() && (
                 <div className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  {task.submissions?.length || 0} Submissions
+                  {taskSubmission?.submissionsCount || 0} Submissions
                 </div>
               )}
             </div>
