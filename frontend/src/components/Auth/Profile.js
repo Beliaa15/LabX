@@ -5,8 +5,9 @@ import { useDarkMode } from '../Common/useDarkMode';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import EditProfileModal from '../Common/Modals/EditProfileModal';
+import ChangePasswordModal from '../Common/Modals/ChangePasswordModal';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
-import { User, Mail, Phone, Pencil, UserCircle, Building2, Calendar, Shield, MapPin } from 'lucide-react';
+import { User, Mail, Phone, Pencil, UserCircle, Building2, Calendar, Shield, MapPin, Lock } from 'lucide-react';
 
 /**
  * Profile page component for user profile management
@@ -19,6 +20,7 @@ const Profile = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -294,6 +296,21 @@ const Profile = () => {
                             </div>
                           </div>
                           
+                          {/* Change Password Button */}
+                          <button
+                            onClick={() => setIsChangePasswordModalOpen(true)}
+                            className="w-full flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-500/5 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/10 transition-colors duration-200"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-indigo-100 dark:bg-indigo-500/10 rounded-lg">
+                                <Lock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Change Password</div>
+                                <div className="text-xs text-indigo-600 dark:text-indigo-500">Update your account password</div>
+                              </div>
+                            </div>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -305,19 +322,25 @@ const Profile = () => {
         </main>
       </div>
 
-      <EditProfileModal
+      {/* Edit Profile Modal */}      <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSubmit={handleSubmit}
         formData={formData}
         setFormData={setFormData}
-        loading={loading}
         errors={errors}
         touched={touched}
         handleBlur={handleBlur}
         validateField={validateField}
         setErrors={setErrors}
         setTouched={setTouched}
+        loading={loading}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
       />
     </div>
   );
