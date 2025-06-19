@@ -109,14 +109,13 @@ const TaskCreationModal = ({ isOpen, onClose }) => {
   };
 
   const getInputStyles = (status) => {
-    const baseStyles = "peer w-full px-4 py-3 border rounded-xl text-gray-900 dark:text-white placeholder-transparent focus:outline-none focus:ring-2 transition-all duration-200 bg-white dark:bg-gray-700";
     switch (status) {
       case 'error':
-        return `${baseStyles} border-red-300 focus:border-red-500 focus:ring-red-500/20`;
+        return `peer w-full px-4 py-3.5 border rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 transition-all duration-200 surface-primary border-red-300 focus:border-red-500 focus:ring-red-500/20`;
       case 'success':
-        return `${baseStyles} border-green-300 focus:border-green-500 focus:ring-green-500/20`;
+        return `peer w-full px-4 py-3.5 border rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 transition-all duration-200 surface-primary border-green-300 focus:border-green-500 focus:ring-green-500/20`;
       default:
-        return `${baseStyles} border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500/20`;
+        return `peer w-full px-4 py-3.5 border rounded-lg text-primary placeholder-transparent focus:outline-none focus:ring-2 transition-all duration-200 surface-primary border-primary focus:border-indigo-500 focus:ring-indigo-500/20`;
     }
   };
 
@@ -195,20 +194,21 @@ const TaskCreationModal = ({ isOpen, onClose }) => {
               />
               <label
                 htmlFor="title"
-                className="absolute left-4 -top-2.5 bg-white dark:bg-gray-800 px-1 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 dark:peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm text-gray-700 dark:text-gray-300 peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
+                className="absolute left-4 -top-2.5 bg-white dark:bg-gray-800 px-1 text-xs transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-600 dark:peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-4 peer-focus:-top-2.5 peer-focus:text-xs text-gray-600 dark:text-gray-300"
               >
                 Task title
               </label>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                {getInputIcon(getInputStatus('title'))}
-              </div>
+              {touched.title && errors.title && (
+                <span className="mt-2 text-sm text-red-500 block">
+                  {errors.title}
+                </span>
+              )}
+              {touched.title && !errors.title && (
+                <span className="mt-2 text-sm text-green-500 block">
+                  Title looks good!
+                </span>
+              )}
             </div>
-            {touched.title && errors.title && (
-              <p className="mt-1.5 text-sm text-red-500 flex items-center">
-                <X className="w-4 h-4 mr-1" />
-                {errors.title}
-              </p>
-            )}
           </div>
 
           {/* Description Field */}
@@ -221,30 +221,27 @@ const TaskCreationModal = ({ isOpen, onClose }) => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 placeholder="Task description"
-                rows={4}
-                className={`${getInputStyles(getInputStatus('description'))} resize-none`}
+                className={getInputStyles(getInputStatus('description'))}
                 disabled={loading}
+                rows={4}
               />
               <label
                 htmlFor="description"
-                className="absolute left-4 -top-2.5 bg-white dark:bg-gray-800 px-1 text-sm transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 dark:peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:-top-2.5 peer-focus:text-sm text-gray-700 dark:text-gray-300 peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
+                className="absolute left-4 -top-2.5 bg-white dark:bg-gray-800 px-1 text-xs transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-600 dark:peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-4 peer-focus:-top-2.5 peer-focus:text-xs text-gray-600 dark:text-gray-300"
               >
                 Task description
               </label>
-              <div className="absolute top-3 right-0 flex items-center pr-3">
-                {getInputIcon(getInputStatus('description'))}
-              </div>
+              {touched.description && errors.description && (
+                <span className="mt-2 text-sm text-red-500 block">
+                  {errors.description}
+                </span>
+              )}
+              {touched.description && !errors.description && (
+                <span className="mt-2 text-sm text-green-500 block">
+                  Description looks good!
+                </span>
+              )}
             </div>
-            {touched.description && errors.description ? (
-              <p className="mt-1.5 text-sm text-red-500 flex items-center">
-                <X className="w-4 h-4 mr-1" />
-                {errors.description}
-              </p>
-            ) : (
-              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                Provide a clear description of what students need to accomplish
-              </p>
-            )}
           </div>
 
           {/* Modal Actions */}
