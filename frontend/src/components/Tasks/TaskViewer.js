@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Send, Trophy, Clock, Star, Users, XCircle } from 'lucide-react';
+import { ArrowLeft, Send, Trophy, Clock, Star, Users, XCircle, HelpCircle } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
@@ -19,6 +19,8 @@ export default function TaskViewer() {
   const [isCompletedModalOpen, setIsCompletedModalOpen] = useState(false);
   const [gameLoaded, setGameLoaded] = useState(false);
   const [taskSubmission, setTaskSubmission] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -28,6 +30,18 @@ export default function TaskViewer() {
   // Get task from location state if available
   const taskFromState = location.state?.task;
   const isTaskManagement = location.pathname.startsWith('/taskmanagement');
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Debug logging
   useEffect(() => {
@@ -164,6 +178,36 @@ export default function TaskViewer() {
       minute: '2-digit',
     });
   };
+
+  // Controls content component
+  const ControlsContent = () => (
+    <div className="space-y-4">
+      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+        <h3 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          🔌 Electronics Lab Controls
+        </h3>
+        <ul className="list-disc pl-4 space-y-1 text-xs text-gray-700 dark:text-gray-300">
+          <li>Drag components from the menu onto the breadboard to build your circuit.</li>
+          <li>Press <strong className="text-gray-900 dark:text-gray-100">W</strong> to enter <strong className="text-gray-900 dark:text-gray-100">Wire Mode</strong>.</li>
+          <li>In Wire Mode, click two pins to create a wire between them.</li>
+          <li>Press <strong className="text-gray-900 dark:text-gray-100">W</strong> again to return to Component Mode.</li>
+          <li><strong className="text-gray-900 dark:text-gray-100">Right-click</strong> on any component or wire to delete it.</li>
+        </ul>
+      </div>
+      
+      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+        <h3 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          🧠 Logic Gates Lab Controls
+        </h3>
+        <ul className="list-disc pl-4 space-y-1 text-xs text-gray-700 dark:text-gray-300">
+          <li>Click and drag any logic gate from the menu to place it anywhere on the canvas.</li>
+          <li>Click on an <strong className="text-gray-900 dark:text-gray-100">output node</strong> to start a wire, then click an <strong className="text-gray-900 dark:text-gray-100">input node</strong> to connect it.</li>
+          <li>Press <strong className="text-gray-900 dark:text-gray-100">Ctrl + Left Click</strong> on an input node to toggle it between HIGH (1) and LOW (0).</li>
+          <li><strong className="text-gray-900 dark:text-gray-100">Right-click</strong> on a component or wire to delete it.</li>
+        </ul>
+      </div>
+    </div>
+  );
 
   // Modified back handler with safe cleanup
 
@@ -624,14 +668,36 @@ export default function TaskViewer() {
                   {task.description}
                 </p>
               </div>
-              <Button 
-                variant="outline" 
-                onClick={handleBack}
-                className="w-full sm:w-auto"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
+              <div className="flex gap-2">
+                {/* Help Icon - Only show on desktop */}
+                {!isMobile && (
+                  <div className="relative">
+                    <div
+                      className="p-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800 cursor-help transition-colors"
+                      onMouseEnter={() => setShowHelp(true)}
+                      onMouseLeave={() => setShowHelp(false)}
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                    </div>
+                    
+                    {/* Help Tooltip */}
+                    {showHelp && (
+                      <div className="absolute top-full right-0 mt-2 w-96 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4">
+                        <ControlsContent />
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleBack}
+                  className="w-full sm:w-auto"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+              </div>
             </div>
 
             <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-4">
@@ -654,6 +720,20 @@ export default function TaskViewer() {
             </div>
           </CardHeader>
         </Card>
+
+        {/* Mobile Controls - Show controls directly on mobile */}
+        {isMobile && (
+          <Card>
+            <CardHeader>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                🎮 Game Controls
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <ControlsContent />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Game Section */}
         <Card>
