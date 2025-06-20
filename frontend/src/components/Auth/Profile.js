@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { useDarkMode } from '../Common/useDarkMode';
@@ -155,162 +156,185 @@ const Profile = () => {
     }
   };
 
+  const getPageTitle = () => {
+    if (user) {
+      return `${user.firstName} ${user.lastName} - LabX`;
+    }
+    return 'User Profile - LabX';
+  };
+
+  const getPageDescription = () => {
+    const role = isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student';
+    if (user) {
+      return `Manage your LabX profile settings and account information as ${role}. Update personal details, contact information, and security settings.`;
+    }
+    return 'Manage your LabX profile settings, personal information, and account security.';
+  };
+
   return (
-    <div className="min-h-screen surface-secondary">
-      <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
+    <>
+      <Helmet>
+        <title>{getPageTitle()}</title>
+        <meta name="description" content={getPageDescription()} />
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="keywords" content="user profile, account settings, personal information, LabX profile" />
+      </Helmet>
+      <div className="min-h-screen surface-secondary">
+        <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
-      <div
-        className={`${
-          sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'
-        } flex flex-col flex-1 transition-all duration-300 ease-in-out`}
-      >
-        <Header 
-          title="Profile"
-          user={user}
-          isAdmin={isAdmin}
-          isTeacher={isTeacher}
-          isDarkMode={isDarkMode}
-          handleToggle={handleToggle}
-        />
+        <div
+          className={`${
+            sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'
+          } flex flex-col flex-1 transition-all duration-300 ease-in-out`}
+        >
+          <Header 
+            title="Profile"
+            user={user}
+            isAdmin={isAdmin}
+            isTeacher={isTeacher}
+            isDarkMode={isDarkMode}
+            handleToggle={handleToggle}
+          />
 
-        <main className="animate-fadeIn flex-1 relative z-0 overflow-y-auto focus:outline-none">
-          <div className="py-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex flex-col gap-8">
-                {/* Profile Header */}
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-6">
-                    <div className="relative">
-                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-                        {user?.firstName?.charAt(0)}
-                        {user?.lastName?.charAt(0)}
+          <main className="animate-fadeIn flex-1 relative z-0 overflow-y-auto focus:outline-none">
+            <div className="py-8">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col gap-8">
+                  {/* Profile Header */}
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-6">
+                      <div className="relative">
+                        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                          {user?.firstName?.charAt(0)}
+                          {user?.lastName?.charAt(0)}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-green-400 border-4 border-white dark:border-gray-900"></div>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-green-400 border-4 border-white dark:border-gray-900"></div>
-                    </div>
-                    <div>
-                      <h1 className="text-2xl font-bold text-primary">
-                        {user?.firstName} {user?.lastName}
-                      </h1>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Shield className="w-4 h-4 text-indigo-500" />
-                        <span className="text-secondary font-medium">
-                          {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow transform hover:translate-y-[-1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900"
-                  >
-                    <Pencil className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </button>
-                </div>
-
-                {/* Profile Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Main Info Card */}
-                  <div className="lg:col-span-2 space-y-8">
-                    {/* Personal Information */}
-                    <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
-                      <div className="px-6 py-5 border-b border-primary/10">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
-                            <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-primary">Personal Information</h3>
+                      <div>
+                        <h1 className="text-2xl font-bold text-primary">
+                          {user?.firstName} {user?.lastName}
+                        </h1>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Shield className="w-4 h-4 text-indigo-500" />
+                          <span className="text-secondary font-medium">
+                            {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
+                          </span>
                         </div>
                       </div>
-                      <div className="p-6">
-                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                          <div>
-                            <dt className="text-sm text-secondary">Full Name</dt>
-                            <dd className="mt-1 text-sm font-medium text-primary">
-                              {user?.firstName} {user?.lastName}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-sm text-secondary">Role</dt>
-                            <dd className="mt-1 text-sm font-medium text-primary">
-                              {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
-                            </dd>
-                          </div>
-                        </dl>
-                      </div>
                     </div>
-
-                    {/* Contact Information */}
-                    <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
-                      <div className="px-6 py-5 border-b border-primary/10">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-purple-50 dark:bg-purple-500/10 rounded-xl">
-                            <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-primary">Contact Information</h3>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                          <div>
-                            <dt className="text-sm text-secondary">Email Address</dt>
-                            <dd className="mt-1 text-sm font-medium text-primary flex items-center">
-                              <Mail className="w-4 h-4 mr-2 text-purple-500" />
-                              {user?.email}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-sm text-secondary">Phone Number</dt>
-                            <dd className="mt-1 text-sm font-medium text-primary flex items-center">
-                              <Phone className="w-4 h-4 mr-2 text-purple-500" />
-                              {user?.phone || 'Not provided'}
-                            </dd>
-                          </div>
-                        </dl>
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow transform hover:translate-y-[-1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900"
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </button>
                   </div>
 
-                  {/* Side Info Card */}
-                  <div className="lg:col-span-1">
-                    <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
-                      <div className="px-6 py-5 border-b border-primary/10">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-green-50 dark:bg-green-500/10 rounded-xl">
-                            <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  {/* Profile Content */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Main Info Card */}
+                    <div className="lg:col-span-2 space-y-8">
+                      {/* Personal Information */}
+                      <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                        <div className="px-6 py-5 border-b border-primary/10">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
+                              <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-primary">Personal Information</h3>
                           </div>
-                          <h3 className="text-lg font-semibold text-primary">Account Status</h3>
+                        </div>
+                        <div className="p-6">
+                          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                            <div>
+                              <dt className="text-sm text-secondary">Full Name</dt>
+                              <dd className="mt-1 text-sm font-medium text-primary">
+                                {user?.firstName} {user?.lastName}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-sm text-secondary">Role</dt>
+                              <dd className="mt-1 text-sm font-medium text-primary">
+                                {isAdmin() ? 'Administrator' : isTeacher() ? 'Teacher' : 'Student'}
+                              </dd>
+                            </div>
+                          </dl>
                         </div>
                       </div>
-                      <div className="p-6">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-500/5 rounded-xl">
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-green-100 dark:bg-green-500/10 rounded-lg">
-                                <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-green-700 dark:text-green-400">Active</div>
-                                <div className="text-xs text-green-600 dark:text-green-500">Your account is in good standing</div>
-                              </div>
+
+                      {/* Contact Information */}
+                      <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                        <div className="px-6 py-5 border-b border-primary/10">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-purple-50 dark:bg-purple-500/10 rounded-xl">
+                              <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                             </div>
+                            <h3 className="text-lg font-semibold text-primary">Contact Information</h3>
                           </div>
-                          
-                          {/* Change Password Button */}
-                          <button
-                            onClick={() => setIsChangePasswordModalOpen(true)}
-                            className="w-full flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-500/5 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/10 transition-colors duration-200"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-indigo-100 dark:bg-indigo-500/10 rounded-lg">
-                                <Lock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Change Password</div>
-                                <div className="text-xs text-indigo-600 dark:text-indigo-500">Update your account password</div>
+                        </div>
+                        <div className="p-6">
+                          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                            <div>
+                              <dt className="text-sm text-secondary">Email Address</dt>
+                              <dd className="mt-1 text-sm font-medium text-primary flex items-center">
+                                <Mail className="w-4 h-4 mr-2 text-purple-500" />
+                                {user?.email}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-sm text-secondary">Phone Number</dt>
+                              <dd className="mt-1 text-sm font-medium text-primary flex items-center">
+                                <Phone className="w-4 h-4 mr-2 text-purple-500" />
+                                {user?.phone || 'Not provided'}
+                              </dd>
+                            </div>
+                          </dl>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Side Info Card */}
+                    <div className="lg:col-span-1">
+                      <div className="surface-primary rounded-2xl border border-primary/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                        <div className="px-6 py-5 border-b border-primary/10">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-green-50 dark:bg-green-500/10 rounded-xl">
+                              <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-primary">Account Status</h3>
+                          </div>
+                        </div>
+                        <div className="p-6">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-500/5 rounded-xl">
+                              <div className="flex items-center space-x-3">
+                                <div className="p-2 bg-green-100 dark:bg-green-500/10 rounded-lg">
+                                  <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-green-700 dark:text-green-400">Active</div>
+                                  <div className="text-xs text-green-600 dark:text-green-500">Your account is in good standing</div>
+                                </div>
                               </div>
                             </div>
-                          </button>
+                            
+                            {/* Change Password Button */}
+                            <button
+                              onClick={() => setIsChangePasswordModalOpen(true)}
+                              className="w-full flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-500/5 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/10 transition-colors duration-200"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <div className="p-2 bg-indigo-100 dark:bg-indigo-500/10 rounded-lg">
+                                  <Lock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Change Password</div>
+                                  <div className="text-xs text-indigo-600 dark:text-indigo-500">Update your account password</div>
+                                </div>
+                              </div>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -318,31 +342,31 @@ const Profile = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
+
+        {/* Edit Profile Modal */}      <EditProfileModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSubmit={handleSubmit}
+          formData={formData}
+          setFormData={setFormData}
+          errors={errors}
+          touched={touched}
+          handleBlur={handleBlur}
+          validateField={validateField}
+          setErrors={setErrors}
+          setTouched={setTouched}
+          loading={loading}
+        />
+
+        {/* Change Password Modal */}
+        <ChangePasswordModal
+          isOpen={isChangePasswordModalOpen}
+          onClose={() => setIsChangePasswordModalOpen(false)}
+        />
       </div>
-
-      {/* Edit Profile Modal */}      <EditProfileModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSubmit={handleSubmit}
-        formData={formData}
-        setFormData={setFormData}
-        errors={errors}
-        touched={touched}
-        handleBlur={handleBlur}
-        validateField={validateField}
-        setErrors={setErrors}
-        setTouched={setTouched}
-        loading={loading}
-      />
-
-      {/* Change Password Modal */}
-      <ChangePasswordModal
-        isOpen={isChangePasswordModalOpen}
-        onClose={() => setIsChangePasswordModalOpen(false)}
-      />
-    </div>
+    </>
   );
 };
 

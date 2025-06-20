@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, BookOpen, FileText, Folder, ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { getUserCourses } from '../../services/courseService';
 import { getTaskSubmissionsForCourse } from '../../services/taskService';
+import { Helmet } from 'react-helmet-async';
 
 
 const TeacherDashboard = () => {
@@ -76,7 +77,14 @@ const TeacherDashboard = () => {
     }, []);
 
     return (
-      <div className="space-y-6">        {/* Welcome Section */}
+      <>
+      <Helmet>
+        <title>Teacher Dashboard - LabX</title>
+        <meta name="description" content="Manage your courses, students, assignments, and track progress on LabX virtual laboratory platform." />
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+      <div className="space-y-6">
+        {/* Welcome Section */}
         <div className="surface-primary shadow-sm rounded-xl p-6 border border-primary">
           <h2 className="text-2xl font-bold text-primary">
             Welcome to Your Dashboard
@@ -477,6 +485,7 @@ const TeacherDashboard = () => {
           </div>
         </div>
       </div>
+      </>
     );
 };
 

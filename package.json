@@ -10,6 +10,7 @@
     "@radix-ui/react-toast": "^1.2.2",
     "bootstrap": "^5.3.3",
     "lucide-react": "^0.454.0",
+    "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.53.1",
     "react-toastify": "^10.0.6",
     "yup": "^1.4.0"

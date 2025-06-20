@@ -4,6 +4,7 @@ import { ArrowLeft, Send, Trophy, Clock, Star, Users, XCircle, HelpCircle } from
 import { Card, CardHeader, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import authApi from '../../services/authService';
 import { submitTaskInCourse, getTaskById, getTaskSubmissionsForCourse } from '../../services/taskService';
@@ -167,6 +168,20 @@ export default function TaskViewer() {
 
     loadSubmissions();
   }, [courseId, taskId]);
+
+  const getPageTitle = () => {
+    if (task) {
+      return `${task.title} - LabX`;
+    }
+    return 'Task Viewer - LabX';
+  };
+
+  const getPageDescription = () => {
+    if (task) {
+      return `Complete the interactive task "${task.title}" using our 3D virtual laboratory platform. ${task.description || ''}`;
+    }
+    return 'Complete interactive tasks using LabX virtual laboratory platform.';
+  };
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -654,6 +669,13 @@ export default function TaskViewer() {
   }
 
   return (
+    <>
+    <Helmet>
+      <title>{getPageTitle()}</title>
+      <meta name="description" content={getPageDescription()} />
+      <meta name="robots" content="noindex, nofollow" />
+      <meta name="keywords" content="virtual laboratory, interactive task, 3D simulation, LabX" />
+    </Helmet>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8 px-2 sm:px-4 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8">
         {/* Task Header */}
@@ -816,5 +838,6 @@ export default function TaskViewer() {
         />
       </div>
     </div>
+    </>
   );
 }

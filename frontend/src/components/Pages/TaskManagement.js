@@ -12,6 +12,7 @@ import { getAllTasks, deleteTask, uploadTaskFiles, updateTaskTitle } from '../..
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { debounce } from 'lodash';
 import axios from 'axios';
+import { Helmet } from 'react-helmet-async';
 
 const TaskManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -335,7 +336,28 @@ const TaskManagement = () => {
     </div>
   ));
 
+  const getPageTitle = () => {
+    if (taskId && selectedTaskToOpen) {
+      return `${selectedTaskToOpen.title} - Task Management - LabX`;
+    }
+    return 'Task Management - LabX Admin Portal';
+  };
+
+  const getPageDescription = () => {
+    if (taskId && selectedTaskToOpen) {
+      return `Manage and preview the interactive task "${selectedTaskToOpen.title}" on LabX virtual laboratory platform.`;
+    }
+    return 'Create, manage, and upload interactive virtual laboratory tasks for students on LabX platform.';
+  };
+
   return (
+    <>
+    <Helmet>
+      <title>{getPageTitle()}</title>
+      <meta name="description" content={getPageDescription()} />
+      <meta name="robots" content="noindex, nofollow" />
+      <meta name="keywords" content="task management, virtual laboratory, interactive tasks, admin portal, LabX" />
+    </Helmet>
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
@@ -571,6 +593,7 @@ const TaskManagement = () => {
         loading={isUpdatingTitle}
       />
     </div>
+    </>
   );
 };
 

@@ -9,6 +9,7 @@ import {
   BookOpen,
   Plus
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { getFolders } from '../../services/folderService';
 import { getUserCourses, enrollStudentByCode } from '../../services/courseService';
@@ -330,7 +331,34 @@ const MyCourses = () => {
     navigate(`/my-courses/${selectedCourse._id}/task/${task._id}`, { state: { task } });
   };
 
+  const getPageTitle = () => {
+    if (selectedCourse && selectedFolder) {
+      return `${selectedFolder.title} - ${selectedCourse.name} - My Courses - LabX`;
+    }
+    if (selectedCourse) {
+      return `${selectedCourse.name} - My Courses - LabX`;
+    }
+    return 'My Courses - LabX Student Portal';
+  };
+
+  const getPageDescription = () => {
+    if (selectedCourse && selectedFolder) {
+      return `Access materials and resources in ${selectedFolder.title} folder for ${selectedCourse.name} course on LabX.`;
+    }
+    if (selectedCourse) {
+      return `Access course materials, assignments, and virtual laboratory tasks for ${selectedCourse.name} on LabX platform.`;
+    }
+    return 'Access your enrolled courses, virtual laboratory tasks, and learning materials on LabX student portal.';
+  };
+
   return (
+    <>
+    <Helmet>
+      <title>{getPageTitle()}</title>
+      <meta name="description" content={getPageDescription()} />
+      <meta name="robots" content="noindex, nofollow" />
+      <meta name="keywords" content="student courses, virtual laboratory, course materials, assignments, LabX" />
+    </Helmet>
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
@@ -517,6 +545,7 @@ const MyCourses = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
