@@ -2,6 +2,332 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { VideoPlayer } from './VideoPlayer';
+
+  // Create Unity HTML content with relative paths to avoid CORS issues
+  const createUnityHTML = (taskTitle) => {
+    return `
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity Web Player | ${taskTitle}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #unity-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        #unity-canvas {
+            background: #231F20;
+            width: 95% !important;
+            height: 90% !important;
+            max-width: none;
+            max-height: none;
+            min-width: 800px;
+            min-height: 600px;
+        }
+        
+        #unity-loading-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+            position: absolute;
+            z-index: 10;
+        }
+        
+        #unity-progress-bar-empty {
+            width: 200px;
+            height: 18px;
+            margin: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9px;
+        }
+        
+        #unity-progress-bar-full {
+            width: 0%;
+            height: 18px;
+            background: linear-gradient(90deg, #ff6b35, #f7931e);
+            border-radius: 9px;
+            transition: width 0.3s ease;
+        }
+        
+        #unity-warning {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        #unity-footer {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        #unity-fullscreen-button {
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            user-select: none;
+        }
+        
+        #unity-fullscreen-button:hover {
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        #unity-build-title {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .loading-text {
+            color: white;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            #unity-canvas {
+                width: 90% !important;
+                height: 85% !important;
+                min-width: 600px;
+                min-height: 450px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #unity-canvas {
+                width: 98% !important;
+                height: 80% !important;
+                min-width: 320px;
+                min-height: 240px;
+            }
+            
+            #unity-footer {
+                bottom: 5px;
+                right: 5px;
+            }
+        }
+</style>
+</head>
+<body>
+    <div id="unity-container">
+        <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
+        <div id="unity-loading-bar">
+            <div id="unity-logo"></div>
+            <div id="unity-progress-bar-empty">
+                <div id="unity-progress-bar-full"></div>
+            </div>
+            <div class="loading-text">Loading Demo...</div>
+        </div>
+        <div id="unity-warning"></div>
+        <div id="unity-footer">
+            <div id="unity-fullscreen-button">⛶</div>
+        </div>
+    </div>
+    
+    <script>
+        var canvas = document.querySelector("#unity-canvas");
+        
+        // Communication with parent window
+        function notifyParent(type, data) {
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: type, data: data }, '*');
+                    console.log('Sent message to parent:', type, data);
+                }
+            } catch (e) {
+                console.warn('Failed to send message to parent:', e);
+            }
+        }
+        
+        // Task completion handler
+        window.unityTaskCompleted = function(data) {
+            console.log('Task completed:', data);
+            notifyParent('TaskCompleted', data);
+        };
+
+        function unityShowBanner(msg, type) {
+            var warningBanner = document.querySelector("#unity-warning");
+            function updateBannerVisibility() {
+                warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+            }
+            var div = document.createElement('div');
+            div.innerHTML = msg;
+            warningBanner.appendChild(div);
+            if (type == 'error') div.style = 'background: red; padding: 10px; color: white;';
+            else {
+                if (type == 'warning') div.style = 'background: yellow; padding: 10px; color: black;';
+                setTimeout(function() {
+                    warningBanner.removeChild(div);
+                    updateBannerVisibility();
+                }, 5000);
+            }
+            updateBannerVisibility();
+        }
+
+        // Use the current window location protocol and host
+        var baseUrl = "http://localhost:3000/webgl/68521f8c8686b74a5725ea0b";
+        var buildUrl = baseUrl + "/Build";
+        var loaderUrl = buildUrl + "/build.loader.js";
+        
+        console.log('Loading Unity from:', baseUrl);
+        console.log('Loader URL:', loaderUrl);
+        
+        var config = {
+            arguments: [],
+            dataUrl: buildUrl + "/build.data",
+            frameworkUrl: buildUrl + "/build.framework.js",
+            codeUrl: buildUrl + "/build.wasm",
+            streamingAssetsUrl: baseUrl + "/StreamingAssets",
+            companyName: "DefaultCompany",
+            productName: "Demo",
+            productVersion: "1.0",
+            showBanner: unityShowBanner,
+        };
+
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            try {
+                var container = document.querySelector("#unity-container");
+                var containerRect = container.getBoundingClientRect();
+                var aspectRatio = 1920 / 1080; // Original aspect ratio
+                
+                var maxWidth = containerRect.width * 0.9;
+                var maxHeight = containerRect.height * 0.8;
+                
+                var width, height;
+                
+                if (maxWidth / aspectRatio <= maxHeight) {
+                    width = maxWidth;
+                    height = maxWidth / aspectRatio;
+                } else {
+                    height = maxHeight;
+                    width = maxHeight * aspectRatio;
+                }
+                
+                canvas.style.width = width + "px";
+                canvas.style.height = height + "px";
+            } catch (e) {
+                console.warn('Error resizing canvas:', e);
+            }
+        }
+
+        // Mobile detection
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            var meta = document.createElement('meta');
+            meta.name = 'viewport';
+            meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+            document.getElementsByTagName('head')[0].appendChild(meta);
+            
+            // Mobile specific styling
+            document.querySelector("#unity-container").style.padding = "10px";
+            canvas.style.maxWidth = "100%";
+            canvas.style.maxHeight = "70vh";
+        } else {
+            // Desktop sizing
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        document.querySelector("#unity-loading-bar").style.display = "block";
+
+        // Load Unity with error handling
+        function loadUnity() {
+            var script = document.createElement("script");
+            script.src = loaderUrl;
+            script.crossOrigin = "anonymous"; // Add crossOrigin attribute
+            
+            script.onload = function() {
+                console.log('Unity loader script loaded successfully');
+                
+                if (typeof createUnityInstance === 'undefined') {
+                    console.error('createUnityInstance is not defined');
+                    unityShowBanner('Unity loader did not define createUnityInstance function', 'error');
+                    return;
+                }
+                
+                createUnityInstance(canvas, config, function(progress) {
+                    document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+                }).then(function(unityInstance) {
+                    document.querySelector("#unity-loading-bar").style.display = "none";
+                    
+                    // Fullscreen button
+                    document.querySelector("#unity-fullscreen-button").onclick = function() {
+                        unityInstance.SetFullscreen(1);
+                    };
+                    
+                    // Notify parent that game has loaded
+                    notifyParent('GameLoaded', true);
+                    
+                    console.log('Unity instance created successfully');
+                    
+                }).catch(function(message) {
+                    console.error('Unity loading error:', message);
+                    unityShowBanner('Failed to load Unity: ' + message, 'error');
+                    document.querySelector("#unity-loading-bar").style.display = "none";
+                });
+            };
+            
+            script.onerror = function() {
+                console.error('Failed to load Unity loader script from:', loaderUrl);
+                unityShowBanner('Failed to load Unity loader script. The game files may not exist at the expected location.', 'error');
+                document.querySelector("#unity-loading-bar").style.display = "none";
+            };
+
+            document.body.appendChild(script);
+        }
+        
+        // Start loading Unity
+        loadUnity();
+        
+        // Test communication with parent
+        setTimeout(function() {
+            notifyParent('IframeReady', { title: 'Demo' });
+        }, 1000);
+    </script>
+</body>
+</html>`;
+  };
+
 
 /**
  * Features page component for LabX Educational Platform
@@ -147,7 +473,7 @@ const Features = () => {
                         </div>
                     </div>
 
-                    {/* 3D Labs Showcase */}
+                    {/* 3D Labs Showcase with Video */}
                     <div className="py-16 sm:py-20 bg-white">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
@@ -178,22 +504,20 @@ const Features = () => {
                                     </div>
                                 </div>
                                 <div className="mt-12 lg:mt-0">
-                                    {/* Placeholder for 3D lab demo video */}
-                                    <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg h-64 lg:h-80 flex items-center justify-center shadow-lg">
-                                        <div className="text-center">
-                                            <svg className="mx-auto h-16 w-16 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <p className="mt-4 text-blue-600 font-medium">3D Lab Demo Video</p>
-                                            <p className="text-sm text-blue-500">Unity Engine in Action</p>
-                                        </div>
-                                    </div>
+                                    {/* 3D Lab Demo Video */}
+                                    <VideoPlayer
+                                        src="/videos/demos/3d-lab-demo.mp4"
+                                        poster="/videos/demos/3d-lab-demo-poster.jpg"
+                                        title="3D Virtual Laboratory Demo"
+                                        className="h-64 lg:h-80"
+                                        onPlay={() => console.log('3D Lab demo started')}
+                                    />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* EECircuit Engine */}
+                    {/* EECircuit Engine with Video */}
                     <div className="py-16 sm:py-20 bg-gray-50">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
@@ -224,15 +548,18 @@ const Features = () => {
                                     </div>
                                 </div>
                                 <div className="mt-12 lg:mt-0 lg:order-1">
-                                    {/* Placeholder for circuit simulation demo */}
-                                    <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-lg h-64 lg:h-80 flex items-center justify-center shadow-lg">
-                                        <div className="text-center">
-                                            <svg className="mx-auto h-16 w-16 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                                            </svg>
-                                            <p className="mt-4 text-green-600 font-medium">Circuit Simulation Demo</p>
-                                            <p className="text-sm text-green-500">EECircuit Engine</p>
-                                        </div>
+                                    {/* Circuit simulation demo using Unity iframe */}
+                                    <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-lg h-64 lg:h-80 shadow-lg overflow-hidden relative">
+                                        <iframe
+                                            srcDoc={createUnityHTML("Demo")}
+                                            className="w-full h-full border-0"
+                                            title="Circuit Simulation Demo - EECircuit Engine"
+                                            allowFullScreen
+                                            allow="fullscreen"
+                                            style={{ background: 'transparent' }}
+                                            onLoad={() => console.log('Circuit demo iframe loaded')}
+                                            onError={() => console.error('Circuit demo iframe failed to load')}
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -373,7 +700,7 @@ const Features = () => {
                         </div>
                     </div>
 
-                    {/* Demo Section */}
+                    {/* Enhanced Demo Section with Multiple Videos */}
                     <div className="py-16 sm:py-20 bg-white">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="text-center">
@@ -384,35 +711,55 @@ const Features = () => {
                             </div>
 
                             <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {/* Physics Lab Demo */}
-                                <div className="bg-gradient-to-br from-indigo-100 to-indigo-50 rounded-lg p-8 shadow-lg">
-                                    <div className="text-center">
-                                        <div className="h-32 flex items-center justify-center">
-                                            <svg className="h-16 w-16 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                            </svg>
+                                {/* Electronics Lab Demo Video */}
+                                <div className="space-y-4">
+                                    <VideoPlayer
+                                        src="/videos/demos/electronics-lab-demo.mp4"
+                                        poster="/videos/demos/electronics-lab-demo-poster.jpg"
+                                        title="Electronics Lab Demo - EECircuit Engine"
+                                        className="h-64 lg:h-80"
+                                        onPlay={() => console.log('Electronics demo started')}
+                                    />
+                                    <div className="text-center lg:text-left">
+                                        <h3 className="text-xl font-semibold text-gray-900">Electronics Laboratory</h3>
+                                        <p className="mt-2 text-gray-600">Build circuits, analyze waveforms, and test electronic components with our advanced simulation engine.</p>
+                                        <div className="mt-4 flex flex-wrap gap-2 justify-center lg:justify-start">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                Circuit Design
+                                            </span>
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                Waveform Analysis
+                                            </span>
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                Real-time Simulation
+                                            </span>
                                         </div>
-                                        <h3 className="text-xl font-semibold text-gray-900">Physics Laboratory Demo</h3>
-                                        <p className="mt-2 text-gray-600">Experience pendulum experiments, wave mechanics, and thermodynamics simulations</p>
-                                        <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
-                                            Watch Demo
-                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Electronics Lab Demo */}
-                                <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-lg p-8 shadow-lg">
-                                    <div className="text-center">
-                                        <div className="h-32 flex items-center justify-center">
-                                            <svg className="h-16 w-16 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                            </svg>
+                                {/* 3D Lab Demo Video */}
+                                <div className="space-y-4">
+                                    <VideoPlayer
+                                        src="/videos/demos/3d-lab-demo.mp4"
+                                        poster="/videos/demos/3d-lab-demo-poster.jpg"
+                                        title="3D Virtual Laboratory Demo"
+                                        className="h-64 lg:h-80"
+                                        onPlay={() => console.log('3D Lab demo started')}
+                                    />
+                                    <div className="text-center lg:text-left">
+                                        <h3 className="text-xl font-semibold text-gray-900">3D Virtual Laboratories</h3>
+                                        <p className="mt-2 text-gray-600">Experience immersive 3D environments with realistic physics and interactive equipment.</p>
+                                        <div className="mt-4 flex flex-wrap gap-2 justify-center lg:justify-start">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                3D Physics
+                                            </span>
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                Interactive Equipment
+                                            </span>
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                Collaborative Learning
+                                            </span>
                                         </div>
-                                        <h3 className="text-xl font-semibold text-gray-900">Electronics Lab Demo</h3>
-                                        <p className="mt-2 text-gray-600">Build circuits, analyze waveforms, and test electronic components with EECircuit Engine</p>
-                                        <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors">
-                                            Watch Demo
-                                        </button>
                                     </div>
                                 </div>
                             </div>
