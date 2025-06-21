@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -449,7 +450,7 @@ const CourseDashboard = () => {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'video/*', 'audio/*'];
+      'video/*', 'audio/*', 'application/zip'];
 
     const uploadFile = async (file) => {
       try {
@@ -463,6 +464,13 @@ const CourseDashboard = () => {
 
         if (!isValidType) {
           showErrorAlert('Invalid File Type', `${file.name} is not an allowed file type.`);
+          return null;
+        }
+
+        // Check file size (limit to 50MB per file)
+        const maxFileSize = 50 * 1024 * 1024; // 50MB in bytes
+        if (file.size > maxFileSize) {
+          showErrorAlert('File Too Large', `${file.name} is too large. Maximum file size is 50MB.`);
           return null;
         }
 
@@ -482,6 +490,12 @@ const CourseDashboard = () => {
           }
         );
 
+        // Mark as completed
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: 100
+        }));
+
         return result.material;
       } catch (error) {
         console.error('Upload failed:', error);
@@ -489,44 +503,81 @@ const CourseDashboard = () => {
                            error.response?.data?.error || 
                            'Failed to upload file. Please try again.';
         showErrorAlert('Upload Failed', `${file.name}: ${errorMessage}`);
+        
+        // Mark as failed
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: -1 // -1 indicates failure
+        }));
+        
         return null;
       }
     };
 
     const fileArray = Array.from(files);
-    const uploadPromises = fileArray.map(uploadFile);
-    const results = await Promise.all(uploadPromises);
-    const successfulUploads = results.filter(Boolean);
+    
+    // Show initial progress for all files
+    const initialProgress = {};
+    fileArray.forEach(file => {
+      initialProgress[file.name] = 0;
+    });
+    setUploadProgress(initialProgress);
 
-    if (successfulUploads.length > 0) {
-      const response = await getMaterials(selectedCourse._id, selectedFolder?._id || '');
-      const transformedMaterials = response.materials.map(material => ({
-        _id: material._id,
-        id: material._id,
-        name: material.title,
-        title: material.title,
-        type: 'file',
-        size: material.fileSize || 0,
-        uploadedAt: material.createdAt,
-        courseId: selectedCourse._id,
-        folderId: selectedFolder?._id || '',
-        path: currentPath,
-        filePath: material.filePath
-      }));
-
-      setMaterials(transformedMaterials);
-
-      showSuccessAlert(
-        'Files Uploaded',
-        `Successfully uploaded ${successfulUploads.length} file(s)${
-          selectedFolder ? ` to ${selectedFolder.title}` : ''
-        }`
-      );
+    // Upload files sequentially to avoid overwhelming the server
+    const results = [];
+    for (const file of fileArray) {
+      const result = await uploadFile(file);
+      results.push(result);
     }
 
-    setSelectedFile(null);
-    setShowAddMaterialModal(false);
-    setUploadProgress({});
+    const successfulUploads = results.filter(Boolean);
+    const failedUploads = fileArray.length - successfulUploads.length;
+
+    if (successfulUploads.length > 0) {
+      // Refresh materials list
+      try {
+        const response = await getMaterials(selectedCourse._id, selectedFolder?._id || '');
+        const transformedMaterials = response.materials.map(material => ({
+          _id: material._id,
+          id: material._id,
+          name: material.title,
+          title: material.title,
+          type: 'file',
+          size: material.fileSize || 0,
+          uploadedAt: material.createdAt,
+          courseId: selectedCourse._id,
+          folderId: selectedFolder?._id || '',
+          path: currentPath,
+          filePath: material.filePath
+        }));
+
+        setMaterials(transformedMaterials);
+
+        // Show success message
+        let message = `Successfully uploaded ${successfulUploads.length} file(s)`;
+        if (selectedFolder) {
+          message += ` to ${selectedFolder.title}`;
+        }
+        if (failedUploads > 0) {
+          message += `. ${failedUploads} file(s) failed to upload.`;
+        }
+
+        showSuccessAlert('Upload Complete', message);
+      } catch (error) {
+        console.error('Failed to refresh materials:', error);
+        showErrorAlert('Upload Complete', 
+          `${successfulUploads.length} file(s) uploaded successfully, but failed to refresh the file list. Please refresh the page.`);
+      }
+    } else if (failedUploads > 0) {
+      showErrorAlert('Upload Failed', 'All files failed to upload. Please check the file types and sizes and try again.');
+    }
+
+    // Clear upload progress after a delay to show completion
+    setTimeout(() => {
+      setUploadProgress({});
+      setSelectedFile(null);
+      setShowAddMaterialModal(false);
+    }, 2000);
   };
 
   const handleDragOver = (e) => {
@@ -544,6 +595,11 @@ const CourseDashboard = () => {
     setIsDragging(false);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
+      // Validate total number of files
+      if (files.length > 20) {
+        showErrorAlert('Too Many Files', 'You can upload a maximum of 20 files at once.');
+        return;
+      }
       handleFileUpload(files);
     }
   };
@@ -852,166 +908,189 @@ const CourseDashboard = () => {
     }
   };
 
+  const getPageTitle = () => {
+    if (selectedCourse) {
+      return `${selectedCourse.name} - Course Management - LabX`;
+    }
+    return user?.role === "admin" ? "Course Management - LabX" : "My Courses - LabX";
+  };
+
+  const getPageDescription = () => {
+    if (selectedCourse) {
+      return `Manage ${selectedCourse.name} course materials, students, and assignments on LabX.`;
+    }
+    return user?.role === "admin" 
+      ? "Manage all courses, materials, and student enrollments on LabX platform."
+      : "Access and manage your courses on LabX virtual laboratory platform.";
+  };
+
   return (
-    <div className="min-h-screen surface-secondary">
-      <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
+    <>
+      <Helmet>
+        <title>{getPageTitle()}</title>
+        <meta name="description" content={getPageDescription()} />
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+      <div className="min-h-screen surface-secondary">
+        <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
-      <div
-        className={`${
-          sidebarCollapsed ? "md:pl-16" : "md:pl-64"
-        } flex flex-col flex-1 transition-all duration-300 ease-in-out`}
-      >
-        {/* Header */}
-        <Header
-          title={user?.role === "admin" ? "Course Management" : "My Courses"}
-          user={user}
-          isAdmin={isAdmin}
-          isTeacher={isTeacher}
-          isDarkMode={isDarkMode}
-          handleToggle={handleToggle}
-        />
-
-        {/* Main Content - Switch between views */}
-        {selectedCourse ? (
-          <CourseDetailView
-            selectedCourse={selectedCourse}
-            currentPath={currentPath}
-            materialsSearchQuery={materialsSearchQuery}
-            setMaterialsSearchQuery={setMaterialsSearchQuery}
-            materialsViewMode={materialsViewMode}
-            setMaterialsViewMode={setMaterialsViewMode}
-            selectedFolder={selectedFolder}
-            materials={materials}
-            folders={folders}
-            onBackToCourses={handleBackToCourses}
-            onNavigateBack={navigateBack}
-            onShowCreateFolderModal={() => setShowCreateFolderModal(true)}
-            onShowAddMaterialModal={() => setShowAddMaterialModal(true)}
-            onNavigateToFolder={navigateToFolder}
-            onDownload={handleDownload}
-            onView={handleView}
-            onDelete={handleDelete}
-            onUpdateFolder={handleUpdateFolderClick}
-            formatFileSize={formatFileSize}
-            isLoadingFolders={isLoadingFolders}
-            isLoadingFiles={isLoadingFiles}
-          />
-        ) : (
-          <CourseListView
-            courses={courses}
-            isLoading={isLoading}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
+        <div
+          className={`${
+            sidebarCollapsed ? "md:pl-16" : "md:pl-64"
+          } flex flex-col flex-1 transition-all duration-300 ease-in-out`}
+        >
+          {/* Header */}
+          <Header
+            title={user?.role === "admin" ? "Course Management" : "My Courses"}
             user={user}
-            showMobileMenu={showMobileMenu}
-            setShowMobileMenu={setShowMobileMenu}
-            onShowCreateModal={() => setShowCreateModal(true)}
-            onCourseClick={handleCourseClick}
-            onAddStudent={handleAddStudentClick}
-            onViewStudents={handleViewStudentsClick}
-            onUpdateCourse={handleUpdateCourseClick}
-            onDeleteCourse={handleDeleteCourse}
+            isAdmin={isAdmin}
+            isTeacher={isTeacher}
+            isDarkMode={isDarkMode}
+            handleToggle={handleToggle}
           />
-        )}
 
-        {/* Create Course Modal */}
-        {showCreateModal && (
-          <CreateCourseModal
-            isOpen={showCreateModal}
-            onClose={() => setShowCreateModal(false)}
-            onSubmit={handleCreateCourse}
-            courseName={courseName}
-            setCourseName={setCourseName}
-            courseDescription={courseDescription}
-            setCourseDescription={setCourseDescription}
-            userRole={user?.role}
-          />
-        )}
+          {/* Main Content - Switch between views */}
+          {selectedCourse ? (
+            <CourseDetailView
+              selectedCourse={selectedCourse}
+              currentPath={currentPath}
+              materialsSearchQuery={materialsSearchQuery}
+              setMaterialsSearchQuery={setMaterialsSearchQuery}
+              materialsViewMode={materialsViewMode}
+              setMaterialsViewMode={setMaterialsViewMode}
+              selectedFolder={selectedFolder}
+              materials={materials}
+              folders={folders}
+              onBackToCourses={handleBackToCourses}
+              onNavigateBack={navigateBack}
+              onShowCreateFolderModal={() => setShowCreateFolderModal(true)}
+              onShowAddMaterialModal={() => setShowAddMaterialModal(true)}
+              onNavigateToFolder={navigateToFolder}
+              onDownload={handleDownload}
+              onView={handleView}
+              onDelete={handleDelete}
+              onUpdateFolder={handleUpdateFolderClick}
+              formatFileSize={formatFileSize}
+              isLoadingFolders={isLoadingFolders}
+              isLoadingFiles={isLoadingFiles}
+            />
+          ) : (
+            <CourseListView
+              courses={courses}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              user={user}
+              showMobileMenu={showMobileMenu}
+              setShowMobileMenu={setShowMobileMenu}
+              onShowCreateModal={() => setShowCreateModal(true)}
+              onCourseClick={handleCourseClick}
+              onAddStudent={handleAddStudentClick}
+              onViewStudents={handleViewStudentsClick}
+              onUpdateCourse={handleUpdateCourseClick}
+              onDeleteCourse={handleDeleteCourse}
+            />
+          )}
 
-        {/* Add Student Modal */}
-        {showAddStudentModal && tempCourse && (
-          <AddStudentModal
-            isOpen={showAddStudentModal && tempCourse}
-            onClose={() => setShowAddStudentModal(false)}
-            onSubmit={handleAddStudent}
-            studentEmail={studentEmail}
-            setStudentEmail={setStudentEmail}
-            courseName={tempCourse?.name}
-            isLoading={isEnrollingStudent}
-          />
-        )}
+          {/* Create Course Modal */}
+          {showCreateModal && (
+            <CreateCourseModal
+              isOpen={showCreateModal}
+              onClose={() => setShowCreateModal(false)}
+              onSubmit={handleCreateCourse}
+              courseName={courseName}
+              setCourseName={setCourseName}
+              courseDescription={courseDescription}
+              setCourseDescription={setCourseDescription}
+              userRole={user?.role}
+            />
+          )}
 
-        {/* View Enrolled Students Modal */}
-        {showEnrolledStudentsModal && tempCourse && (
-          <ViewStudentsModal
-            isOpen={showEnrolledStudentsModal && tempCourse}
-            onClose={() => setShowEnrolledStudentsModal(false)}
-            courseName={tempCourse?.name}
-            students={tempCourse?.students || []}
-            onRemoveStudent={handleRemoveStudent}
-            isLoading={isLoading}
-          />
-        )}
+          {/* Add Student Modal */}
+          {showAddStudentModal && tempCourse && (
+            <AddStudentModal
+              isOpen={showAddStudentModal && tempCourse}
+              onClose={() => setShowAddStudentModal(false)}
+              onSubmit={handleAddStudent}
+              studentEmail={studentEmail}
+              setStudentEmail={setStudentEmail}
+              courseName={tempCourse?.name}
+              isLoading={isEnrollingStudent}
+            />
+          )}
 
-        {/* Create Folder Modal */}
-        {showCreateFolderModal && selectedCourse && (
-          <CreateFolderModal
-            isOpen={showCreateFolderModal && selectedCourse}
-            onClose={() => setShowCreateFolderModal(false)}
-            onSubmit={handleCreateFolder}
-            folderName={newFolderName}
-            setFolderName={setNewFolderName}
-          />
-        )}
+          {/* View Enrolled Students Modal */}
+          {showEnrolledStudentsModal && tempCourse && (
+            <ViewStudentsModal
+              isOpen={showEnrolledStudentsModal && tempCourse}
+              onClose={() => setShowEnrolledStudentsModal(false)}
+              courseName={tempCourse?.name}
+              students={tempCourse?.students || []}
+              onRemoveStudent={handleRemoveStudent}
+              isLoading={isLoading}
+            />
+          )}
 
-        {/* Add Material Modal */}
-        {showAddMaterialModal && selectedCourse && (
-          <UploadFilesModal
-            isOpen={showAddMaterialModal && selectedCourse}
-            onClose={() => {
-              setShowAddMaterialModal(false);
-              setUploadProgress({});
-            }}
-            onFileUpload={handleFileUpload}
-            isDragging={isDragging}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            uploadProgress={uploadProgress}
-          />
-        )}
+          {/* Create Folder Modal */}
+          {showCreateFolderModal && selectedCourse && (
+            <CreateFolderModal
+              isOpen={showCreateFolderModal && selectedCourse}
+              onClose={() => setShowCreateFolderModal(false)}
+              onSubmit={handleCreateFolder}
+              folderName={newFolderName}
+              setFolderName={setNewFolderName}
+            />
+          )}
 
-        {/* Update Course Modal */}
-        {showUpdateModal && tempCourse && (
-          <UpdateCourseModal
-            isOpen={showUpdateModal && tempCourse}
-            onClose={() => setShowUpdateModal(false)}
-            onSubmit={handleSubmitUpdate}
-            courseName={updateCourseName}
-            setCourseName={setUpdateCourseName}
-            courseDescription={updateCourseDescription}
-            setCourseDescription={setUpdateCourseDescription}
-          />
-        )}
+          {/* Add Material Modal */}
+          {showAddMaterialModal && selectedCourse && (
+            <UploadFilesModal
+              isOpen={showAddMaterialModal && selectedCourse}
+              onClose={() => {
+                setShowAddMaterialModal(false);
+                setUploadProgress({});
+              }}
+              onFileUpload={handleFileUpload}
+              isDragging={isDragging}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              uploadProgress={uploadProgress}
+            />
+          )}
 
-        {/* Update Folder Modal */}
-        {showUpdateFolderModal && selectedFolderToUpdate && (
-          <UpdateFolderModal
-            isOpen={showUpdateFolderModal && selectedFolderToUpdate}
-            onClose={() => {
-              setShowUpdateFolderModal(false);
-              setUpdateFolderTitle("");
-              setSelectedFolderToUpdate(null);
-            }}
-            onSubmit={handleUpdateFolder}
-            folderTitle={updateFolderTitle}
-            setFolderTitle={setUpdateFolderTitle}
-          />
-        )}
+          {/* Update Course Modal */}
+          {showUpdateModal && tempCourse && (
+            <UpdateCourseModal
+              isOpen={showUpdateModal && tempCourse}
+              onClose={() => setShowUpdateModal(false)}
+              onSubmit={handleSubmitUpdate}
+              courseName={updateCourseName}
+              setCourseName={setUpdateCourseName}
+              courseDescription={updateCourseDescription}
+              setCourseDescription={setUpdateCourseDescription}
+            />
+          )}
+
+          {/* Update Folder Modal */}
+          {showUpdateFolderModal && selectedFolderToUpdate && (
+            <UpdateFolderModal
+              isOpen={showUpdateFolderModal && selectedFolderToUpdate}
+              onClose={() => {
+                setShowUpdateFolderModal(false);
+                setUpdateFolderTitle("");
+                setSelectedFolderToUpdate(null);
+              }}
+              onSubmit={handleUpdateFolder}
+              folderTitle={updateFolderTitle}
+              setFolderTitle={setUpdateFolderTitle}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

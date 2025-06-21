@@ -7,10 +7,12 @@ import Header from '../Common/Header';
 import TaskCreationModal from '../Common/Modals/TaskCreationModal';
 import TaskUploadModal from '../Common/Modals/TaskUploadModal';
 import TaskViewer from '../Tasks/TaskViewer';
-import { getAllTasks, deleteTask, uploadTaskFiles } from '../../services/taskService';
+import UpdateTaskTitleModal from '../Common/Modals/UpdateTaskTitleModal';
+import { getAllTasks, deleteTask, uploadTaskFiles, updateTaskTitle } from '../../services/taskService';
 import { showConfirmDialog, showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { debounce } from 'lodash';
 import axios from 'axios';
+import { Helmet } from 'react-helmet-async';
 
 const TaskManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,6 +27,9 @@ const TaskManagement = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedTaskToOpen, setSelectedTaskToOpen] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUpdateTitleModalOpen, setIsUpdateTitleModalOpen] = useState(false);
+  const [selectedTaskForUpdate, setSelectedTaskForUpdate] = useState(null);
+  const [isUpdatingTitle, setIsUpdatingTitle] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { taskId } = useParams();
@@ -203,6 +208,33 @@ const TaskManagement = () => {
     });
   };
 
+  const handleOpenUpdateTitleModal = (task) => {
+    setSelectedTaskForUpdate(task);
+    setIsUpdateTitleModalOpen(true);
+  };
+
+  const handleCloseUpdateTitleModal = () => {
+    setIsUpdateTitleModalOpen(false);
+    setSelectedTaskForUpdate(null);
+    setIsUpdatingTitle(false);
+  };
+
+  const handleUpdateTaskTitle = async (newTitle) => {
+    if (!selectedTaskForUpdate) return;
+    setIsUpdatingTitle(true);
+    try {
+      const updatedTask = await updateTaskTitle(selectedTaskForUpdate._id, newTitle);
+      setTasks(prevTasks => prevTasks.map(task =>
+        task._id === updatedTask.task._id ? { ...task, title: updatedTask.task.title } : task
+      ));
+      showSuccessAlert('Success', 'Task title updated successfully');
+      handleCloseUpdateTitleModal();
+    } catch (error) {
+      showErrorAlert('Update Failed', error.response?.data?.message || 'Failed to update title');
+      setIsUpdatingTitle(false);
+    }
+  };
+
   const sortedTasks = React.useMemo(() => {
     return [...tasks].sort((a, b) => {
       if (sortConfig.key === 'submissions') {
@@ -280,6 +312,14 @@ const TaskManagement = () => {
           >
             <Trash2 className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => handleOpenUpdateTitleModal(task)}
+            className="text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400 p-1"
+            title="Edit Title"
+          >
+            {/* Pen icon SVG, same as used for edit course */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3zm0 0v3h3" /></svg>
+          </button>
         </div>
       </div>
       <p className="text-secondary text-sm mb-3 line-clamp-2">{task.description}</p>
@@ -296,7 +336,28 @@ const TaskManagement = () => {
     </div>
   ));
 
+  const getPageTitle = () => {
+    if (taskId && selectedTaskToOpen) {
+      return `${selectedTaskToOpen.title} - Task Management - LabX`;
+    }
+    return 'Task Management - LabX Admin Portal';
+  };
+
+  const getPageDescription = () => {
+    if (taskId && selectedTaskToOpen) {
+      return `Manage and preview the interactive task "${selectedTaskToOpen.title}" on LabX virtual laboratory platform.`;
+    }
+    return 'Create, manage, and upload interactive virtual laboratory tasks for students on LabX platform.';
+  };
+
   return (
+    <>
+    <Helmet>
+      <title>{getPageTitle()}</title>
+      <meta name="description" content={getPageDescription()} />
+      <meta name="robots" content="noindex, nofollow" />
+      <meta name="keywords" content="task management, virtual laboratory, interactive tasks, admin portal, LabX" />
+    </Helmet>
     <div className="min-h-screen surface-secondary">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
@@ -482,6 +543,14 @@ const TaskManagement = () => {
                                     >
                                       <Trash2 className="w-5 h-5" />
                                     </button>
+                                    <button
+                                      onClick={() => handleOpenUpdateTitleModal(task)}
+                                      className="p-2 text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
+                                      title="Edit Title"
+                                    >
+                                      {/* Pen icon SVG, same as used for edit course */}
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3zm0 0v3h3" /></svg>
+                                    </button>
                                   </div>
                                 </td>
                               </tr>
@@ -515,7 +584,16 @@ const TaskManagement = () => {
         uploadProgress={uploadProgress}
         isUploading={isUploading}
       />
+
+      <UpdateTaskTitleModal
+        isOpen={isUpdateTitleModalOpen}
+        onClose={handleCloseUpdateTitleModal}
+        onUpdate={handleUpdateTaskTitle}
+        initialTitle={selectedTaskForUpdate?.title}
+        loading={isUpdatingTitle}
+      />
     </div>
+    </>
   );
 };
 

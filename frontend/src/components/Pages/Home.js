@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { Helmet } from 'react-helmet-async';
 
 /**
  * Home page component for LabX Educational Platform
@@ -11,6 +12,15 @@ const Home = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
+        <>
+        <Helmet>
+        <title>LabX - Virtual Laboratory Platform | Experience Learning in 3D</title>
+        <meta name="description" content="LabX revolutionizes education by combining traditional course management with cutting-edge 3D virtual laboratories. Conduct real experiments safely, access expensive equipment virtually." />
+        <meta name="keywords" content="virtual laboratory, 3D learning, online education, laboratory simulation, LabX" />
+        <meta property="og:title" content="LabX - Virtual Laboratory Platform" />
+        <meta property="og:description" content="Experience learning in 3D interactive labs. Safe, accessible, and innovative virtual laboratory platform." />
+        <meta property="og:type" content="website" />
+      </Helmet>
         <div className="min-h-screen bg-gray-50">
             {/* Header/Navigation */}
             <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -350,6 +360,7 @@ const Home = () => {
                 </div>
             </footer>
         </div>
+        </>
     );
 };
 

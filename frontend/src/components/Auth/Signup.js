@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { signup } from '../../services/authService';
 import { showSuccessAlert, showErrorAlert } from '../../utils/sweetAlert';
 import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
+import { Helmet } from 'react-helmet-async';
 
 /**
  * Signup component with form validation and API integration
@@ -265,6 +266,11 @@ const Signup = () => {
   };
 
   return (
+    <>
+    <Helmet>
+      <title>Sign Up - LabX Virtual Laboratory Platform</title>
+      <meta name="description" content="Create your LabX account to start learning with 3D virtual laboratories and interactive courses." />
+    </Helmet>
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="absolute top-0 left-0 w-full h-64 bg-indigo-600" aria-hidden="true" />
       
@@ -495,6 +501,7 @@ const Signup = () => {
         </form>
       </div>
     </div>
+    </>
   );
 };
 
