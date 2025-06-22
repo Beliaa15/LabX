@@ -1,7 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../utils/constants';
 
-// Configure your API base URL here
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+// Remove the hardcoded API_BASE_URL since it's now imported from constants
 
 // Request deduplication cache
 const pendingRequests = new Map();

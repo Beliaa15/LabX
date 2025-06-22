@@ -104,33 +104,9 @@ app.use((req, res, next) => {
     next();
 });
 
-// Static file serving with proper headers
-app.use('/uploads', (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    next();
-}, express.static(path.join(__dirname, 'uploads')));
-
-// WebGL static serving with permissive headers
-app.use('/webgl', (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader('X-Frame-Options', 'ALLOWALL');
-    res.removeHeader('X-Content-Type-Options'); // Allow Unity to determine content types
-    next();
-}, express.static(path.join(__dirname, 'uploads/webgl')));
-
-const webglStaticPath = process.env.NODE_ENV === 'production' 
-    ? path.join(__dirname, 'frontend/public/webgl-tasks')
-    : path.join(__dirname, '../frontend/public/webgl-tasks');
-
-app.use('/webgl-tasks', (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader('X-Frame-Options', 'ALLOWALL');
-    res.removeHeader('X-Content-Type-Options');
-    next();
-}, express.static(webglStaticPath));
+// Serve uploaded files and WebGL content
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/webgl', express.static(path.join(__dirname, 'uploads/webgl')));
 
 // Rate limiting (more permissive for development)
 const limiter = rateLimit({
@@ -154,10 +130,29 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 
-// Root endpoint
-app.get('/', (req, res) => {
-    res.send('Welcome to the Educational Platform API');
+// Health check endpoint for Railway
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
 });
+
+// Serve static files from the React app build directory
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../frontend/build')));
+    
+    // Handle React routing, return all requests to React app
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+    });
+} else {
+    // Root endpoint for development
+    app.get('/', (req, res) => {
+        res.send('Welcome to the Educational Platform API');
+    });
+}
 
 // Global error handler
 app.use(errorHandler);

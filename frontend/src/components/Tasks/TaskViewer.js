@@ -491,8 +491,10 @@ export default function TaskViewer() {
             updateBannerVisibility();
         }
 
-        // Use the current window location protocol and host
-        var baseUrl = "http://localhost:3000/webgl/${taskId}";
+        // Use the current window location for WebGL assets
+        var baseUrl = process.env.NODE_ENV === 'production' 
+            ? \`/webgl/\${taskId}\` 
+            : \`http://localhost:3000/webgl/\${taskId}\`;
         var buildUrl = baseUrl + "/Build";
         var loaderUrl = buildUrl + "/build.loader.js";
         
@@ -506,7 +508,7 @@ export default function TaskViewer() {
             codeUrl: buildUrl + "/build.wasm",
             streamingAssetsUrl: baseUrl + "/StreamingAssets",
             companyName: "DefaultCompany",
-            productName: "${taskTitle}",
+            productName: "\${taskTitle}",
             productVersion: "1.0",
             showBanner: unityShowBanner,
         };
@@ -608,7 +610,7 @@ export default function TaskViewer() {
         
         // Test communication with parent
         setTimeout(function() {
-            notifyParent('IframeReady', { title: '${cleanTitle}' });
+            notifyParent('IframeReady', { title: '\${cleanTitle}' });
         }, 1000);
     </script>
 </body>

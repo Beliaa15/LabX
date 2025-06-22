@@ -202,10 +202,10 @@ import { VideoPlayer } from './VideoPlayer';
                 }, 5000);
             }
             updateBannerVisibility();
-        }
-
-        // Use the current window location protocol and host
-        var baseUrl = "http://localhost:3000/webgl/68521f8c8686b74a5725ea0b";
+        }        // Use the current window location for WebGL assets
+        var baseUrl = process.env.NODE_ENV === 'production' 
+            ? "/webgl/68521f8c8686b74a5725ea0b"
+            : "http://localhost:3000/webgl/68521f8c8686b74a5725ea0b";
         var buildUrl = baseUrl + "/Build";
         var loaderUrl = buildUrl + "/build.loader.js";
         

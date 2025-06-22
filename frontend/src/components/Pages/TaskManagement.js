@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, ArrowUpDown, Calendar, Users, ArrowUpToLine, Trash2, FileText, CheckCircle2, XCircle, PlayCircle, ArrowLeft } from 'lucide-react';
 import { useUI } from '../../context/UIContext';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { API_BASE_URL } from '../../utils/constants';
 import Sidebar from '../Common/Sidebar';
 import Header from '../Common/Header';
 import TaskCreationModal from '../Common/Modals/TaskCreationModal';
@@ -129,7 +130,7 @@ const TaskManagement = () => {
         formData.append('file', file);
       });
 
-      await axios.post(`http://localhost:3000/api/tasks/${selectedTaskId}/upload-zip`, formData, {
+      await axios.post(`${API_BASE_URL}/tasks/${selectedTaskId}/upload-zip`, formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
