@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ['nodejs-18_x']
+
+[phases.build]
+cmds = ['npm run build']
+
+[start]
+cmd = 'npm start'
+
+[variables]
+NODE_ENV = 'production'
+NPM_CONFIG_FUND = 'false'
+NPM_CONFIG_AUDIT = 'false'
+NODE_OPTIONS = '--max-old-space-size=2048'

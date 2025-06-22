@@ -1,38 +1,49 @@
-# Multi-stage build for production deployment
-FROM node:18-alpine AS frontend-builder
+# Use Node.js 18 with more memory
+FROM node:18-alpine
 
-# Build frontend
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci --only=production
-COPY frontend/ ./
-RUN npm run build
-
-# Backend stage
-FROM node:18-alpine AS backend
+# Set memory limits and npm configuration
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+ENV NPM_CONFIG_FUND=false
+ENV NPM_CONFIG_AUDIT=false
 
 WORKDIR /app
 
-# Install backend dependencies
-COPY backend/package*.json ./
-RUN npm ci --only=production
+# Install dependencies for both frontend and backend
+# Copy package files first for better layer caching
+COPY package*.json ./
+COPY frontend/package*.json ./frontend/
+COPY backend/package*.json ./backend/
 
-# Copy backend source
-COPY backend/ ./
+# Install backend dependencies first (smaller, less memory intensive)
+WORKDIR /app/backend
+RUN npm install --production --no-optional
 
-# Copy built frontend
-COPY --from=frontend-builder /app/frontend/build ./frontend/build
+# Install frontend dependencies and build
+WORKDIR /app/frontend
+RUN npm install --production --no-optional
+COPY frontend/ ./
+RUN npm run build
+
+# Copy backend source code
+WORKDIR /app
+COPY backend/ ./backend/
+
+# Copy built frontend to backend for serving
+RUN cp -r frontend/build backend/frontend/
 
 # Create necessary directories
-RUN mkdir -p uploads
-RUN mkdir -p frontend/public/webgl-tasks
+RUN mkdir -p backend/uploads
+RUN mkdir -p backend/frontend/public/webgl-tasks
+
+# Set working directory to backend
+WORKDIR /app/backend
 
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "http.get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 # Start the application
 CMD ["npm", "start"]
