@@ -286,9 +286,8 @@ export default function TaskViewer() {
     console.error('Iframe failed to load');
     setError('Failed to load the interactive task. Please check if the game files exist.');
   };
-
   // Create Unity HTML content with relative paths to avoid CORS issues
-  const createUnityHTML = (taskTitle) => {
+  const createUnityHTML = (taskTitle, webglBaseUrl, currentTaskId) => {
     const cleanTitle = taskTitle
       .replace(/\s+/g, '-')  // Replace spaces with hyphens
       .replace(/[^\w\-]/g, '') // Remove special characters except hyphens and alphanumeric
@@ -489,10 +488,8 @@ export default function TaskViewer() {
                     updateBannerVisibility();                }, 5000);
             }
             updateBannerVisibility();
-        }
-
-        // Use the centralized WebGL base URL
-        var baseUrl = `${WEBGL_BASE_URL}/${taskId}`;
+        }        // Use the centralized WebGL base URL
+        var baseUrl = webglBaseUrl + "/" + currentTaskId;
         var buildUrl = baseUrl + "/Build";
         var loaderUrl = buildUrl + "/build.loader.js";
         
@@ -777,10 +774,8 @@ export default function TaskViewer() {
                     </p>
                   </div>
                 </div>
-              )}
-
-              <iframe
-                srcDoc={createUnityHTML(task.title)}
+              )}              <iframe
+                srcDoc={createUnityHTML(task.title, WEBGL_BASE_URL, taskId)}
                 className="absolute top-0 left-0 w-full h-full border-0"
                 title={`Task ${taskId} - ${task.title}`}
                 allowFullScreen

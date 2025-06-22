@@ -14,6 +14,14 @@ try {
   console.log('📦 Installing frontend dependencies...');
   execSync('npm install', { cwd: 'frontend', stdio: 'inherit' });
 
+  // Update browserslist database
+  console.log('🔄 Updating browserslist database...');
+  try {
+    execSync('npx update-browserslist-db@latest', { cwd: 'frontend', stdio: 'inherit' });
+  } catch (error) {
+    console.log('⚠️ Could not update browserslist, continuing with build...');
+  }
+
   // Build frontend
   console.log('🏗️ Building frontend...');
   execSync('npm run build', { cwd: 'frontend', stdio: 'inherit' });
