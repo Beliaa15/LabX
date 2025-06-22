@@ -8,8 +8,13 @@ ENV NPM_CONFIG_AUDIT=false
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and build script
 COPY package*.json ./
+COPY build.js ./
+
+# Copy source code
+COPY frontend/ ./frontend/
+COPY backend/ ./backend/
 
 # Install dependencies and build
 RUN npm install
