@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { VideoPlayer } from './VideoPlayer';
+import { WEBGL_BASE_URL } from '../../utils/constants';
 
   // Create Unity HTML content with relative paths to avoid CORS issues
   const createUnityHTML = (taskTitle) => {
@@ -200,12 +201,11 @@ import { VideoPlayer } from './VideoPlayer';
                     warningBanner.removeChild(div);
                     updateBannerVisibility();
                 }, 5000);
-            }
-            updateBannerVisibility();
-        }        // Use the current window location for WebGL assets
-        var baseUrl = process.env.NODE_ENV === 'production' 
-            ? "/webgl/68521f8c8686b74a5725ea0b"
-            : "http://localhost:3000/webgl/68521f8c8686b74a5725ea0b";
+            }            updateBannerVisibility();
+        }
+
+        // Use the centralized WebGL base URL
+        var baseUrl = "${WEBGL_BASE_URL}/68521f8c8686b74a5725ea0b";
         var buildUrl = baseUrl + "/Build";
         var loaderUrl = buildUrl + "/build.loader.js";
         

@@ -8,6 +8,7 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import authApi from '../../services/authService';
 import { submitTaskInCourse, getTaskById, getTaskSubmissionsForCourse } from '../../services/taskService';
+import { WEBGL_BASE_URL } from '../../utils/constants';
 import TaskCompletedModal from '../Common/Modals/TaskCompletedModal';
 
 export default function TaskViewer() {
@@ -485,16 +486,13 @@ export default function TaskViewer() {
                 if (type == 'warning') div.style = 'background: yellow; padding: 10px; color: black;';
                 setTimeout(function() {
                     warningBanner.removeChild(div);
-                    updateBannerVisibility();
-                }, 5000);
+                    updateBannerVisibility();                }, 5000);
             }
             updateBannerVisibility();
         }
 
-        // Use the current window location for WebGL assets
-        var baseUrl = process.env.NODE_ENV === 'production' 
-            ? \`/webgl/\${taskId}\` 
-            : \`http://localhost:3000/webgl/\${taskId}\`;
+        // Use the centralized WebGL base URL
+        var baseUrl = `${WEBGL_BASE_URL}/${taskId}`;
         var buildUrl = baseUrl + "/Build";
         var loaderUrl = buildUrl + "/build.loader.js";
         

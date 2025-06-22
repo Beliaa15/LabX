@@ -5,16 +5,17 @@
   "main": "backend/app.js",  "scripts": {
     "build": "node build.js",
     "start": "cd backend && npm start",
-    "dev:backend": "cd backend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm start",
     "dev:frontend": "cd frontend && npm start",
     "install:backend": "cd backend && npm install --production",
-    "install:frontend": "cd frontend && npm install"
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
-  },
-  "dependencies": {
+  },  "dependencies": {
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@hookform/resolvers": "^3.9.1",
@@ -29,5 +30,8 @@
     "react-hook-form": "^7.53.1",
     "react-toastify": "^10.0.6",
     "yup": "^1.4.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

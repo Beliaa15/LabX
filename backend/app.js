@@ -25,8 +25,17 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
-        // Allow localhost and development origins
+        // Development origins
+        const developmentOrigins = [
+            'http://localhost:3001',  // React development server
+            'http://127.0.0.1:3001',
+            'http://localhost:3000',  // Backend development
+            'http://127.0.0.1:3000'
+        ];
+        
+        // Production origins
         const allowedOrigins = [
+            ...developmentOrigins,
             ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
         ];
         
@@ -119,6 +128,49 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// Health check endpoint - MUST be before database-dependent routes
+app.get('/health', (req, res) => {
+    const healthStatus = {
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        env: process.env.NODE_ENV || 'development',
+        port: process.env.PORT || 3000,
+        memory: process.memoryUsage(),
+        version: require('./package.json').version || '1.0.0'
+    };
+    
+    res.status(200).json(healthStatus);
+});
+
+// Simple ping endpoint for basic connectivity
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+});
+
+// Ready check endpoint (includes database status)
+app.get('/ready', async (req, res) => {
+    try {
+        // Check if we can import mongoose without error
+        const mongoose = require('mongoose');
+        const dbStatus = mongoose.connection.readyState;
+        
+        const readyStatus = {
+            status: dbStatus === 1 ? 'READY' : 'NOT_READY',
+            database: dbStatus === 1 ? 'connected' : 'disconnected',
+            timestamp: new Date().toISOString()
+        };
+        
+        res.status(dbStatus === 1 ? 200 : 503).json(readyStatus);
+    } catch (error) {
+        res.status(503).json({
+            status: 'ERROR',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Serve static files (including WebGL builds)
@@ -130,22 +182,17 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 
-// Health check endpoint for Railway
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-    });
-});
-
 // Serve static files from the React app build directory
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../frontend/build')));
+    app.use(express.static(path.join(__dirname, 'frontend/build')));
     
-    // Handle React routing, return all requests to React app
+    // Handle React routing, return all requests to React app (except API routes)
     app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+        // Skip API routes and health checks
+        if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/ping')) {
+            return res.status(404).json({ error: 'Not found' });
+        }
+        res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
     });
 } else {
     // Root endpoint for development
@@ -157,22 +204,59 @@ if (process.env.NODE_ENV === 'production') {
 // Global error handler
 app.use(errorHandler);
 
-// Connect to MongoDB and start the server
+// Start server immediately, connect to database in background
 const startServer = async () => {
-    try {
-        await connectDB(); // Connect to MongoDB
-        console.log('Database connected');
+    const PORT = process.env.PORT || 3000;
+    
+    console.log('🚀 Starting server...');
+    console.log('📊 Environment variables:');
+    console.log('  - NODE_ENV:', process.env.NODE_ENV);
+    console.log('  - PORT:', PORT);
+    console.log('  - MongoDB URI:', process.env.MONGODB_URI ? 'Set' : 'Not set');
+    console.log('  - Redis URL:', process.env.REDIS_URL ? 'Set' : 'Not set');
+    
+    // Start server first (for health checks)
+    const server = app.listen(PORT, '0.0.0.0', () => {
+        console.log(`✅ Server running on port ${PORT}`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🔗 Health check: http://localhost:${PORT}/ping`);
+    });
 
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`CORS enabled for development origins`);
-        });
+    // Connect to database in background
+    try {
+        console.log('🔄 Connecting to database...');
+        await connectDB();
+        console.log('✅ Database connected successfully');
     } catch (err) {
-        console.error('Database connection error:', err);
-        process.exit(1);
+        console.error('❌ Database connection error:', err.message);
+        console.log('⚠️ Server running without database connection');
+        // Don't exit - allow health checks to work
     }
+
+    return server;
 };
 
 startServer();
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught Exception:', error);
+    console.log('🔄 Server continuing to run...');
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    console.log('🔄 Server continuing to run...');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('👋 SIGTERM received, shutting down gracefully');
+    process.exit(0);
+});
+
+process.on('SIGINT', () => {
+    console.log('👋 SIGINT received, shutting down gracefully');
+    process.exit(0);
+});

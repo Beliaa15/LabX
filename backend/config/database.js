@@ -2,14 +2,21 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI, {
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+        const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+        if (!mongoUri) {
+            throw new Error('MongoDB URI not provided');
+        }
+        
+        await mongoose.connect(mongoUri, {
+            serverSelectionTimeoutMS: 10000, // Timeout after 10s
             maxPoolSize: 10, // Maintain up to 10 socket connections
+            bufferCommands: false, // Disable buffering
+            bufferMaxEntries: 0 // Disable buffering
         });
-        console.log('MongoDB connected successfully');
+        console.log('✅ MongoDB connected successfully');
     } catch (error) {
-        console.error('MongoDB connection error:', error.message);
-        process.exit(1);
+        console.error('❌ MongoDB connection error:', error.message);
+        throw error; // Don't exit process, let caller handle it
     }
 };
 

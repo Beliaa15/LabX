@@ -4,6 +4,18 @@ A comprehensive full-stack educational platform that enables teachers to create 
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Beliaa15/GP-website)
 
+## 🌐 Port Configuration
+
+### Development Environment
+- **Backend Server**: `http://localhost:3000` - API endpoints and file serving
+- **Frontend Server**: `http://localhost:3001` - React development server
+- **API Proxy**: Frontend proxies API calls to backend automatically
+
+### Production Environment
+- **Single Server**: All traffic served from one domain (Railway deployment)
+- **API Endpoints**: `/api/*` routes handled by backend
+- **Static Assets**: Frontend build served by backend
+
 ## 🎯 Main Feature
 
 ### 🔬 3D Interactive Labs
